@@ -31,7 +31,7 @@ struct LandingView: View {
         .safeAreaInset(edge: .bottom, spacing: 8) {
             InvocationConsole(router: router)
                 .padding(.bottom, 10)
-//        }
+        }
         .onAppear {
             if let first = availableTouchpoints.first {
                 selectedTouchpoint = first
