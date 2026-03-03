@@ -152,6 +152,7 @@ bash scripts/create-submission.sh "Your Team Name"
 ```
 
 This creates `Submissions/<team-slug>/` from template, renames the Swift file to a unique `ClipExperience` type, and pre-fills team details.
+If Xcode shows your submission file with Target Membership unchecked, that's expected in this lab setup.
 
 ### Step 2: Conform to the Protocol
 
@@ -174,6 +175,7 @@ struct MyClipExperience: ClipExperience {
 ### Step 3: Build (auto-register)
 
 No manual router edits are needed. The build script auto-discovers clips in `Submissions/` and generates the registry.
+It compiles submissions through `GeneratedSubmissions.swift`, so target-membership checkbox state on team files is not a blocker.
 
 ### Step 4: Test It
 

@@ -97,6 +97,7 @@ cp -r Submissions/_template Submissions/YourTeamName
 ### Step 2: Rename and edit your experience
 
 Open `Submissions/YourTeamName/MyClipExperience.swift`. Rename the struct, set your URL pattern, and build your UI.
+If Xcode shows Target Membership unchecked for your team file, that is expected in this lab.
 
 ```swift
 struct PreShowHypeExperience: ClipExperience {
@@ -151,6 +152,7 @@ static let touchpoint = JourneyTouchpoint(
 
 The build script auto-discovers your experience from `Submissions/`. Run **Cmd+R** and your clip appears in the landing screen.
 If it does not appear, run `bash scripts/generate-registry.sh` once and rebuild.
+Submissions are compiled through `GeneratedSubmissions.swift`, so team-file target membership checkbox state does not block build.
 
 ### Step 4: Test
 

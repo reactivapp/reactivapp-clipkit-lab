@@ -4,6 +4,8 @@ import SwiftUI
 // 2. Update urlPattern, clipName, clipDescription, teamName
 // 3. Build your UI in body using the building block components
 // 4. Copy this folder as Submissions/YourTeamName/ and start building
+// 5. If Xcode shows this file without Target Membership, that's expected here.
+//    Submissions are compiled through GeneratedSubmissions.swift after build/script.
 //
 // DESIGN NOTES:
 // - Use system colors (.primary, .secondary, .tertiary) — they adapt to Liquid Glass
