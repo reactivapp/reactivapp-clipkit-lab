@@ -533,6 +533,7 @@ struct CauseLandingView: View {
 // MARK: - From Submissions/mithun/Views/ImpactConfirmationView.swift
 
 import SwiftUI
+import UserNotifications
 
 struct ImpactConfirmationView: View {
     let cause: CauseData
@@ -687,6 +688,31 @@ struct ImpactConfirmationView: View {
             withAnimation(.easeOut(duration: 1.0)) {
                 updatedProgress = newProgress
             }
+        }
+
+        scheduleImpactNotification()
+    }
+
+    private func scheduleImpactNotification() {
+        let center = UNUserNotificationCenter.current()
+        center.requestAuthorization(options: [.alert, .sound]) { granted, _ in
+            guard granted else { return }
+
+            let content = UNMutableNotificationContent()
+            content.title = cause.name
+            content.body = "Today's count: \(newMealCount) meals packed across \(cause.city). Thank you for being part of it."
+            content.sound = .default
+            content.categoryIdentifier = "GIVE_IMPACT"
+
+            // 10s for demo; 4 hours (14400s) in production
+            let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 10, repeats: false)
+            let request = UNNotificationRequest(
+                identifier: "givekit-impact-\(cause.id)",
+                content: content,
+                trigger: trigger
+            )
+
+            center.add(request)
         }
     }
 
