@@ -11,20 +11,20 @@ import SwiftUI
 // MARK: - Design System Colors
 
 enum ClipBetColors {
-    static let bg           = Color(red: 250/255, green: 248/255, blue: 245/255) // FAF8F5
-    static let surface      = Color(red: 240/255, green: 236/255, blue: 228/255) // F0ECE4
-    static let divider      = Color(red: 226/255, green: 221/255, blue: 213/255) // E2DDD5
-    static let textPrimary  = Color(red: 26/255,  green: 24/255,  blue: 20/255)  // 1A1814
-    static let textSecondary = Color(red: 122/255, green: 117/255, blue: 111/255) // 7A756F
-    static let textFaint    = Color(red: 176/255, green: 169/255, blue: 159/255) // B0A99F
+    static let bg           = Color(white: 0.98) // Off-white
+    static let surface      = Color(white: 0.94)
+    static let divider      = Color(white: 0.90)
+    static let textPrimary  = Color(white: 0.12) // Softer off-black
+    static let textSecondary = Color(white: 0.45)
+    static let textFaint    = Color(white: 0.65)
 
-    static let yes          = Color(red: 123/255, green: 184/255, blue: 154/255) // 7BB89A
-    static let yesFill      = Color(red: 196/255, green: 224/255, blue: 212/255) // C4E0D4
-    static let no           = Color(red: 201/255, green: 123/255, blue: 123/255) // C97B7B
-    static let noFill       = Color(red: 245/255, green: 206/255, blue: 206/255) // F5CECE
-    static let accent       = Color(red: 232/255, green: 160/255, blue: 160/255) // E8A0A0
+    static let yes          = Color(red: 100/255, green: 170/255, blue: 140/255)
+    static let yesFill      = Color(red: 220/255, green: 240/255, blue: 230/255)
+    static let no           = Color(red: 200/255, green: 100/255, blue: 100/255)
+    static let noFill       = Color(red: 250/255, green: 225/255, blue: 225/255)
+    static let accent       = Color(white: 0.25)
 
-    static let dark         = Color(red: 26/255,  green: 24/255,  blue: 20/255)  // 1A1814
+    static let dark         = Color(white: 0.10)
 }
 
 // MARK: - Event Status

@@ -8,6 +8,7 @@
 //
 
 import SwiftUI
+import UserNotifications
 
 struct ClipBetExperience: ClipExperience {
     static let urlPattern = "clipbet.io/event/:eventId"
@@ -683,17 +684,20 @@ struct ClipBetExperience: ClipExperience {
         ScrollView {
             VStack(spacing: 0) {
                 VStack(spacing: 16) {
-                    Image(systemName: "checkmark")
-                        .font(.system(size: 32, weight: .light))
-                        .foregroundColor(ClipBetColors.yes)
-                        .padding(.top, 40)
-
                     Text("You're In")
                         .font(.custom("Cormorant Garamond", size: 36))
                         .fontWeight(.light)
                         .foregroundColor(ClipBetColors.textPrimary)
+                        .padding(.top, 40)
 
                     MonoLabel(text: "Bet placed successfully")
+                    
+                    if newBettorsAdded > 0 {
+                        Text("\(newBettorsAdded) more people are betting on this right now")
+                            .font(.custom("DM Mono", size: 10))
+                            .foregroundColor(ClipBetColors.accent)
+                            .padding(.top, 8)
+                    }
                 }
                 .padding(.bottom, 28)
 
@@ -793,11 +797,9 @@ struct ClipBetExperience: ClipExperience {
                             }
                             
                             Button { 
-                                withAnimation { notificationOptInStatus = true }
+                                requestNotificationPermission()
                             } label: {
                                 HStack(spacing: 8) {
-                                    Image(systemName: "bell.badge.fill")
-                                        .font(.system(size: 14))
                                     Text("ENABLE")
                                         .font(.custom("DM Mono", size: 12))
                                         .kerning(1.6)
@@ -812,19 +814,36 @@ struct ClipBetExperience: ClipExperience {
                     }
                     .padding(.vertical, 24)
                 } else if notificationOptInStatus == true {
-                    VStack(spacing: 8) {
-                        Image(systemName: "bell.fill")
-                            .foregroundColor(ClipBetColors.yes)
-                        Text("NOTIFICATIONS ENABLED FOR 8 HOURS")
+                    VStack(spacing: 16) {
+                        Text("NOTIFICATIONS TURNED ON")
                             .font(.custom("DM Mono", size: 10))
                             .kerning(1)
                             .foregroundColor(ClipBetColors.yes)
+                            
+                        HStack(spacing: 12) {
+                            Button { simulateNotification(type: 1) } label: {
+                                Text("SIMULATE: CLOSED")
+                                    .font(.custom("DM Mono", size: 9))
+                                    .foregroundColor(ClipBetColors.textPrimary)
+                                    .padding(.horizontal, 16)
+                                    .padding(.vertical, 10)
+                                    .background(ClipBetColors.surface)
+                                    .clipShape(RoundedRectangle(cornerRadius: 2))
+                            }
+                            Button { simulateNotification(type: 2) } label: {
+                                Text("SIMULATE: ENDED")
+                                    .font(.custom("DM Mono", size: 9))
+                                    .foregroundColor(ClipBetColors.textPrimary)
+                                    .padding(.horizontal, 16)
+                                    .padding(.vertical, 10)
+                                    .background(ClipBetColors.surface)
+                                    .clipShape(RoundedRectangle(cornerRadius: 2))
+                            }
+                        }
                     }
                     .padding(.vertical, 24)
                 } else {
                     VStack(spacing: 8) {
-                        Image(systemName: "bell.slash")
-                            .foregroundColor(ClipBetColors.textFaint)
                         Text("NOTIFICATIONS DISABLED")
                             .font(.custom("DM Mono", size: 10))
                             .kerning(1)
@@ -842,10 +861,51 @@ struct ClipBetExperience: ClipExperience {
                         .multilineTextAlignment(.center)
                         .padding(.horizontal, 32)
                 }
-                .padding(.bottom, 32)
+                .padding(.bottom, 24)
+                
+                // View Organizer Dashboard demo feature
+                Button {
+                    // For demo purposes, map mock data to organizer state if missing
+                    if self.createdEvent == nil {
+                        self.createdEvent = self.event
+                        self.createdEventQRURL = "clipbet.io/event/\(self.event.id.uuidString.prefix(8).lowercased())"
+                        self.organizerId = self.event.organizerId.uuidString
+                    }
+                    withAnimation { currentScreen = .dashboard }
+                } label: {
+                    Text("Switch to Organizer View (Demo)")
+                        .font(.custom("DM Mono", size: 11))
+                        .foregroundColor(ClipBetColors.textSecondary)
+                }
+                .padding(.bottom, 40)
             }
         }
         .scrollIndicators(.hidden)
+    }
+
+    // MARK: - Notifications
+    
+    private func requestNotificationPermission() {
+        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, _ in
+            DispatchQueue.main.async {
+                withAnimation { self.notificationOptInStatus = granted }
+            }
+        }
+    }
+    
+    private func simulateNotification(type: Int) {
+        let content = UNMutableNotificationContent()
+        if type == 1 {
+            content.title = "Bets Are Closed"
+            content.body = "100 people are taking part. Event is now live!"
+        } else {
+            content.title = "Event Ended"
+            content.body = "Enter the app to view results and claim your winnings."
+        }
+        content.sound = .default
+        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 1, repeats: false)
+        let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: trigger)
+        UNUserNotificationCenter.current().add(request)
     }
 
     // MARK: - Payment Actions

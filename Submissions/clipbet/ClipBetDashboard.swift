@@ -13,6 +13,8 @@ struct OrganizerDashboard: View {
     var qrURL: String?
     var organizerId: String?
 
+    @State private var generatedPDFURL: URL?
+
     @State private var showResolveSheet = false
     @State private var showCancelConfirm = false
     @State private var isProcessing = false
@@ -194,13 +196,30 @@ struct OrganizerDashboard: View {
                         }
                     }
 
-                    // Share QR
-                    if let qrURL, let shareURL = URL(string: "https://\(qrURL)") {
-                        ShareLink(item: shareURL) {
+                    // Share PDF / QR
+                    if let pdfURL = generatedPDFURL {
+                        ShareLink(item: pdfURL) {
                             HStack(spacing: 8) {
-                                Image(systemName: "qrcode")
+                                Image(systemName: "arrow.down.doc.fill")
                                     .font(.system(size: 14))
-                                Text("SHARE QR CODE")
+                                Text("SAVE PDF POSTER")
+                                    .font(.custom("DM Mono", size: 12))
+                                    .kerning(1.2)
+                            }
+                            .foregroundColor(ClipBetColors.bg)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 14)
+                            .background(ClipBetColors.textPrimary)
+                            .clipShape(RoundedRectangle(cornerRadius: 2))
+                        }
+                    } else {
+                        Button {
+                            self.generatedPDFURL = generatePDF()
+                        } label: {
+                            HStack(spacing: 8) {
+                                Image(systemName: "doc.text")
+                                    .font(.system(size: 14))
+                                Text("GENERATE PRINTABLE PDF")
                                     .font(.custom("DM Mono", size: 12))
                                     .kerning(1.2)
                             }
@@ -298,7 +317,47 @@ struct OrganizerDashboard: View {
             }
         }
     }
-
+    
+    // MARK: - PDF Generation
+    
+    private func generatePDF() -> URL? {
+        let pdfMetaData = [
+            kCGPDFContextCreator: "ClipBet",
+            kCGPDFContextAuthor: "Organizer"
+        ]
+        let format = UIGraphicsPDFRendererFormat()
+        format.documentInfo = pdfMetaData as [String: Any]
+        
+        let pageWidth = 8.5 * 72.0 // US Letter
+        let pageHeight = 11.0 * 72.0
+        let pageRect = CGRect(x: 0, y: 0, width: pageWidth, height: pageHeight)
+        
+        let renderer = UIGraphicsPDFRenderer(bounds: pageRect, format: format)
+        let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent("ClipBet-QR-\(event.id.uuidString.prefix(6)).pdf")
+        
+        do {
+            try renderer.writePDF(to: tempURL) { context in
+                context.beginPage()
+                
+                let titleAttributes: [NSAttributedString.Key: Any] = [
+                    .font: UIFont.systemFont(ofSize: 36, weight: .bold)
+                ]
+                let titleString = "Scan to bet on:\n\(event.name)"
+                titleString.draw(in: CGRect(x: 50, y: 100, width: pageWidth - 100, height: 100), withAttributes: titleAttributes)
+                
+                if let qrURL = qrURL {
+                    let urlAttributes: [NSAttributedString.Key: Any] = [
+                        .font: UIFont.systemFont(ofSize: 18, weight: .regular)
+                    ]
+                    "\(qrURL)".draw(in: CGRect(x: 50, y: 250, width: pageWidth - 100, height: 50), withAttributes: urlAttributes)
+                }
+            }
+            return tempURL
+        } catch {
+            print("Could not create PDF: \(error)")
+            return nil
+        }
+    }
     private func resolveEvent(winningOptionId: String) {
         isProcessing = true
         ClipBetAPI.shared.resolveEvent(
