@@ -1,8 +1,10 @@
 //  ClipBetExperience.swift
-//  ClipBet — Hyperlocal Prediction Markets via App Clips
+//  ClipBet
 //
-//  Scan QR → See event → Place bet → Apple Pay → Done.
-//  Editorial-minimal design: print magazine meets quiet SaaS.
+//  Main App Clip experience. Entry point for the ClipBet prediction market.
+//  Flow: Landing -> Place Bet -> Confirm (Apple Pay) -> Success
+//
+//  Scan QR at a venue. See the event. Place your bet. Done.
 //
 
 import SwiftUI
@@ -10,7 +12,7 @@ import SwiftUI
 struct ClipBetExperience: ClipExperience {
     static let urlPattern = "clipbet.io/event/:eventId"
     static let clipName = "ClipBet"
-    static let clipDescription = "Scan. Predict. Win. Hyperlocal prediction markets — no app, no account."
+    static let clipDescription = "Scan. Predict. Win. Hyperlocal prediction markets, no app, no account."
     static let teamName = "ClipBet"
 
     static let touchpoint: JourneyTouchpoint = .onSite
@@ -18,7 +20,7 @@ struct ClipBetExperience: ClipExperience {
 
     let context: ClipContext
 
-    // MARK: - State
+    // MARK: - Screen Flow
 
     enum Screen {
         case landing
@@ -36,25 +38,24 @@ struct ClipBetExperience: ClipExperience {
     @State private var customAmount: String = ""
     @State private var showCustomAmount = false
     @State private var appeared = false
-    @State private var isProcessing = false
+    @State private var paymentManager = ClipBetPaymentManager()
 
     var body: some View {
         ZStack {
-            // Editorial warm cream background
             ClipBetColors.bg.ignoresSafeArea()
 
             switch currentScreen {
             case .landing:
-                landingScreen
+                landingView
                     .transition(.opacity)
             case .placeBet:
-                placeBetScreen
+                placeBetView
                     .transition(.move(edge: .trailing).combined(with: .opacity))
             case .confirm:
-                confirmScreen
+                confirmView
                     .transition(.move(edge: .trailing).combined(with: .opacity))
             case .success:
-                successScreen
+                successView
                     .transition(.scale(scale: 0.95).combined(with: .opacity))
             }
         }
@@ -66,15 +67,14 @@ struct ClipBetExperience: ClipExperience {
         }
     }
 
-    // MARK: - Landing Screen (Specific Event QR)
+    // MARK: - Landing View
 
-    private var landingScreen: some View {
+    private var landingView: some View {
         ScrollView {
             VStack(spacing: 0) {
 
-                // Logo + Status
+                // Brand + Status
                 VStack(spacing: 16) {
-                    // Brand
                     Text("ClipBet")
                         .font(.custom("Cormorant Garamond", size: 32))
                         .fontWeight(.light)
@@ -82,15 +82,14 @@ struct ClipBetExperience: ClipExperience {
                         .opacity(appeared ? 1 : 0)
                         .offset(y: appeared ? 0 : 8)
 
-                    // Status pill
                     StatusIndicator(status: event.status)
                 }
                 .padding(.top, 24)
                 .padding(.bottom, 20)
 
-                hairlineDivider
+                ClipBetDivider()
 
-                // Event Question — the hero
+                // Event question
                 VStack(spacing: 12) {
                     Text(event.name)
                         .font(.custom("Cormorant Garamond", size: 28))
@@ -101,30 +100,26 @@ struct ClipBetExperience: ClipExperience {
                         .opacity(appeared ? 1 : 0)
                         .offset(y: appeared ? 0 : 12)
 
-                    monoLabel(event.location)
+                    MonoLabel(text: event.location)
                 }
                 .padding(.horizontal, 32)
                 .padding(.vertical, 28)
 
-                hairlineDivider
+                ClipBetDivider()
 
-                // Pool Stats (newspaper-style columns)
+                // Pool stats
                 HStack(spacing: 0) {
-                    statColumn(value: event.formattedPool, label: "TOTAL POOL")
-
-                    verticalDivider
-
-                    statColumn(value: "\(event.totalBettors)", label: "BETTORS")
-
-                    verticalDivider
-
-                    statColumn(value: "5%", label: "PLATFORM FEE")
+                    StatColumn(value: event.formattedPool, label: "TOTAL POOL")
+                    ClipBetVerticalDivider()
+                    StatColumn(value: "\(event.totalBettors)", label: "BETTORS")
+                    ClipBetVerticalDivider()
+                    StatColumn(value: "5%", label: "PLATFORM FEE")
                 }
                 .padding(.vertical, 20)
 
-                hairlineDivider
+                ClipBetDivider()
 
-                // Outcomes with probability bars
+                // Outcomes
                 VStack(spacing: 0) {
                     ForEach(Array(event.outcomes.enumerated()), id: \.element.id) { index, outcome in
                         OutcomeRow(
@@ -132,71 +127,46 @@ struct ClipBetExperience: ClipExperience {
                             percentage: event.percentage(for: outcome),
                             isFirst: index == 0
                         )
-
                         if index < event.outcomes.count - 1 {
-                            hairlineDivider
+                            ClipBetDivider()
                         }
                     }
                 }
                 .padding(.horizontal, 24)
                 .padding(.vertical, 16)
 
-                hairlineDivider
+                ClipBetDivider()
 
-                // CTA Buttons
+                // CTA
                 VStack(spacing: 12) {
-                    // Primary CTA
-                    Button {
+                    ClipBetPrimaryButton(title: "PLACE A BET") {
                         withAnimation { currentScreen = .placeBet }
-                    } label: {
-                        HStack {
-                            Text("PLACE A BET")
-                                .font(.custom("DM Mono", size: 13))
-                                .kerning(2.4)
-                                .foregroundColor(ClipBetColors.bg)
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 16)
-                        .background(ClipBetColors.dark)
-                        .clipShape(RoundedRectangle(cornerRadius: 2))
-                    }
-
-                    // Secondary actions
-                    HStack(spacing: 12) {
-                        secondaryButton("BROWSE NEARBY") { }
-                        secondaryButton("CREATE EVENT") { }
                     }
                 }
                 .padding(.horizontal, 24)
                 .padding(.vertical, 24)
 
-                // Organizer credit
-                monoLabel("organized by \(event.organizer)")
+                // Organizer
+                MonoLabel(text: "organized by \(event.organizer)")
+                    .padding(.bottom, 8)
+
+                MonoLabel(text: event.timeSinceCreated + " ago")
                     .padding(.bottom, 24)
             }
         }
         .scrollIndicators(.hidden)
     }
 
-    // MARK: - Place Bet Screen
+    // MARK: - Place Bet View
 
-    private var placeBetScreen: some View {
+    private var placeBetView: some View {
         ScrollView {
             VStack(spacing: 0) {
 
-                // Back + Title
+                // Header
                 HStack {
-                    Button {
+                    ClipBetBackButton {
                         withAnimation { currentScreen = .landing }
-                    } label: {
-                        HStack(spacing: 4) {
-                            Image(systemName: "arrow.left")
-                                .font(.system(size: 12))
-                            Text("BACK")
-                                .font(.custom("DM Mono", size: 11))
-                                .kerning(1.6)
-                        }
-                        .foregroundColor(ClipBetColors.textSecondary)
                     }
                     Spacer()
                 }
@@ -210,57 +180,48 @@ struct ClipBetExperience: ClipExperience {
                     .padding(.top, 20)
                     .padding(.bottom, 8)
 
-                monoLabel(event.name)
+                MonoLabel(text: event.name)
                     .padding(.horizontal, 32)
                     .padding(.bottom, 24)
 
-                hairlineDivider
+                ClipBetDivider()
 
-                // Email input
+                // Email
                 VStack(alignment: .leading, spacing: 8) {
-                    monoLabelLeft("EMAIL")
-
-                    TextField("your@email.com", text: $email)
-                        .font(.custom("DM Mono", size: 14))
-                        .foregroundColor(ClipBetColors.textPrimary)
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 14)
-                        .background(ClipBetColors.surface)
-                        .clipShape(RoundedRectangle(cornerRadius: 2))
-                        .textInputAutocapitalization(.never)
-                        .keyboardType(.emailAddress)
+                    MonoLabelLeft(text: "EMAIL")
+                    ClipBetTextField(
+                        placeholder: "your@email.com",
+                        text: $email,
+                        keyboardType: .emailAddress
+                    )
                 }
                 .padding(.horizontal, 24)
                 .padding(.vertical, 20)
 
-                hairlineDivider
+                ClipBetDivider()
 
-                // Nickname (optional)
+                // Nickname
                 VStack(alignment: .leading, spacing: 8) {
                     HStack {
-                        monoLabelLeft("NICKNAME")
+                        MonoLabelLeft(text: "NICKNAME")
                         Spacer()
                         Text("optional")
                             .font(.custom("DM Mono", size: 10))
                             .foregroundColor(ClipBetColors.textFaint)
                     }
-
-                    TextField("Anonymous", text: $nickname)
-                        .font(.custom("DM Mono", size: 14))
-                        .foregroundColor(ClipBetColors.textPrimary)
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 14)
-                        .background(ClipBetColors.surface)
-                        .clipShape(RoundedRectangle(cornerRadius: 2))
+                    ClipBetTextField(
+                        placeholder: "Anonymous",
+                        text: $nickname
+                    )
                 }
                 .padding(.horizontal, 24)
                 .padding(.vertical, 20)
 
-                hairlineDivider
+                ClipBetDivider()
 
-                // Select Outcome
+                // Outcome selection
                 VStack(alignment: .leading, spacing: 12) {
-                    monoLabelLeft("SELECT OUTCOME")
+                    MonoLabelLeft(text: "SELECT OUTCOME")
                         .padding(.horizontal, 24)
 
                     ForEach(event.outcomes) { outcome in
@@ -273,7 +234,6 @@ struct ClipBetExperience: ClipExperience {
                             }
                         } label: {
                             HStack {
-                                // Dot indicator
                                 Circle()
                                     .fill(isSelected
                                           ? (isYes ? ClipBetColors.yes : ClipBetColors.no)
@@ -305,18 +265,25 @@ struct ClipBetExperience: ClipExperience {
                 }
                 .padding(.vertical, 20)
 
-                hairlineDivider
+                ClipBetDivider()
 
-                // Bet Amount
+                // Bet amount
                 VStack(alignment: .leading, spacing: 12) {
-                    monoLabelLeft("BET AMOUNT")
+                    MonoLabelLeft(text: "BET AMOUNT")
                         .padding(.horizontal, 24)
 
                     HStack(spacing: 8) {
                         ForEach([5.0, 10.0, 25.0], id: \.self) { amount in
-                            amountButton(amount)
+                            AmountButton(
+                                amount: amount,
+                                isSelected: !showCustomAmount && betAmount == amount
+                            ) {
+                                showCustomAmount = false
+                                customAmount = ""
+                                betAmount = amount
+                            }
                         }
-                        // Custom
+
                         Button {
                             showCustomAmount = true
                             betAmount = 0
@@ -361,13 +328,13 @@ struct ClipBetExperience: ClipExperience {
                 }
                 .padding(.vertical, 20)
 
-                hairlineDivider
+                ClipBetDivider()
 
-                // Estimated Return
+                // Estimated return
                 if let outcome = selectedOutcome, betAmount > 0 {
                     let est = event.estimatedReturn(betAmount: betAmount, for: outcome)
                     VStack(spacing: 4) {
-                        monoLabel("ESTIMATED RETURN")
+                        MonoLabel(text: "ESTIMATED RETURN")
                         Text(String(format: "$%.2f", est))
                             .font(.custom("Cormorant Garamond", size: 36))
                             .fontWeight(.light)
@@ -375,48 +342,34 @@ struct ClipBetExperience: ClipExperience {
                     }
                     .padding(.vertical, 20)
 
-                    hairlineDivider
+                    ClipBetDivider()
                 }
 
-                // Confirm button
-                Button {
+                // Review button
+                let canProceed = selectedOutcome != nil && betAmount >= event.minimumBet && !email.isEmpty
+                ClipBetPrimaryButton(
+                    title: "REVIEW & PAY",
+                    icon: "apple.logo",
+                    isEnabled: canProceed
+                ) {
                     withAnimation { currentScreen = .confirm }
-                } label: {
-                    HStack(spacing: 8) {
-                        Image(systemName: "apple.logo")
-                            .font(.system(size: 16))
-                        Text("REVIEW & PAY")
-                            .font(.custom("DM Mono", size: 13))
-                            .kerning(2.4)
-                    }
-                    .foregroundColor(ClipBetColors.bg)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 16)
-                    .background(
-                        (selectedOutcome != nil && betAmount >= event.minimumBet && !email.isEmpty)
-                        ? ClipBetColors.dark
-                        : ClipBetColors.textFaint
-                    )
-                    .clipShape(RoundedRectangle(cornerRadius: 2))
                 }
-                .disabled(selectedOutcome == nil || betAmount < event.minimumBet || email.isEmpty)
                 .padding(.horizontal, 24)
                 .padding(.vertical, 24)
 
-                monoLabel("min bet: $\(Int(event.minimumBet))")
+                MonoLabel(text: "min bet: $\(Int(event.minimumBet))")
                     .padding(.bottom, 24)
             }
         }
         .scrollIndicators(.hidden)
     }
 
-    // MARK: - Confirm Screen
+    // MARK: - Confirm View (Dark Modal)
 
-    private var confirmScreen: some View {
+    private var confirmView: some View {
         VStack(spacing: 0) {
             Spacer()
 
-            // Dark modal overlay style
             VStack(spacing: 0) {
                 // Header
                 HStack {
@@ -444,51 +397,40 @@ struct ClipBetExperience: ClipExperience {
                     .padding(.top, 16)
                     .padding(.bottom, 24)
 
-                // Details rows
+                // Bet details
                 VStack(spacing: 0) {
-                    confirmRow(label: "EVENT", value: event.name, isMultiline: true)
-                    confirmDivider
-                    confirmRow(label: "PREDICTION", value: selectedOutcome?.name ?? "—")
-                    confirmDivider
-                    confirmRow(label: "AMOUNT", value: String(format: "$%.0f", betAmount))
-                    confirmDivider
+                    ConfirmRow(label: "EVENT", value: event.name, isMultiline: true)
+                    ClipBetDarkDivider()
+                    ConfirmRow(label: "PREDICTION", value: selectedOutcome?.name ?? "")
+                    ClipBetDarkDivider()
+                    ConfirmRow(label: "AMOUNT", value: String(format: "$%.0f", betAmount))
+                    ClipBetDarkDivider()
                     if let outcome = selectedOutcome {
                         let est = event.estimatedReturn(betAmount: betAmount, for: outcome)
-                        confirmRow(label: "EST. RETURN", value: String(format: "$%.2f", est), valueColor: ClipBetColors.yes)
-                        confirmDivider
+                        ConfirmRow(label: "EST. RETURN", value: String(format: "$%.2f", est), valueColor: ClipBetColors.yes)
+                        ClipBetDarkDivider()
                     }
-                    confirmRow(label: "AS", value: nickname.isEmpty ? "Anonymous" : nickname)
-                    confirmDivider
-                    confirmRow(label: "CONTACT", value: email)
+                    ConfirmRow(label: "AS", value: nickname.isEmpty ? "Anonymous" : nickname)
+                    ClipBetDarkDivider()
+                    ConfirmRow(label: "CONTACT", value: email)
                 }
                 .padding(.horizontal, 24)
                 .padding(.vertical, 16)
 
+                // Payment status
+                ClipBetPaymentStatus(state: paymentManager.paymentState)
+                    .padding(.horizontal, 24)
+
                 Spacer()
 
-                // Apple Pay button
-                Button {
-                    processPayment()
-                } label: {
-                    HStack(spacing: 8) {
-                        if isProcessing {
-                            ProgressView()
-                                .tint(ClipBetColors.dark)
-                        } else {
-                            Image(systemName: "apple.logo")
-                                .font(.system(size: 18))
-                            Text("PAY WITH APPLE PAY")
-                                .font(.custom("DM Mono", size: 13))
-                                .kerning(2)
-                        }
-                    }
-                    .foregroundColor(ClipBetColors.dark)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 18)
-                    .background(Color.white)
-                    .clipShape(RoundedRectangle(cornerRadius: 2))
-                }
-                .disabled(isProcessing)
+                // Apple Pay button + card fallback
+                ClipBetApplePayButton(
+                    amount: betAmount,
+                    isEnabled: paymentManager.paymentState != .processing,
+                    isProcessing: paymentManager.paymentState == .processing,
+                    onTap: { processApplePayment() },
+                    onCardFallback: { processCardPayment() }
+                )
                 .padding(.horizontal, 24)
                 .padding(.bottom, 32)
             }
@@ -498,15 +440,12 @@ struct ClipBetExperience: ClipExperience {
         .ignoresSafeArea(edges: .bottom)
     }
 
-    // MARK: - Success Screen
+    // MARK: - Success View
 
-    private var successScreen: some View {
-        @State var successAppeared = false
-
-        return ScrollView {
+    private var successView: some View {
+        ScrollView {
             VStack(spacing: 0) {
                 VStack(spacing: 16) {
-                    // Checkmark
                     Image(systemName: "checkmark")
                         .font(.system(size: 32, weight: .light))
                         .foregroundColor(ClipBetColors.yes)
@@ -517,31 +456,34 @@ struct ClipBetExperience: ClipExperience {
                         .fontWeight(.light)
                         .foregroundColor(ClipBetColors.textPrimary)
 
-                    monoLabel("Bet placed successfully")
+                    MonoLabel(text: "Bet placed successfully")
                 }
                 .padding(.bottom, 28)
 
-                hairlineDivider
+                ClipBetDivider()
 
-                // Bet receipt
+                // Receipt
                 VStack(spacing: 0) {
-                    receiptRow(label: "EVENT", value: event.name)
-                    receiptRow(label: "YOUR PICK", value: selectedOutcome?.name ?? "—")
-                    receiptRow(label: "AMOUNT", value: String(format: "$%.0f", betAmount))
+                    ReceiptRow(label: "EVENT", value: event.name)
+                    ReceiptRow(label: "YOUR PICK", value: selectedOutcome?.name ?? "")
+                    ReceiptRow(label: "AMOUNT", value: String(format: "$%.0f", betAmount))
                     if let outcome = selectedOutcome {
                         let est = event.estimatedReturn(betAmount: betAmount, for: outcome)
-                        receiptRow(label: "EST. RETURN", value: String(format: "$%.2f", est))
+                        ReceiptRow(label: "EST. RETURN", value: String(format: "$%.2f", est))
                     }
-                    receiptRow(label: "NICKNAME", value: nickname.isEmpty ? "Anonymous" : nickname)
+                    ReceiptRow(label: "NICKNAME", value: nickname.isEmpty ? "Anonymous" : nickname)
+                    if case .success(let txId) = paymentManager.paymentState {
+                        ReceiptRow(label: "TRANSACTION", value: txId)
+                    }
                 }
                 .padding(.horizontal, 24)
                 .padding(.vertical, 20)
 
-                hairlineDivider
+                ClipBetDivider()
 
-                // Updated pool standings
+                // Pool standings
                 VStack(spacing: 16) {
-                    monoLabel("CURRENT STANDINGS")
+                    MonoLabel(text: "CURRENT STANDINGS")
                         .padding(.top, 20)
 
                     ForEach(event.outcomes) { outcome in
@@ -556,16 +498,7 @@ struct ClipBetExperience: ClipExperience {
                                     .foregroundColor(ClipBetColors.textPrimary)
 
                                 if isYours {
-                                    Text("YOUR PICK")
-                                        .font(.custom("DM Mono", size: 9))
-                                        .kerning(1.2)
-                                        .foregroundColor(ClipBetColors.accent)
-                                        .padding(.horizontal, 6)
-                                        .padding(.vertical, 2)
-                                        .overlay(
-                                            RoundedRectangle(cornerRadius: 2)
-                                                .stroke(ClipBetColors.accent, lineWidth: 1)
-                                        )
+                                    ClipBetTag(text: "YOUR PICK")
                                 }
 
                                 Spacer()
@@ -576,13 +509,11 @@ struct ClipBetExperience: ClipExperience {
                                     .foregroundColor(isYes ? ClipBetColors.yes : ClipBetColors.no)
                             }
 
-                            // Progress bar
                             GeometryReader { geo in
                                 ZStack(alignment: .leading) {
                                     Rectangle()
                                         .fill(ClipBetColors.divider)
                                         .frame(height: 3)
-
                                     Rectangle()
                                         .fill(isYes ? ClipBetColors.yes : ClipBetColors.no)
                                         .frame(width: geo.size.width * (pct / 100), height: 3)
@@ -595,11 +526,11 @@ struct ClipBetExperience: ClipExperience {
                 }
                 .padding(.bottom, 24)
 
-                hairlineDivider
+                ClipBetDivider()
 
-                // Push notifications opt-in
+                // Notification opt-in
                 VStack(spacing: 12) {
-                    monoLabel("GET NOTIFIED WHEN RESULTS ARE IN")
+                    MonoLabel(text: "GET NOTIFIED WHEN RESULTS ARE IN")
 
                     Button { } label: {
                         HStack(spacing: 8) {
@@ -619,237 +550,61 @@ struct ClipBetExperience: ClipExperience {
                     }
                 }
                 .padding(.vertical, 24)
+
+                // Escrow info
+                VStack(spacing: 4) {
+                    MonoLabel(text: "FUNDS HELD IN ESCROW")
+                    Text("Organizer has 24h to resolve. If unresolved, you get a full refund.")
+                        .font(.custom("DM Mono", size: 10))
+                        .foregroundColor(ClipBetColors.textFaint)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 32)
+                }
+                .padding(.bottom, 32)
             }
         }
         .scrollIndicators(.hidden)
     }
 
-    // MARK: - Payment Processing (Mock)
+    // MARK: - Payment Actions
 
-    private func processPayment() {
-        isProcessing = true
-        // Simulate Apple Pay + Stripe processing
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-            // Update the pool with user's bet
-            if let outcomeIndex = event.outcomes.firstIndex(where: { $0.id == selectedOutcome?.id }) {
-                event.outcomes[outcomeIndex].totalAmount += betAmount
-                event.outcomes[outcomeIndex].betCount += 1
-            }
-            isProcessing = false
-            withAnimation { currentScreen = .success }
-        }
-    }
-
-    // MARK: - Shared Components
-
-    private var hairlineDivider: some View {
-        Rectangle()
-            .fill(ClipBetColors.divider)
-            .frame(height: 1)
-    }
-
-    private var verticalDivider: some View {
-        Rectangle()
-            .fill(ClipBetColors.divider)
-            .frame(width: 1, height: 40)
-    }
-
-    private func monoLabel(_ text: String) -> some View {
-        Text(text)
-            .font(.custom("DM Mono", size: 11))
-            .kerning(1.8)
-            .foregroundColor(ClipBetColors.textSecondary)
-            .textCase(.uppercase)
-            .multilineTextAlignment(.center)
-    }
-
-    private func monoLabelLeft(_ text: String) -> some View {
-        Text(text)
-            .font(.custom("DM Mono", size: 10))
-            .kerning(2)
-            .foregroundColor(ClipBetColors.textSecondary)
-            .textCase(.uppercase)
-    }
-
-    private func statColumn(value: String, label: String) -> some View {
-        VStack(spacing: 4) {
-            Text(value)
-                .font(.custom("Cormorant Garamond", size: 26))
-                .fontWeight(.light)
-                .foregroundColor(ClipBetColors.textPrimary)
-
-            Text(label)
-                .font(.custom("DM Mono", size: 9))
-                .kerning(1.6)
-                .foregroundColor(ClipBetColors.textSecondary)
-                .textCase(.uppercase)
-        }
-        .frame(maxWidth: .infinity)
-    }
-
-    private func secondaryButton(_ title: String, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Text(title)
-                .font(.custom("DM Mono", size: 11))
-                .kerning(1.4)
-                .foregroundColor(ClipBetColors.textSecondary)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 14)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 2)
-                        .stroke(ClipBetColors.divider, lineWidth: 1)
-                )
-        }
-    }
-
-    private func amountButton(_ amount: Double) -> some View {
-        let isSelected = !showCustomAmount && betAmount == amount
-        return Button {
-            showCustomAmount = false
-            customAmount = ""
-            betAmount = amount
-        } label: {
-            Text("$\(Int(amount))")
-                .font(.custom("DM Mono", size: 14))
-                .foregroundColor(isSelected ? ClipBetColors.bg : ClipBetColors.textPrimary)
-                .padding(.horizontal, 16)
-                .padding(.vertical, 12)
-                .background(isSelected ? ClipBetColors.dark : Color.clear)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 2)
-                        .stroke(isSelected ? Color.clear : ClipBetColors.divider, lineWidth: 1)
-                )
-                .clipShape(RoundedRectangle(cornerRadius: 2))
-        }
-    }
-
-    // Confirm screen helpers
-
-    private var confirmDivider: some View {
-        Rectangle()
-            .fill(Color.white.opacity(0.08))
-            .frame(height: 1)
-    }
-
-    private func confirmRow(label: String, value: String, isMultiline: Bool = false, valueColor: Color = .white) -> some View {
-        HStack(alignment: isMultiline ? .top : .center) {
-            Text(label)
-                .font(.custom("DM Mono", size: 10))
-                .kerning(1.6)
-                .foregroundColor(ClipBetColors.textFaint)
-                .frame(width: 90, alignment: .leading)
-
-            Text(value)
-                .font(.custom("DM Mono", size: 13))
-                .foregroundColor(valueColor)
-                .lineLimit(isMultiline ? 3 : 1)
-
-            Spacer()
-        }
-        .padding(.vertical, 10)
-    }
-
-    // Receipt row helper
-    private func receiptRow(label: String, value: String) -> some View {
-        HStack {
-            Text(label)
-                .font(.custom("DM Mono", size: 10))
-                .kerning(1.6)
-                .foregroundColor(ClipBetColors.textSecondary)
-                .frame(width: 90, alignment: .leading)
-
-            Text(value)
-                .font(.custom("DM Mono", size: 13))
-                .foregroundColor(ClipBetColors.textPrimary)
-                .lineLimit(2)
-
-            Spacer()
-        }
-        .padding(.vertical, 8)
-    }
-}
-
-// MARK: - Status Indicator Component
-
-struct StatusIndicator: View {
-    let status: EventStatus
-    @State private var pulsing = false
-
-    var body: some View {
-        HStack(spacing: 8) {
-            Circle()
-                .fill(status.dotColor)
-                .frame(width: 6, height: 6)
-                .opacity(pulsing ? 0.4 : 1.0)
-
-            Text(status.rawValue)
-                .font(.custom("DM Mono", size: 11))
-                .kerning(2)
-                .foregroundColor(ClipBetColors.textSecondary)
-                .textCase(.uppercase)
-        }
-        .onAppear {
-            if status.isPulsing {
-                withAnimation(.easeInOut(duration: 1.2).repeatForever(autoreverses: true)) {
-                    pulsing = true
+    private func processApplePayment() {
+        paymentManager.selectedMethod = .applePay
+        paymentManager.processBet(
+            amount: betAmount,
+            eventId: event.id,
+            outcomeId: selectedOutcome?.id ?? UUID(),
+            email: email,
+            nickname: nickname.isEmpty ? "Anonymous" : nickname
+        ) { success in
+            if success {
+                // Update pool with user bet
+                if let idx = event.outcomes.firstIndex(where: { $0.id == selectedOutcome?.id }) {
+                    event.outcomes[idx].totalAmount += betAmount
+                    event.outcomes[idx].betCount += 1
                 }
+                withAnimation { currentScreen = .success }
             }
+            // On failure, payment status view shows error, user can retry
         }
     }
-}
 
-// MARK: - Outcome Row Component
-
-struct OutcomeRow: View {
-    let outcome: BetOutcome
-    let percentage: Double
-    let isFirst: Bool
-
-    private var color: Color {
-        isFirst ? ClipBetColors.yes : ClipBetColors.no
-    }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                Text(outcome.name)
-                    .font(.custom("DM Mono", size: 14))
-                    .foregroundColor(ClipBetColors.textPrimary)
-
-                Spacer()
-
-                Text(String(format: "%.0f%%", percentage))
-                    .font(.custom("Cormorant Garamond", size: 28))
-                    .fontWeight(.light)
-                    .foregroundColor(color)
-            }
-
-            // 3px progress bar
-            GeometryReader { geo in
-                ZStack(alignment: .leading) {
-                    Rectangle()
-                        .fill(ClipBetColors.divider)
-                        .frame(height: 3)
-
-                    Rectangle()
-                        .fill(color)
-                        .frame(width: geo.size.width * (percentage / 100), height: 3)
+    private func processCardPayment() {
+        paymentManager.selectedMethod = .card
+        paymentManager.processBet(
+            amount: betAmount,
+            eventId: event.id,
+            outcomeId: selectedOutcome?.id ?? UUID(),
+            email: email,
+            nickname: nickname.isEmpty ? "Anonymous" : nickname
+        ) { success in
+            if success {
+                if let idx = event.outcomes.firstIndex(where: { $0.id == selectedOutcome?.id }) {
+                    event.outcomes[idx].totalAmount += betAmount
+                    event.outcomes[idx].betCount += 1
                 }
-            }
-            .frame(height: 3)
-
-            HStack {
-                Text(outcome.formattedAmount)
-                    .font(.custom("DM Mono", size: 11))
-                    .foregroundColor(ClipBetColors.textSecondary)
-
-                Spacer()
-
-                Text("\(outcome.betCount) bets")
-                    .font(.custom("DM Mono", size: 11))
-                    .foregroundColor(ClipBetColors.textFaint)
+                withAnimation { currentScreen = .success }
             }
         }
-        .padding(.vertical, 16)
     }
 }
