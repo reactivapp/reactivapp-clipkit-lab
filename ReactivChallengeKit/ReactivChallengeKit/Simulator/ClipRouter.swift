@@ -73,6 +73,7 @@ final class ClipRouter {
             "artistId": "jelly-roll",
             "boothId": "3",
             "param": "demo",
+            "tableNumber": "5",
         ]
         let segments = pattern.split(separator: "/", omittingEmptySubsequences: true)
         let resolved = segments.map { segment -> String in
