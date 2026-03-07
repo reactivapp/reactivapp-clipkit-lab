@@ -79,6 +79,7 @@ struct PredictionEvent: Identifiable {
     let name: String
     let description: String?
     let imageURL: String?
+    var localImage: UIImage?
     let location: String
     let locationLat: Double
     let locationLng: Double

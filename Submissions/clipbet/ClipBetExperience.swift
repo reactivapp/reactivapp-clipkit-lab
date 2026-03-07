@@ -10,6 +10,23 @@
 import SwiftUI
 import UserNotifications
 
+// MARK: - Notification Delegate to show banners in-app
+class ForegroundNotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
+    func userNotificationCenter(
+        _ center: UNUserNotificationCenter,
+        willPresent notification: UNNotification,
+        withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
+    ) {
+        if #available(iOS 14.0, *) {
+            completionHandler([.banner, .sound, .list])
+        } else {
+            completionHandler([.alert, .sound])
+        }
+    }
+}
+
+let sharedForegroundNotificationDelegate = ForegroundNotificationDelegate()
+
 struct ClipBetExperience: ClipExperience {
     static let urlPattern = "clipbet.io/event/:eventId"
     static let clipName = "ClipBet"
@@ -46,11 +63,17 @@ struct ClipBetExperience: ClipExperience {
     @State private var paymentManager = ClipBetPaymentManager()
     @State private var loadError: String?
     @State private var createdEvent: PredictionEvent?
+    @State private var createdEventQRURL: String?
+    @State private var organizerId: String?
+
     // MARK: - Live Data State
     @State private var liveDataTimer: Timer?
     @State private var notificationOptInStatus: Bool? = nil
     @State private var newBettorsAdded = 0
     @State private var newAmountAdded = 0.0
+    // MARK: - Mock Notification State
+    @State private var mockNotifTitle: String? = nil
+    @State private var mockNotifBody: String? = nil
 
     var body: some View {
         ZStack {
@@ -93,9 +116,48 @@ struct ClipBetExperience: ClipExperience {
                 )
                 .transition(.move(edge: .trailing).combined(with: .opacity))
             }
+            
+            // In-app mock notification banner
+            if let title = mockNotifTitle, let bodyStr = mockNotifBody {
+                VStack {
+                    HStack(spacing: 12) {
+                        Image(systemName: "app.badge")
+                            .font(.system(size: 24))
+                            .foregroundColor(ClipBetColors.textPrimary)
+                            .padding(.top, 4)
+                        
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(title)
+                                .font(.system(size: 15, weight: .bold))
+                                .foregroundColor(ClipBetColors.textPrimary)
+                            Text(bodyStr)
+                                .font(.system(size: 13, weight: .regular))
+                                .foregroundColor(ClipBetColors.textPrimary.opacity(0.8))
+                        }
+                        Spacer()
+                    }
+                    .padding(16)
+                    .background(Color.white.opacity(0.95))
+                    .cornerRadius(16)
+                    .shadow(color: Color.black.opacity(0.1), radius: 10, x: 0, y: 4)
+                    .padding(.horizontal, 16)
+                    .padding(.top, 16)
+                    
+                    Spacer()
+                }
+                .transition(.move(edge: .top).combined(with: .opacity))
+                .zIndex(100) // Ensure it appears above all screens
+                .onTapGesture {
+                    withAnimation(.easeOut) {
+                        mockNotifTitle = nil
+                        mockNotifBody = nil
+                    }
+                }
+            }
         }
         .animation(.easeInOut(duration: 0.3), value: currentScreen)
         .onAppear {
+            UNUserNotificationCenter.current().delegate = sharedForegroundNotificationDelegate
             loadEvent()
             withAnimation(.easeOut(duration: 0.6).delay(0.1)) {
                 appeared = true
@@ -177,8 +239,17 @@ struct ClipBetExperience: ClipExperience {
 
                 ClipBetDivider()
 
-                // Event photo (if available)
-                if let imageURL = event.imageURL, !imageURL.isEmpty {
+                // Event photo (if available or local)
+                if let localImage = event.localImage {
+                    Image(uiImage: localImage)
+                        .resizable()
+                        .scaledToFill()
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 180)
+                        .clipped()
+                    
+                    ClipBetDivider()
+                } else if let imageURL = event.imageURL, !imageURL.isEmpty {
                     AsyncImage(url: URL(string: imageURL)) { image in
                         image
                             .resizable()
@@ -886,26 +957,37 @@ struct ClipBetExperience: ClipExperience {
     // MARK: - Notifications
     
     private func requestNotificationPermission() {
+        // Assume opt-in immediately for UX
+        withAnimation { self.notificationOptInStatus = true }
+        
         UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, _ in
             DispatchQueue.main.async {
-                withAnimation { self.notificationOptInStatus = granted }
+                // In a demo, simulators are often blocked. Don't overwrite to false if true.
+                if granted {
+                    withAnimation { self.notificationOptInStatus = granted }
+                }
             }
         }
     }
     
     private func simulateNotification(type: Int) {
-        let content = UNMutableNotificationContent()
-        if type == 1 {
-            content.title = "Bets Are Closed"
-            content.body = "100 people are taking part. Event is now live!"
-        } else {
-            content.title = "Event Ended"
-            content.body = "Enter the app to view results and claim your winnings."
+        withAnimation(.spring()) {
+            if type == 1 {
+                self.mockNotifTitle = "Bets Are Closed"
+                self.mockNotifBody = "100 people are taking part. Event is now live!"
+            } else {
+                self.mockNotifTitle = "Event Ended"
+                self.mockNotifBody = "Enter the app to view results and claim your winnings."
+            }
         }
-        content.sound = .default
-        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 1, repeats: false)
-        let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: trigger)
-        UNUserNotificationCenter.current().add(request)
+        
+        // Auto-dismiss after 4 seconds
+        DispatchQueue.main.asyncAfter(deadline: .now() + 4.0) {
+            withAnimation(.easeOut) {
+                self.mockNotifTitle = nil
+                self.mockNotifBody = nil
+            }
+        }
     }
 
     // MARK: - Payment Actions

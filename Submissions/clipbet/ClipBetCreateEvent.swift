@@ -540,6 +540,7 @@ struct CreateEventFlow: View {
                     name: eventName,
                     description: eventDescription.isEmpty ? nil : eventDescription,
                     imageURL: nil,
+                    localImage: eventImage,
                     location: locationName.isEmpty ? "Unknown" : locationName,
                     locationLat: 0, locationLng: 0,
                     organizer: "You",

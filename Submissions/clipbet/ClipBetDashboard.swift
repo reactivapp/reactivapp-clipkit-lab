@@ -38,8 +38,36 @@ struct OrganizerDashboard: View {
 
                 ClipBetDivider()
 
-                // Event name
+                // Event name and image
                 VStack(spacing: 8) {
+                    if let localImage = event.localImage {
+                        Image(uiImage: localImage)
+                            .resizable()
+                            .scaledToFill()
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 120)
+                            .clipped()
+                        
+                        ClipBetDivider()
+                            .padding(.bottom, 8)
+                    } else if let imageURL = event.imageURL, !imageURL.isEmpty {
+                        AsyncImage(url: URL(string: imageURL)) { image in
+                            image
+                                .resizable()
+                                .scaledToFill()
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 120)
+                                .clipped()
+                        } placeholder: {
+                            Rectangle()
+                                .fill(ClipBetColors.surface)
+                                .frame(height: 120)
+                        }
+                        
+                        ClipBetDivider()
+                            .padding(.bottom, 8)
+                    }
+
                     Text(event.name)
                         .font(.custom("Cormorant Garamond", size: 22))
                         .fontWeight(.light)
