@@ -18,7 +18,7 @@ struct ImpactCounter: View {
     var body: some View {
         Text("\(displayedValue)")
             .font(.system(size: 36, weight: .bold))
-            .foregroundStyle(.green)
+            .foregroundStyle(.giveGreen)
             .contentTransition(.numericText(value: Double(displayedValue)))
             .onAppear {
                 guard !hasStarted else { return }

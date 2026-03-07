@@ -11,25 +11,26 @@ struct CauseLandingView: View {
                     .font(.system(size: 40, weight: .medium))
                     .foregroundStyle(.white)
                     .frame(width: 80, height: 80)
-                    .background(.green, in: Circle())
+                    .background(.giveGreen, in: Circle())
                     .padding(.top, 24)
 
                 VStack(spacing: 4) {
                     Text(cause.name)
                         .font(.system(size: 28, weight: .bold))
+                        .foregroundStyle(.giveTextPrimary)
                         .multilineTextAlignment(.center)
                     Text(cause.city)
                         .font(.system(size: 16))
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(.giveTextSecondary)
                 }
 
                 Text("Neighbours helping neighbours in \(cause.city)")
                     .font(.system(size: 16).italic())
-                    .foregroundStyle(.green)
+                    .foregroundStyle(.giveGreen)
 
                 Text(cause.scenario)
                     .font(.system(size: 14))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(.giveTextSecondary)
                     .multilineTextAlignment(.center)
                     .lineLimit(2)
                     .padding(.horizontal, 32)
@@ -40,10 +41,10 @@ struct CauseLandingView: View {
                 HStack(spacing: 4) {
                     Image(systemName: "person.2.fill")
                         .font(.system(size: 12))
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(.giveTextSecondary)
                     Text("\(cause.donorsThisWeek) people gave in \(cause.city) this week")
                         .font(.system(size: 13))
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(.giveTextSecondary)
                 }
 
                 CityLeaderboard(currentCauseId: cause.id)
@@ -59,7 +60,7 @@ struct CauseLandingView: View {
                         .foregroundStyle(.white)
                         .frame(maxWidth: .infinity)
                         .frame(height: 56)
-                        .background(.green, in: RoundedRectangle(cornerRadius: 16))
+                        .background(.giveGreen, in: RoundedRectangle(cornerRadius: 16))
                 }
                 .padding(.horizontal, 16)
             }

@@ -12,16 +12,17 @@ struct CityLeaderboard: View {
                     HStack(spacing: 10) {
                         Image(systemName: "leaf.fill")
                             .font(.system(size: 13))
-                            .foregroundStyle(.green)
+                            .foregroundStyle(.giveGreen)
 
                         Text(cause.city)
                             .font(.system(size: 14, weight: cause.id == currentCauseId ? .bold : .medium))
+                            .foregroundStyle(.giveTextPrimary)
 
                         Spacer()
 
                         Text("\(cause.mealsToday) meals")
                             .font(.system(size: 14, weight: .semibold))
-                            .foregroundStyle(.green)
+                            .foregroundStyle(.giveGreen)
                     }
                     .padding(.vertical, 10)
                     .padding(.horizontal, 4)
@@ -35,12 +36,13 @@ struct CityLeaderboard: View {
         } label: {
             HStack(spacing: 6) {
                 Image(systemName: "chart.bar.fill")
-                    .foregroundStyle(.green)
+                    .foregroundStyle(.giveGreen)
                     .font(.system(size: 14))
                 Text("City Leaderboard")
                     .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(.giveTextPrimary)
             }
         }
-        .tint(.green)
+        .tint(.giveGreen)
     }
 }

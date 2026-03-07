@@ -27,15 +27,15 @@ struct AmountCard: View {
             VStack(spacing: 8) {
                 Image(systemName: icon)
                     .font(.system(size: 24))
-                    .foregroundStyle(isSelected ? .white : .green)
+                    .foregroundStyle(isSelected ? .white : .giveGreen)
 
                 Text(displayAmount)
                     .font(.system(size: 22, weight: .bold))
-                    .foregroundStyle(isSelected ? .white : .primary)
+                    .foregroundStyle(isSelected ? .white : .giveTextPrimary)
 
                 Text(label)
                     .font(.system(size: 11, weight: .medium))
-                    .foregroundStyle(isSelected ? .white.opacity(0.9) : .secondary)
+                    .foregroundStyle(isSelected ? .white.opacity(0.9) : .giveTextSecondary)
                     .multilineTextAlignment(.center)
                     .lineLimit(2)
             }
@@ -43,11 +43,11 @@ struct AmountCard: View {
             .frame(height: 120)
             .background(
                 RoundedRectangle(cornerRadius: 16)
-                    .fill(isSelected ? Color.green : Color(.systemBackground))
+                    .fill(isSelected ? Color.giveGreen : Color(.systemBackground))
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 16)
-                    .strokeBorder(isSelected ? Color.green : Color(.systemGray4), lineWidth: isSelected ? 2 : 1)
+                    .strokeBorder(isSelected ? Color.giveGreen : Color(.systemGray4), lineWidth: isSelected ? 2 : 1)
             )
         }
         .buttonStyle(.plain)
@@ -70,16 +70,17 @@ struct CityLeaderboard: View {
                     HStack(spacing: 10) {
                         Image(systemName: "leaf.fill")
                             .font(.system(size: 13))
-                            .foregroundStyle(.green)
+                            .foregroundStyle(.giveGreen)
 
                         Text(cause.city)
                             .font(.system(size: 14, weight: cause.id == currentCauseId ? .bold : .medium))
+                            .foregroundStyle(.giveTextPrimary)
 
                         Spacer()
 
                         Text("\(cause.mealsToday) meals")
                             .font(.system(size: 14, weight: .semibold))
-                            .foregroundStyle(.green)
+                            .foregroundStyle(.giveGreen)
                     }
                     .padding(.vertical, 10)
                     .padding(.horizontal, 4)
@@ -93,13 +94,14 @@ struct CityLeaderboard: View {
         } label: {
             HStack(spacing: 6) {
                 Image(systemName: "chart.bar.fill")
-                    .foregroundStyle(.green)
+                    .foregroundStyle(.giveGreen)
                     .font(.system(size: 14))
                 Text("City Leaderboard")
                     .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(.giveTextPrimary)
             }
         }
-        .tint(.green)
+        .tint(.giveGreen)
     }
 }
 
@@ -123,20 +125,21 @@ struct GoalProgressBar: View {
             HStack {
                 Text("\(current) / \(goal) meals today")
                     .font(.system(size: 14, weight: .bold))
+                    .foregroundStyle(.giveTextPrimary)
                 Spacer()
                 Text("\(Int(targetProgress * 100))%")
                     .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(.green)
+                    .foregroundStyle(.giveGreen)
             }
 
             GeometryReader { geo in
                 ZStack(alignment: .leading) {
                     RoundedRectangle(cornerRadius: 6)
-                        .fill(Color(.systemGray5))
+                        .fill(Color.giveLightGreen)
                         .frame(height: 12)
 
                     RoundedRectangle(cornerRadius: 6)
-                        .fill(.green)
+                        .fill(Color.giveGreen)
                         .frame(width: geo.size.width * animatedProgress, height: 12)
                 }
             }
@@ -174,7 +177,7 @@ struct ImpactCounter: View {
     var body: some View {
         Text("\(displayedValue)")
             .font(.system(size: 36, weight: .bold))
-            .foregroundStyle(.green)
+            .foregroundStyle(.giveGreen)
             .contentTransition(.numericText(value: Double(displayedValue)))
             .onAppear {
                 guard !hasStarted else { return }
@@ -354,6 +357,24 @@ final class DonationState: ObservableObject {
     }
 }
 
+// MARK: - From Submissions/mithun/Models/GiveClipTheme.swift
+
+import SwiftUI
+
+extension Color {
+    static let giveGreen = Color(red: 0x2E / 255.0, green: 0x7D / 255.0, blue: 0x32 / 255.0)
+    static let giveLightGreen = Color(red: 0xF1 / 255.0, green: 0xF8 / 255.0, blue: 0xE9 / 255.0)
+    static let giveTextPrimary = Color(red: 0x21 / 255.0, green: 0x21 / 255.0, blue: 0x21 / 255.0)
+    static let giveTextSecondary = Color(red: 0x75 / 255.0, green: 0x75 / 255.0, blue: 0x75 / 255.0)
+}
+
+extension ShapeStyle where Self == Color {
+    static var giveGreen: Color { .init(red: 0x2E / 255.0, green: 0x7D / 255.0, blue: 0x32 / 255.0) }
+    static var giveLightGreen: Color { .init(red: 0xF1 / 255.0, green: 0xF8 / 255.0, blue: 0xE9 / 255.0) }
+    static var giveTextPrimary: Color { .init(red: 0x21 / 255.0, green: 0x21 / 255.0, blue: 0x21 / 255.0) }
+    static var giveTextSecondary: Color { .init(red: 0x75 / 255.0, green: 0x75 / 255.0, blue: 0x75 / 255.0) }
+}
+
 // MARK: - From Submissions/mithun/Views/AmountSelectionView.swift
 
 import SwiftUI
@@ -379,8 +400,9 @@ struct AmountSelectionView: View {
             VStack(spacing: 24) {
                 Text("How much would you like to give?")
                     .font(.system(size: 22, weight: .bold))
+                    .foregroundStyle(.giveTextPrimary)
                     .multilineTextAlignment(.center)
-                    .padding(.top, 20)
+                    .padding(.top, 24)
 
                 LazyVGrid(columns: columns, spacing: 12) {
                     ForEach(amounts, id: \.icon) { item in
@@ -403,6 +425,7 @@ struct AmountSelectionView: View {
                 VStack(spacing: 10) {
                     Text("Where should your gift go?")
                         .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(.giveTextPrimary)
 
                     HStack(spacing: 12) {
                         ForEach(cause.causeOptions, id: \.self) { option in
@@ -413,17 +436,17 @@ struct AmountSelectionView: View {
                             } label: {
                                 Text(option)
                                     .font(.system(size: 13, weight: .semibold))
-                                    .foregroundStyle(donationState.causeDirection == option ? .white : .green)
+                                    .foregroundStyle(donationState.causeDirection == option ? .white : .giveGreen)
                                     .padding(.horizontal, 16)
                                     .padding(.vertical, 10)
                                     .frame(maxWidth: .infinity)
                                     .background(
                                         RoundedRectangle(cornerRadius: 12)
-                                            .fill(donationState.causeDirection == option ? Color.green : Color.clear)
+                                            .fill(donationState.causeDirection == option ? Color.giveGreen : Color.clear)
                                     )
                                     .overlay(
                                         RoundedRectangle(cornerRadius: 12)
-                                            .strokeBorder(Color.green, lineWidth: 1)
+                                            .strokeBorder(Color.giveGreen, lineWidth: 1)
                                     )
                             }
                             .buttonStyle(.plain)
@@ -434,7 +457,7 @@ struct AmountSelectionView: View {
 
                 Text("100% goes to \(cause.name). Powered by GiveClip.")
                     .font(.system(size: 12))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(.giveTextSecondary)
                     .multilineTextAlignment(.center)
 
                 Button {
@@ -447,7 +470,7 @@ struct AmountSelectionView: View {
                         .foregroundStyle(.white)
                         .frame(maxWidth: .infinity)
                         .frame(height: 56)
-                        .background(.green, in: RoundedRectangle(cornerRadius: 16))
+                        .background(.giveGreen, in: RoundedRectangle(cornerRadius: 16))
                 }
                 .padding(.horizontal, 16)
             }
@@ -472,25 +495,26 @@ struct CauseLandingView: View {
                     .font(.system(size: 40, weight: .medium))
                     .foregroundStyle(.white)
                     .frame(width: 80, height: 80)
-                    .background(.green, in: Circle())
+                    .background(.giveGreen, in: Circle())
                     .padding(.top, 24)
 
                 VStack(spacing: 4) {
                     Text(cause.name)
                         .font(.system(size: 28, weight: .bold))
+                        .foregroundStyle(.giveTextPrimary)
                         .multilineTextAlignment(.center)
                     Text(cause.city)
                         .font(.system(size: 16))
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(.giveTextSecondary)
                 }
 
                 Text("Neighbours helping neighbours in \(cause.city)")
                     .font(.system(size: 16).italic())
-                    .foregroundStyle(.green)
+                    .foregroundStyle(.giveGreen)
 
                 Text(cause.scenario)
                     .font(.system(size: 14))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(.giveTextSecondary)
                     .multilineTextAlignment(.center)
                     .lineLimit(2)
                     .padding(.horizontal, 32)
@@ -501,10 +525,10 @@ struct CauseLandingView: View {
                 HStack(spacing: 4) {
                     Image(systemName: "person.2.fill")
                         .font(.system(size: 12))
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(.giveTextSecondary)
                     Text("\(cause.donorsThisWeek) people gave in \(cause.city) this week")
                         .font(.system(size: 13))
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(.giveTextSecondary)
                 }
 
                 CityLeaderboard(currentCauseId: cause.id)
@@ -520,7 +544,7 @@ struct CauseLandingView: View {
                         .foregroundStyle(.white)
                         .frame(maxWidth: .infinity)
                         .frame(height: 56)
-                        .background(.green, in: RoundedRectangle(cornerRadius: 16))
+                        .background(.giveGreen, in: RoundedRectangle(cornerRadius: 16))
                 }
                 .padding(.horizontal, 16)
             }
@@ -549,11 +573,6 @@ struct ImpactConfirmationView: View {
         cause.mealsToday + 1
     }
 
-    private var originalProgress: CGFloat {
-        guard cause.dailyGoal > 0 else { return 0 }
-        return CGFloat(cause.mealsToday) / CGFloat(cause.dailyGoal)
-    }
-
     private var newProgress: CGFloat {
         guard cause.dailyGoal > 0 else { return 0 }
         return min(CGFloat(newMealCount) / CGFloat(cause.dailyGoal), 1.0)
@@ -566,13 +585,14 @@ struct ImpactConfirmationView: View {
 
                 Image(systemName: "checkmark.circle.fill")
                     .font(.system(size: 80))
-                    .foregroundStyle(.green)
+                    .foregroundStyle(.giveGreen)
                     .scaleEffect(showCheckmark ? 1.0 : 0.1)
                     .opacity(showCheckmark ? 1.0 : 0.0)
 
                 if showText {
                     Text("You just fed a family in \(cause.city) today.")
                         .font(.system(size: 22, weight: .bold))
+                        .foregroundStyle(.giveTextPrimary)
                         .multilineTextAlignment(.center)
                         .padding(.horizontal, 24)
                         .transition(.opacity.combined(with: .move(edge: .bottom)))
@@ -582,8 +602,8 @@ struct ImpactConfirmationView: View {
                     VStack(spacing: 8) {
                         Text("\(cause.mealsToday) meals")
                             .font(.system(size: 16))
-                            .foregroundStyle(.secondary)
-                            .strikethrough(true, color: .secondary)
+                            .foregroundStyle(.giveTextSecondary)
+                            .strikethrough(true, color: .giveTextSecondary)
 
                         ImpactCounter(
                             startValue: cause.mealsToday,
@@ -599,20 +619,21 @@ struct ImpactConfirmationView: View {
                             HStack {
                                 Text("Community Goal")
                                     .font(.system(size: 14, weight: .semibold))
+                                    .foregroundStyle(.giveTextPrimary)
                                 Spacer()
                                 Text("\(newMealCount) / \(cause.dailyGoal)")
                                     .font(.system(size: 14, weight: .bold))
-                                    .foregroundStyle(.green)
+                                    .foregroundStyle(.giveGreen)
                             }
 
                             GeometryReader { geo in
                                 ZStack(alignment: .leading) {
                                     RoundedRectangle(cornerRadius: 6)
-                                        .fill(Color(.systemGray5))
+                                        .fill(Color.giveLightGreen)
                                         .frame(height: 12)
 
                                     RoundedRectangle(cornerRadius: 6)
-                                        .fill(.green)
+                                        .fill(Color.giveGreen)
                                         .frame(width: geo.size.width * updatedProgress, height: 12)
                                 }
                             }
@@ -623,10 +644,10 @@ struct ImpactConfirmationView: View {
                         HStack(spacing: 6) {
                             Image(systemName: "bell.fill")
                                 .font(.system(size: 13))
-                                .foregroundStyle(.green)
+                                .foregroundStyle(.giveGreen)
                             Text("We'll send you an update in a few hours")
                                 .font(.system(size: 14))
-                                .foregroundStyle(.secondary)
+                                .foregroundStyle(.giveTextSecondary)
                         }
 
                         Button {
@@ -638,19 +659,19 @@ struct ImpactConfirmationView: View {
                                 Text("Tell someone about \(cause.name)")
                                     .font(.system(size: 15, weight: .semibold))
                             }
-                            .foregroundStyle(.green)
+                            .foregroundStyle(.giveGreen)
                             .frame(maxWidth: .infinity)
-                            .frame(height: 50)
+                            .frame(height: 56)
                             .overlay(
                                 RoundedRectangle(cornerRadius: 14)
-                                    .strokeBorder(Color.green, lineWidth: 1.5)
+                                    .strokeBorder(Color.giveGreen, lineWidth: 1.5)
                             )
                         }
                         .padding(.horizontal, 16)
 
                         Text("Track your lifetime impact — Download the app")
                             .font(.system(size: 13))
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(.giveTextSecondary)
                     }
                     .transition(.opacity.combined(with: .move(edge: .bottom)))
                 }
@@ -770,14 +791,15 @@ struct PaymentView: View {
                 VStack(spacing: 12) {
                     Text("$\(donationState.finalAmount)")
                         .font(.system(size: 48, weight: .bold))
-                        .foregroundStyle(.green)
+                        .foregroundStyle(.giveGreen)
 
                     Text(cause.name)
                         .font(.system(size: 16, weight: .medium))
+                        .foregroundStyle(.giveTextPrimary)
 
                     Text(donationState.impactLabel)
                         .font(.system(size: 14))
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(.giveTextSecondary)
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 24)
@@ -821,22 +843,23 @@ struct PaymentView: View {
                         VStack(alignment: .leading, spacing: 2) {
                             Text("Round up to $12?")
                                 .font(.system(size: 15, weight: .semibold))
+                                .foregroundStyle(.giveTextPrimary)
                             Text("Feed one more child today")
                                 .font(.system(size: 13))
-                                .foregroundStyle(.secondary)
+                                .foregroundStyle(.giveTextSecondary)
                         }
 
                         Spacer()
 
                         Toggle("", isOn: $donationState.roundUpSelected)
-                            .tint(.green)
+                            .tint(.giveGreen)
                             .labelsHidden()
                     }
                     .padding(.horizontal, 20)
                     .padding(.vertical, 14)
                     .background(
                         RoundedRectangle(cornerRadius: 14)
-                            .fill(Color(.secondarySystemBackground))
+                            .fill(Color.giveLightGreen)
                     )
                     .padding(.horizontal, 16)
                 }
@@ -844,10 +867,10 @@ struct PaymentView: View {
                 HStack(spacing: 6) {
                     Image(systemName: "lock.fill")
                         .font(.system(size: 12))
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(.giveTextSecondary)
                     Text("No account created. Payment secured by Apple Pay.")
                         .font(.system(size: 12))
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(.giveTextSecondary)
                 }
                 .padding(.horizontal, 16)
             }

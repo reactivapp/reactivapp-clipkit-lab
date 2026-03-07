@@ -17,15 +17,15 @@ struct AmountCard: View {
             VStack(spacing: 8) {
                 Image(systemName: icon)
                     .font(.system(size: 24))
-                    .foregroundStyle(isSelected ? .white : .green)
+                    .foregroundStyle(isSelected ? .white : .giveGreen)
 
                 Text(displayAmount)
                     .font(.system(size: 22, weight: .bold))
-                    .foregroundStyle(isSelected ? .white : .primary)
+                    .foregroundStyle(isSelected ? .white : .giveTextPrimary)
 
                 Text(label)
                     .font(.system(size: 11, weight: .medium))
-                    .foregroundStyle(isSelected ? .white.opacity(0.9) : .secondary)
+                    .foregroundStyle(isSelected ? .white.opacity(0.9) : .giveTextSecondary)
                     .multilineTextAlignment(.center)
                     .lineLimit(2)
             }
@@ -33,11 +33,11 @@ struct AmountCard: View {
             .frame(height: 120)
             .background(
                 RoundedRectangle(cornerRadius: 16)
-                    .fill(isSelected ? Color.green : Color(.systemBackground))
+                    .fill(isSelected ? Color.giveGreen : Color(.systemBackground))
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 16)
-                    .strokeBorder(isSelected ? Color.green : Color(.systemGray4), lineWidth: isSelected ? 2 : 1)
+                    .strokeBorder(isSelected ? Color.giveGreen : Color(.systemGray4), lineWidth: isSelected ? 2 : 1)
             )
         }
         .buttonStyle(.plain)

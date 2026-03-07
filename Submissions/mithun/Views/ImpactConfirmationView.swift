@@ -15,11 +15,6 @@ struct ImpactConfirmationView: View {
         cause.mealsToday + 1
     }
 
-    private var originalProgress: CGFloat {
-        guard cause.dailyGoal > 0 else { return 0 }
-        return CGFloat(cause.mealsToday) / CGFloat(cause.dailyGoal)
-    }
-
     private var newProgress: CGFloat {
         guard cause.dailyGoal > 0 else { return 0 }
         return min(CGFloat(newMealCount) / CGFloat(cause.dailyGoal), 1.0)
@@ -32,13 +27,14 @@ struct ImpactConfirmationView: View {
 
                 Image(systemName: "checkmark.circle.fill")
                     .font(.system(size: 80))
-                    .foregroundStyle(.green)
+                    .foregroundStyle(.giveGreen)
                     .scaleEffect(showCheckmark ? 1.0 : 0.1)
                     .opacity(showCheckmark ? 1.0 : 0.0)
 
                 if showText {
                     Text("You just fed a family in \(cause.city) today.")
                         .font(.system(size: 22, weight: .bold))
+                        .foregroundStyle(.giveTextPrimary)
                         .multilineTextAlignment(.center)
                         .padding(.horizontal, 24)
                         .transition(.opacity.combined(with: .move(edge: .bottom)))
@@ -48,8 +44,8 @@ struct ImpactConfirmationView: View {
                     VStack(spacing: 8) {
                         Text("\(cause.mealsToday) meals")
                             .font(.system(size: 16))
-                            .foregroundStyle(.secondary)
-                            .strikethrough(true, color: .secondary)
+                            .foregroundStyle(.giveTextSecondary)
+                            .strikethrough(true, color: .giveTextSecondary)
 
                         ImpactCounter(
                             startValue: cause.mealsToday,
@@ -65,20 +61,21 @@ struct ImpactConfirmationView: View {
                             HStack {
                                 Text("Community Goal")
                                     .font(.system(size: 14, weight: .semibold))
+                                    .foregroundStyle(.giveTextPrimary)
                                 Spacer()
                                 Text("\(newMealCount) / \(cause.dailyGoal)")
                                     .font(.system(size: 14, weight: .bold))
-                                    .foregroundStyle(.green)
+                                    .foregroundStyle(.giveGreen)
                             }
 
                             GeometryReader { geo in
                                 ZStack(alignment: .leading) {
                                     RoundedRectangle(cornerRadius: 6)
-                                        .fill(Color(.systemGray5))
+                                        .fill(Color.giveLightGreen)
                                         .frame(height: 12)
 
                                     RoundedRectangle(cornerRadius: 6)
-                                        .fill(.green)
+                                        .fill(Color.giveGreen)
                                         .frame(width: geo.size.width * updatedProgress, height: 12)
                                 }
                             }
@@ -89,10 +86,10 @@ struct ImpactConfirmationView: View {
                         HStack(spacing: 6) {
                             Image(systemName: "bell.fill")
                                 .font(.system(size: 13))
-                                .foregroundStyle(.green)
+                                .foregroundStyle(.giveGreen)
                             Text("We'll send you an update in a few hours")
                                 .font(.system(size: 14))
-                                .foregroundStyle(.secondary)
+                                .foregroundStyle(.giveTextSecondary)
                         }
 
                         Button {
@@ -104,19 +101,19 @@ struct ImpactConfirmationView: View {
                                 Text("Tell someone about \(cause.name)")
                                     .font(.system(size: 15, weight: .semibold))
                             }
-                            .foregroundStyle(.green)
+                            .foregroundStyle(.giveGreen)
                             .frame(maxWidth: .infinity)
-                            .frame(height: 50)
+                            .frame(height: 56)
                             .overlay(
                                 RoundedRectangle(cornerRadius: 14)
-                                    .strokeBorder(Color.green, lineWidth: 1.5)
+                                    .strokeBorder(Color.giveGreen, lineWidth: 1.5)
                             )
                         }
                         .padding(.horizontal, 16)
 
                         Text("Track your lifetime impact — Download the app")
                             .font(.system(size: 13))
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(.giveTextSecondary)
                     }
                     .transition(.opacity.combined(with: .move(edge: .bottom)))
                 }

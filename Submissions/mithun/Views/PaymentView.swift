@@ -12,14 +12,15 @@ struct PaymentView: View {
                 VStack(spacing: 12) {
                     Text("$\(donationState.finalAmount)")
                         .font(.system(size: 48, weight: .bold))
-                        .foregroundStyle(.green)
+                        .foregroundStyle(.giveGreen)
 
                     Text(cause.name)
                         .font(.system(size: 16, weight: .medium))
+                        .foregroundStyle(.giveTextPrimary)
 
                     Text(donationState.impactLabel)
                         .font(.system(size: 14))
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(.giveTextSecondary)
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 24)
@@ -63,22 +64,23 @@ struct PaymentView: View {
                         VStack(alignment: .leading, spacing: 2) {
                             Text("Round up to $12?")
                                 .font(.system(size: 15, weight: .semibold))
+                                .foregroundStyle(.giveTextPrimary)
                             Text("Feed one more child today")
                                 .font(.system(size: 13))
-                                .foregroundStyle(.secondary)
+                                .foregroundStyle(.giveTextSecondary)
                         }
 
                         Spacer()
 
                         Toggle("", isOn: $donationState.roundUpSelected)
-                            .tint(.green)
+                            .tint(.giveGreen)
                             .labelsHidden()
                     }
                     .padding(.horizontal, 20)
                     .padding(.vertical, 14)
                     .background(
                         RoundedRectangle(cornerRadius: 14)
-                            .fill(Color(.secondarySystemBackground))
+                            .fill(Color.giveLightGreen)
                     )
                     .padding(.horizontal, 16)
                 }
@@ -86,10 +88,10 @@ struct PaymentView: View {
                 HStack(spacing: 6) {
                     Image(systemName: "lock.fill")
                         .font(.system(size: 12))
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(.giveTextSecondary)
                     Text("No account created. Payment secured by Apple Pay.")
                         .font(.system(size: 12))
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(.giveTextSecondary)
                 }
                 .padding(.horizontal, 16)
             }

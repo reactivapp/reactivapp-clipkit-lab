@@ -21,8 +21,9 @@ struct AmountSelectionView: View {
             VStack(spacing: 24) {
                 Text("How much would you like to give?")
                     .font(.system(size: 22, weight: .bold))
+                    .foregroundStyle(.giveTextPrimary)
                     .multilineTextAlignment(.center)
-                    .padding(.top, 20)
+                    .padding(.top, 24)
 
                 LazyVGrid(columns: columns, spacing: 12) {
                     ForEach(amounts, id: \.icon) { item in
@@ -45,6 +46,7 @@ struct AmountSelectionView: View {
                 VStack(spacing: 10) {
                     Text("Where should your gift go?")
                         .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(.giveTextPrimary)
 
                     HStack(spacing: 12) {
                         ForEach(cause.causeOptions, id: \.self) { option in
@@ -55,17 +57,17 @@ struct AmountSelectionView: View {
                             } label: {
                                 Text(option)
                                     .font(.system(size: 13, weight: .semibold))
-                                    .foregroundStyle(donationState.causeDirection == option ? .white : .green)
+                                    .foregroundStyle(donationState.causeDirection == option ? .white : .giveGreen)
                                     .padding(.horizontal, 16)
                                     .padding(.vertical, 10)
                                     .frame(maxWidth: .infinity)
                                     .background(
                                         RoundedRectangle(cornerRadius: 12)
-                                            .fill(donationState.causeDirection == option ? Color.green : Color.clear)
+                                            .fill(donationState.causeDirection == option ? Color.giveGreen : Color.clear)
                                     )
                                     .overlay(
                                         RoundedRectangle(cornerRadius: 12)
-                                            .strokeBorder(Color.green, lineWidth: 1)
+                                            .strokeBorder(Color.giveGreen, lineWidth: 1)
                                     )
                             }
                             .buttonStyle(.plain)
@@ -76,7 +78,7 @@ struct AmountSelectionView: View {
 
                 Text("100% goes to \(cause.name). Powered by GiveClip.")
                     .font(.system(size: 12))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(.giveTextSecondary)
                     .multilineTextAlignment(.center)
 
                 Button {
@@ -89,7 +91,7 @@ struct AmountSelectionView: View {
                         .foregroundStyle(.white)
                         .frame(maxWidth: .infinity)
                         .frame(height: 56)
-                        .background(.green, in: RoundedRectangle(cornerRadius: 16))
+                        .background(.giveGreen, in: RoundedRectangle(cornerRadius: 16))
                 }
                 .padding(.horizontal, 16)
             }

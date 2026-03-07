@@ -16,20 +16,21 @@ struct GoalProgressBar: View {
             HStack {
                 Text("\(current) / \(goal) meals today")
                     .font(.system(size: 14, weight: .bold))
+                    .foregroundStyle(.giveTextPrimary)
                 Spacer()
                 Text("\(Int(targetProgress * 100))%")
                     .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(.green)
+                    .foregroundStyle(.giveGreen)
             }
 
             GeometryReader { geo in
                 ZStack(alignment: .leading) {
                     RoundedRectangle(cornerRadius: 6)
-                        .fill(Color(.systemGray5))
+                        .fill(Color.giveLightGreen)
                         .frame(height: 12)
 
                     RoundedRectangle(cornerRadius: 6)
-                        .fill(.green)
+                        .fill(Color.giveGreen)
                         .frame(width: geo.size.width * animatedProgress, height: 12)
                 }
             }
