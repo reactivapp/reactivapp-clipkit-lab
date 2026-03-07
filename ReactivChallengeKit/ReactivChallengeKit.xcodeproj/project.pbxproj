@@ -6,13 +6,30 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		0011B7B42F5BE76E009C8744 /* SmartSpectraSwiftSDK in Frameworks */ = {isa = PBXBuildFile; productRef = 0011B7B32F5BE76E009C8744 /* SmartSpectraSwiftSDK */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		7409D7E92F525C060097EC9A /* ReactivChallengeKit.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ReactivChallengeKit.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		005E30242F5BEC9000A78658 /* Exceptions for "ReactivChallengeKit" folder in "ReactivChallengeKit" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 7409D7E82F525C060097EC9A /* ReactivChallengeKit */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		7409D7EB2F525C060097EC9A /* ReactivChallengeKit */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				005E30242F5BEC9000A78658 /* Exceptions for "ReactivChallengeKit" folder in "ReactivChallengeKit" target */,
+			);
 			path = ReactivChallengeKit;
 			sourceTree = "<group>";
 		};
@@ -28,6 +45,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				0011B7B42F5BE76E009C8744 /* SmartSpectraSwiftSDK in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -72,6 +90,7 @@
 			);
 			name = ReactivChallengeKit;
 			packageProductDependencies = (
+				0011B7B32F5BE76E009C8744 /* SmartSpectraSwiftSDK */,
 			);
 			productName = ReactivChallengeKit;
 			productReference = 7409D7E92F525C060097EC9A /* ReactivChallengeKit.app */;
@@ -101,6 +120,9 @@
 			);
 			mainGroup = 7409D7E02F525C050097EC9A;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				0011B7B22F5BE76D009C8744 /* XCRemoteSwiftPackageReference "SmartSpectra" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 7409D7EA2F525C060097EC9A /* Products */;
 			projectDirPath = "";
@@ -278,6 +300,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = K775MT4ZF9;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
@@ -289,6 +312,8 @@
 					"../Submissions/_template/**/*.swift",
 				);
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = ReactivChallengeKit/Info.plist;
+				INFOPLIST_KEY_NSCameraUsageDescription = "The camera is used to measure vital signs";
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
@@ -304,7 +329,7 @@
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 15.6;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = reactiv.ai.ReactivChallengeKit;
+				PRODUCT_BUNDLE_IDENTIFIER = ultrablob.me.HackCanada2025;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
 				SDKROOT = auto;
@@ -328,6 +353,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = K775MT4ZF9;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
@@ -339,6 +365,8 @@
 					"../Submissions/_template/**/*.swift",
 				);
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = ReactivChallengeKit/Info.plist;
+				INFOPLIST_KEY_NSCameraUsageDescription = "The camera is used to measure vital signs";
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
@@ -354,7 +382,7 @@
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 15.6;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = reactiv.ai.ReactivChallengeKit;
+				PRODUCT_BUNDLE_IDENTIFIER = ultrablob.me.HackCanada2025;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
 				SDKROOT = auto;
@@ -393,6 +421,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		0011B7B22F5BE76D009C8744 /* XCRemoteSwiftPackageReference "SmartSpectra" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/Presage-Security/SmartSpectra";
+			requirement = {
+				branch = main;
+				kind = branch;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		0011B7B32F5BE76E009C8744 /* SmartSpectraSwiftSDK */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 0011B7B22F5BE76D009C8744 /* XCRemoteSwiftPackageReference "SmartSpectra" */;
+			productName = SmartSpectraSwiftSDK;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 7409D7E12F525C050097EC9A /* Project object */;
 }
