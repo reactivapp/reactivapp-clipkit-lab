@@ -57,8 +57,6 @@ final class ClipBetPaymentManager {
     // Platform fee percentage
     let platformFeeRate: Double = 0.05
 
-    // MARK: - Process Bet Payment
-
     /// Processes a bet payment. In production this would:
     /// 1. Create a Stripe PaymentIntent on the backend
     /// 2. Present Apple Pay sheet (PKPaymentAuthorizationViewController)
@@ -73,6 +71,32 @@ final class ClipBetPaymentManager {
         completion: @escaping (Bool) -> Void
     ) {
         paymentState = .processing
+
+        if !ClipBetAPIConfig.useMockData {
+            // Real API: get Stripe client_secret from backend
+            ClipBetAPI.shared.placeBet(
+                eventId: eventId.uuidString,
+                optionId: outcomeId.uuidString,
+                amount: amount,
+                email: email,
+                nickname: nickname
+            ) { [weak self] result in
+                guard let self else { return }
+                switch result {
+                case .success(let response):
+                    // In production: use response.client_secret with PKPaymentRequest
+                    // For hackathon: mark as success directly
+                    self.paymentIntentId = response.payment_intent_id
+                    self.paymentState = .success(transactionId: response.payment_intent_id)
+                    self.escrowState = .held
+                    completion(true)
+                case .failure(let error):
+                    self.paymentState = .failed(message: error.localizedDescription)
+                    completion(false)
+                }
+            }
+            return
+        }
 
         // Mock: simulate network delay for PaymentIntent creation + Apple Pay
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in

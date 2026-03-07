@@ -23,7 +23,9 @@ struct ClipBetExperience: ClipExperience {
     // MARK: - Screen Flow
 
     enum Screen {
+        case loading
         case landing
+        case expired
         case placeBet
         case confirm
         case success
@@ -31,7 +33,7 @@ struct ClipBetExperience: ClipExperience {
         case dashboard
     }
 
-    @State private var currentScreen: Screen = .landing
+    @State private var currentScreen: Screen = .loading
     @State private var event: PredictionEvent = ClipBetMockData.primaryEvent
     @State private var selectedOutcome: BetOutcome?
     @State private var betAmount: Double = 10
@@ -41,14 +43,24 @@ struct ClipBetExperience: ClipExperience {
     @State private var showCustomAmount = false
     @State private var appeared = false
     @State private var paymentManager = ClipBetPaymentManager()
+    @State private var loadError: String?
+    @State private var createdEvent: PredictionEvent?
+    @State private var createdEventQRURL: String?
+    @State private var organizerId: String?
 
     var body: some View {
         ZStack {
             ClipBetColors.bg.ignoresSafeArea()
 
             switch currentScreen {
+            case .loading:
+                ClipBetLoadingView(message: "LOADING EVENT...")
+                    .transition(.opacity)
             case .landing:
                 landingView
+                    .transition(.opacity)
+            case .expired:
+                expiredView
                     .transition(.opacity)
             case .placeBet:
                 placeBetView
@@ -60,17 +72,50 @@ struct ClipBetExperience: ClipExperience {
                 successView
                     .transition(.scale(scale: 0.95).combined(with: .opacity))
             case .createEvent:
-                CreateEventFlow()
-                    .transition(.move(edge: .trailing).combined(with: .opacity))
+                CreateEventFlow(
+                    onEventCreated: { createdEvt, qrURL, orgId in
+                        self.createdEvent = createdEvt
+                        self.createdEventQRURL = qrURL
+                        self.organizerId = orgId
+                        withAnimation { currentScreen = .dashboard }
+                    }
+                )
+                .transition(.move(edge: .trailing).combined(with: .opacity))
             case .dashboard:
-                OrganizerDashboard()
-                    .transition(.move(edge: .trailing).combined(with: .opacity))
+                OrganizerDashboard(
+                    event: createdEvent ?? event,
+                    qrURL: createdEventQRURL,
+                    organizerId: organizerId
+                )
+                .transition(.move(edge: .trailing).combined(with: .opacity))
             }
         }
         .animation(.easeInOut(duration: 0.3), value: currentScreen)
         .onAppear {
+            loadEvent()
             withAnimation(.easeOut(duration: 0.6).delay(0.1)) {
                 appeared = true
+            }
+        }
+    }
+
+    // MARK: - Load Event
+
+    private func loadEvent() {
+        let eventId = context.pathParameters["eventId"] ?? "demo"
+        ClipBetAPI.shared.fetchEvent(id: eventId) { result in
+            switch result {
+            case .success(let fetchedEvent):
+                self.event = fetchedEvent
+                if fetchedEvent.isExpired {
+                    withAnimation { currentScreen = .expired }
+                } else {
+                    withAnimation { currentScreen = .landing }
+                }
+            case .failure(let error):
+                self.loadError = error.localizedDescription
+                // Fallback to mock for demo
+                withAnimation { currentScreen = .landing }
             }
         }
     }
@@ -97,6 +142,28 @@ struct ClipBetExperience: ClipExperience {
 
                 ClipBetDivider()
 
+                // Event photo (if available)
+                if let imageURL = event.imageURL, !imageURL.isEmpty {
+                    AsyncImage(url: URL(string: imageURL)) { image in
+                        image
+                            .resizable()
+                            .scaledToFill()
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 180)
+                            .clipped()
+                    } placeholder: {
+                        Rectangle()
+                            .fill(ClipBetColors.surface)
+                            .frame(height: 180)
+                            .overlay(
+                                ProgressView()
+                                    .tint(ClipBetColors.textFaint)
+                            )
+                    }
+
+                    ClipBetDivider()
+                }
+
                 // Event question
                 VStack(spacing: 12) {
                     Text(event.name)
@@ -107,6 +174,28 @@ struct ClipBetExperience: ClipExperience {
                         .lineSpacing(4)
                         .opacity(appeared ? 1 : 0)
                         .offset(y: appeared ? 0 : 12)
+
+                    // Description
+                    if let desc = event.description, !desc.isEmpty {
+                        Text(desc)
+                            .font(.custom("DM Mono", size: 12))
+                            .foregroundColor(ClipBetColors.textSecondary)
+                            .multilineTextAlignment(.center)
+                            .lineSpacing(3)
+                            .padding(.top, 4)
+                    }
+
+                    // Event time
+                    if let timeString = event.formattedEventTime {
+                        HStack(spacing: 6) {
+                            Image(systemName: "clock")
+                                .font(.system(size: 10))
+                            Text(timeString)
+                                .font(.custom("DM Mono", size: 11))
+                        }
+                        .foregroundColor(ClipBetColors.textFaint)
+                        .padding(.top, 2)
+                    }
 
                     MonoLabel(text: event.location)
                 }
@@ -145,10 +234,20 @@ struct ClipBetExperience: ClipExperience {
 
                 ClipBetDivider()
 
-                // CTA
+                // CTA — state-dependent
                 VStack(spacing: 12) {
-                    ClipBetPrimaryButton(title: "PLACE A BET") {
-                        withAnimation { currentScreen = .placeBet }
+                    if event.isAcceptingBets {
+                        ClipBetPrimaryButton(title: "PLACE A BET") {
+                            withAnimation { currentScreen = .placeBet }
+                        }
+                    } else if event.isPlanned {
+                        ClipBetPrimaryButton(title: "BETS OPEN SOON", isEnabled: false) {
+                            // Disabled
+                        }
+                    } else if event.status == .betsClosed {
+                        ClipBetPrimaryButton(title: "BETS CLOSED", isEnabled: false) {
+                            // Disabled
+                        }
                     }
 
                     ClipBetSecondaryButton(title: "CREATE YOUR OWN EVENT") {
@@ -162,7 +261,99 @@ struct ClipBetExperience: ClipExperience {
                 MonoLabel(text: "organized by \(event.organizer)")
                     .padding(.bottom, 8)
 
-                MonoLabel(text: event.timeSinceCreated + " ago")
+                MonoLabel(text: event.timeSinceCreated + (event.isPlanned ? "" : " ago"))
+                    .padding(.bottom, 24)
+            }
+        }
+        .scrollIndicators(.hidden)
+    }
+
+    // MARK: - Expired View
+
+    private var expiredView: some View {
+        ScrollView {
+            VStack(spacing: 0) {
+
+                // Brand
+                VStack(spacing: 16) {
+                    Text("ClipBet")
+                        .font(.custom("Cormorant Garamond", size: 32))
+                        .fontWeight(.light)
+                        .foregroundColor(ClipBetColors.textPrimary)
+
+                    StatusIndicator(status: event.status)
+                }
+                .padding(.top, 24)
+                .padding(.bottom, 20)
+
+                ClipBetDivider()
+
+                // Event ended message
+                VStack(spacing: 16) {
+                    Image(systemName: "clock.badge.checkmark")
+                        .font(.system(size: 32, weight: .light))
+                        .foregroundColor(ClipBetColors.textFaint)
+
+                    Text("This event has ended")
+                        .font(.custom("Cormorant Garamond", size: 26))
+                        .fontWeight(.light)
+                        .foregroundColor(ClipBetColors.textPrimary)
+
+                    Text(event.name)
+                        .font(.custom("DM Mono", size: 13))
+                        .foregroundColor(ClipBetColors.textSecondary)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 24)
+                }
+                .padding(.vertical, 32)
+
+                ClipBetDivider()
+
+                // Final results
+                HStack(spacing: 0) {
+                    StatColumn(value: event.formattedPool, label: "FINAL POOL")
+                    ClipBetVerticalDivider()
+                    StatColumn(value: "\(event.totalBettors)", label: "PARTICIPANTS")
+                    ClipBetVerticalDivider()
+                    StatColumn(value: event.status == .resolved ? "RESOLVED" : "CANCELLED", label: "STATUS")
+                }
+                .padding(.vertical, 20)
+
+                ClipBetDivider()
+
+                // Outcome results (read-only)
+                VStack(spacing: 0) {
+                    ForEach(Array(event.outcomes.enumerated()), id: \.element.id) { index, outcome in
+                        HStack {
+                            OutcomeRow(
+                                outcome: outcome,
+                                percentage: event.percentage(for: outcome),
+                                isFirst: index == 0
+                            )
+                            if event.resolvedOutcomeId == outcome.id {
+                                ClipBetTag(text: "WINNER", color: ClipBetColors.yes)
+                            }
+                        }
+                        if index < event.outcomes.count - 1 {
+                            ClipBetDivider()
+                        }
+                    }
+                }
+                .padding(.horizontal, 24)
+                .padding(.vertical, 16)
+
+                ClipBetDivider()
+
+                // CTA — only create your own
+                VStack(spacing: 12) {
+                    ClipBetPrimaryButton(title: "CREATE YOUR OWN EVENT") {
+                        withAnimation { currentScreen = .createEvent }
+                    }
+                }
+                .padding(.horizontal, 24)
+                .padding(.vertical, 24)
+
+                MonoLabel(text: "This event was organized by \(event.organizer)")
                     .padding(.bottom, 24)
             }
         }

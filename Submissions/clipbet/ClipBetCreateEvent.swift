@@ -2,7 +2,7 @@
 //  ClipBet
 //
 //  Create Event flow for organizers.
-//  Sign in with Apple -> (first time: TOS + Stripe Connect) -> Form -> Preview -> QR
+//  Sign in → TOS → Event Form (photo, name, description, outcomes, time, location) → PDF Card with QR
 //
 
 import SwiftUI
@@ -10,27 +10,36 @@ import SwiftUI
 // MARK: - Create Event Flow
 
 struct CreateEventFlow: View {
+
+    var onEventCreated: ((PredictionEvent, String, String) -> Void)?
+
     enum Step {
         case signIn
-        case tos
+        case terms
         case form
         case preview
-        case qrCode
+        case qrCard
     }
 
     @State private var step: Step = .signIn
-    @State private var isReturning = false
-    @State private var appeared = false
+    @State private var organizerId: String = ""
+    @State private var organizer: APIOrganizer?
 
-    // Form state
-    @State private var eventName = ""
+    // Form fields
+    @State private var eventName: String = ""
+    @State private var eventDescription: String = ""
+    @State private var eventImage: UIImage?
+    @State private var showImagePicker = false
+    @State private var eventTime: Date = Date().addingTimeInterval(3600)
+    @State private var showDatePicker = false
+    @State private var locationName: String = ""
     @State private var outcomes: [String] = ["", ""]
     @State private var minimumBet: Double = 5
-    @State private var bettingWindow: BettingWindow = .manual
-    @State private var locationName = "Detecting location..."
-    @State private var tosAccepted = false
-    @State private var isSignedIn = false
-    @State private var generatedEventId = UUID()
+    @State private var isCreating = false
+
+    // Created event
+    @State private var createdEvent: PredictionEvent?
+    @State private var qrURL: String = ""
 
     var body: some View {
         ZStack {
@@ -39,30 +48,19 @@ struct CreateEventFlow: View {
             switch step {
             case .signIn:
                 signInView
-                    .transition(.opacity)
-            case .tos:
-                tosView
-                    .transition(.move(edge: .trailing).combined(with: .opacity))
+            case .terms:
+                termsView
             case .form:
                 formView
-                    .transition(.move(edge: .trailing).combined(with: .opacity))
             case .preview:
                 previewView
-                    .transition(.move(edge: .trailing).combined(with: .opacity))
-            case .qrCode:
-                qrCodeView
-                    .transition(.scale(scale: 0.95).combined(with: .opacity))
+            case .qrCard:
+                qrCardView
             }
         }
         .animation(.easeInOut(duration: 0.3), value: step)
-        .onAppear {
-            withAnimation(.easeOut(duration: 0.6).delay(0.1)) {
-                appeared = true
-            }
-            // Simulate location detection
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-                locationName = "Scotiabank Arena, Toronto"
-            }
+        .sheet(isPresented: $showImagePicker) {
+            ClipBetImagePicker(selectedImage: $eventImage)
         }
     }
 
@@ -72,98 +70,91 @@ struct CreateEventFlow: View {
         VStack(spacing: 0) {
             Spacer()
 
-            VStack(spacing: 24) {
-                Text("ClipBet")
-                    .font(.custom("Cormorant Garamond", size: 36))
+            VStack(spacing: 20) {
+                Image(systemName: "person.crop.circle")
+                    .font(.system(size: 48, weight: .ultraLight))
+                    .foregroundColor(ClipBetColors.textPrimary)
+
+                Text("Create a Market")
+                    .font(.custom("Cormorant Garamond", size: 28))
                     .fontWeight(.light)
                     .foregroundColor(ClipBetColors.textPrimary)
-                    .opacity(appeared ? 1 : 0)
 
-                Text("Create a Prediction Market")
-                    .font(.custom("Cormorant Garamond", size: 24))
-                    .fontWeight(.light)
+                Text("Sign in to create prediction markets at your event")
+                    .font(.custom("DM Mono", size: 12))
                     .foregroundColor(ClipBetColors.textSecondary)
-
-                MonoLabel(text: "ORGANIZERS MUST SIGN IN")
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 40)
             }
 
             Spacer()
 
-            VStack(spacing: 16) {
-                // Sign in with Apple button
-                Button {
-                    simulateSignIn()
-                } label: {
-                    HStack(spacing: 8) {
-                        Image(systemName: "apple.logo")
-                            .font(.system(size: 18))
-                        Text("SIGN IN WITH APPLE")
-                            .font(.custom("DM Mono", size: 13))
-                            .kerning(2)
+            // Apple Sign In button (mock)
+            Button {
+                // Mock sign in
+                ClipBetAPI.shared.signinOrganizer(appleUserId: "apple_\(UUID().uuidString.prefix(8))") { result in
+                    switch result {
+                    case .success(let response):
+                        self.organizerId = response.organizer.id
+                        self.organizer = response.organizer
+                        if response.needs_tos {
+                            withAnimation { step = .terms }
+                        } else {
+                            withAnimation { step = .form }
+                        }
+                    case .failure:
+                        // Fallback for demo
+                        self.organizerId = UUID().uuidString
+                        withAnimation { step = .terms }
                     }
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 18)
-                    .background(Color.black)
-                    .clipShape(RoundedRectangle(cornerRadius: 2))
                 }
-
-                Text("Required to create and manage events")
-                    .font(.custom("DM Mono", size: 10))
-                    .foregroundColor(ClipBetColors.textFaint)
+            } label: {
+                HStack(spacing: 8) {
+                    Image(systemName: "apple.logo")
+                        .font(.system(size: 16))
+                    Text("Sign in with Apple")
+                        .font(.custom("DM Mono", size: 14))
+                }
+                .foregroundColor(.white)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 16)
+                .background(Color.black)
+                .clipShape(RoundedRectangle(cornerRadius: 8))
             }
             .padding(.horizontal, 24)
-            .padding(.bottom, 40)
+            .padding(.bottom, 48)
         }
     }
 
-    // MARK: - Terms of Service View
+    // MARK: - Terms View
 
-    private var tosView: some View {
+    private var termsView: some View {
         ScrollView {
             VStack(spacing: 0) {
-                HStack {
-                    ClipBetBackButton { withAnimation { step = .signIn } }
-                    Spacer()
-                }
-                .padding(.horizontal, 24)
-                .padding(.top, 16)
 
                 Text("Terms of Service")
                     .font(.custom("Cormorant Garamond", size: 28))
                     .fontWeight(.light)
                     .foregroundColor(ClipBetColors.textPrimary)
-                    .padding(.top, 20)
+                    .padding(.top, 32)
                     .padding(.bottom, 24)
 
                 ClipBetDivider()
 
                 VStack(alignment: .leading, spacing: 16) {
-                    tosSection("Platform Fee", "ClipBet charges a 5% platform fee on all prediction market pools. This fee is deducted before winnings are distributed.")
-                    tosSection("Resolution", "As an organizer, you must resolve events within 24 hours. Failure to resolve results in automatic refunds to all bettors.")
-                    tosSection("Cancellation", "You may cancel an event at any time before resolution. All bettors will receive full refunds.")
-                    tosSection("Payouts", "Payouts are processed via Stripe Connect. You must complete Stripe onboarding to receive your organizer share.")
-                    tosSection("Disputes", "Bettors may dispute your resolution. ClipBet reserves the right to reverse outcomes and issue refunds.")
+                    tosItem(number: "1", text: "You will resolve each market honestly within 24 hours")
+                    tosItem(number: "2", text: "Unresolved markets auto-refund all participants")
+                    tosItem(number: "3", text: "ClipBet charges a 5% platform fee on all pools")
+                    tosItem(number: "4", text: "Payouts are distributed via Stripe Connect")
+                    tosItem(number: "5", text: "Organizers with 3+ disputes may be banned")
                 }
                 .padding(.horizontal, 24)
                 .padding(.vertical, 24)
 
                 ClipBetDivider()
 
-                VStack(spacing: 16) {
-                    Button {
-                        tosAccepted = true
-                        withAnimation { step = .form }
-                    } label: {
-                        Text("I AGREE TO THE TERMS")
-                            .font(.custom("DM Mono", size: 13))
-                            .kerning(2.4)
-                            .foregroundColor(ClipBetColors.bg)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 16)
-                            .background(ClipBetColors.dark)
-                            .clipShape(RoundedRectangle(cornerRadius: 2))
-                    }
+                ClipBetPrimaryButton(title: "I AGREE") {
+                    withAnimation { step = .form }
                 }
                 .padding(.horizontal, 24)
                 .padding(.vertical, 24)
@@ -172,31 +163,77 @@ struct CreateEventFlow: View {
         .scrollIndicators(.hidden)
     }
 
-    // MARK: - Event Form View
+    private func tosItem(number: String, text: String) -> some View {
+        HStack(alignment: .top, spacing: 12) {
+            Text(number)
+                .font(.custom("Cormorant Garamond", size: 22))
+                .fontWeight(.light)
+                .foregroundColor(ClipBetColors.yes)
+                .frame(width: 20)
+            Text(text)
+                .font(.custom("DM Mono", size: 12))
+                .foregroundColor(ClipBetColors.textSecondary)
+                .lineSpacing(3)
+        }
+    }
+
+    // MARK: - Form View
 
     private var formView: some View {
         ScrollView {
             VStack(spacing: 0) {
-                HStack {
-                    ClipBetBackButton {
-                        withAnimation { step = isReturning ? .signIn : .tos }
-                    }
-                    Spacer()
-                    MonoLabel(text: "NEW EVENT")
-                }
-                .padding(.horizontal, 24)
-                .padding(.top, 16)
 
-                Text("Create Event")
+                Text("Create Market")
                     .font(.custom("Cormorant Garamond", size: 28))
                     .fontWeight(.light)
                     .foregroundColor(ClipBetColors.textPrimary)
-                    .padding(.top, 20)
+                    .padding(.top, 32)
                     .padding(.bottom, 24)
 
                 ClipBetDivider()
 
-                // Event Name
+                // Event photo (optional)
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack {
+                        MonoLabelLeft(text: "EVENT PHOTO")
+                        Spacer()
+                        Text("optional")
+                            .font(.custom("DM Mono", size: 10))
+                            .foregroundColor(ClipBetColors.textFaint)
+                    }
+
+                    Button { showImagePicker = true } label: {
+                        if let image = eventImage {
+                            Image(uiImage: image)
+                                .resizable()
+                                .scaledToFill()
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 140)
+                                .clipped()
+                                .clipShape(RoundedRectangle(cornerRadius: 2))
+                        } else {
+                            VStack(spacing: 8) {
+                                Image(systemName: "camera")
+                                    .font(.system(size: 20, weight: .light))
+                                    .foregroundColor(ClipBetColors.textFaint)
+                                Text("TAP TO ADD PHOTO")
+                                    .font(.custom("DM Mono", size: 10))
+                                    .kerning(1.2)
+                                    .foregroundColor(ClipBetColors.textFaint)
+                            }
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 140)
+                            .background(ClipBetColors.surface)
+                            .clipShape(RoundedRectangle(cornerRadius: 2))
+                        }
+                    }
+                }
+                .padding(.horizontal, 24)
+                .padding(.vertical, 20)
+
+                ClipBetDivider()
+
+                // Event name (required)
                 VStack(alignment: .leading, spacing: 8) {
                     MonoLabelLeft(text: "EVENT NAME")
                     ClipBetTextField(
@@ -210,103 +247,71 @@ struct CreateEventFlow: View {
 
                 ClipBetDivider()
 
+                // Description (optional)
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack {
+                        MonoLabelLeft(text: "DESCRIPTION")
+                        Spacer()
+                        Text("optional")
+                            .font(.custom("DM Mono", size: 10))
+                            .foregroundColor(ClipBetColors.textFaint)
+                    }
+                    ClipBetTextEditor(
+                        placeholder: "Add context about your event...",
+                        text: $eventDescription
+                    )
+                }
+                .padding(.horizontal, 24)
+                .padding(.vertical, 20)
+
+                ClipBetDivider()
+
                 // Outcomes
                 VStack(alignment: .leading, spacing: 12) {
-                    HStack {
-                        MonoLabelLeft(text: "OUTCOMES")
-                        Spacer()
-                        MonoLabel(text: "\(outcomes.count) of 6")
-                    }
+                    MonoLabelLeft(text: "OUTCOMES")
+                        .padding(.horizontal, 24)
 
-                    ForEach(outcomes.indices, id: \.self) { index in
-                        HStack(spacing: 8) {
+                    ForEach(outcomes.indices, id: \.self) { i in
+                        HStack {
                             Circle()
-                                .fill(index == 0 ? ClipBetColors.yes : ClipBetColors.no)
-                                .frame(width: 6, height: 6)
-
-                            TextField("Option \(index + 1)", text: $outcomes[index])
-                                .font(.custom("DM Mono", size: 14))
-                                .foregroundColor(ClipBetColors.textPrimary)
-                                .padding(.horizontal, 12)
-                                .padding(.vertical, 12)
-                                .background(ClipBetColors.surface)
-                                .clipShape(RoundedRectangle(cornerRadius: 2))
-
-                            if outcomes.count > 2 {
-                                Button {
-                                    outcomes.remove(at: index)
-                                } label: {
-                                    Image(systemName: "xmark")
-                                        .font(.system(size: 10, weight: .bold))
-                                        .foregroundColor(ClipBetColors.textFaint)
-                                        .frame(width: 28, height: 28)
-                                }
-                            }
+                                .fill(i == 0 ? ClipBetColors.yes : ClipBetColors.no)
+                                .frame(width: 8, height: 8)
+                            TextField("Outcome \(i + 1)", text: Binding(
+                                get: { outcomes[i] },
+                                set: { outcomes[i] = $0 }
+                            ))
+                            .font(.custom("DM Mono", size: 14))
+                            .foregroundColor(ClipBetColors.textPrimary)
                         }
+                        .padding(.horizontal, 24)
                     }
 
                     if outcomes.count < 6 {
                         Button {
                             outcomes.append("")
                         } label: {
-                            HStack(spacing: 6) {
+                            HStack(spacing: 4) {
                                 Image(systemName: "plus")
-                                    .font(.system(size: 11))
+                                    .font(.system(size: 10))
                                 Text("ADD OUTCOME")
-                                    .font(.custom("DM Mono", size: 11))
-                                    .kerning(1.4)
+                                    .font(.custom("DM Mono", size: 10))
+                                    .kerning(1.0)
                             }
-                            .foregroundColor(ClipBetColors.textSecondary)
-                            .padding(.vertical, 10)
+                            .foregroundColor(ClipBetColors.yes)
                         }
+                        .padding(.horizontal, 24)
                     }
                 }
-                .padding(.horizontal, 24)
                 .padding(.vertical, 20)
 
                 ClipBetDivider()
 
-                // Minimum Bet
-                VStack(alignment: .leading, spacing: 12) {
-                    MonoLabelLeft(text: "MINIMUM BET")
-
-                    HStack(spacing: 8) {
-                        ForEach([1.0, 5.0, 10.0], id: \.self) { amount in
-                            AmountButton(
-                                amount: amount,
-                                isSelected: minimumBet == amount
-                            ) {
-                                minimumBet = amount
-                            }
-                        }
-                    }
-                }
-                .padding(.horizontal, 24)
-                .padding(.vertical, 20)
-
-                ClipBetDivider()
-
-                // Betting Window
-                VStack(alignment: .leading, spacing: 12) {
-                    MonoLabelLeft(text: "BETTING WINDOW")
-
-                    ForEach([BettingWindow.manual, .atStart, .stayOpen], id: \.rawValue) { window in
-                        Button {
-                            bettingWindow = window
-                        } label: {
-                            HStack {
-                                Circle()
-                                    .fill(bettingWindow == window ? ClipBetColors.dark : ClipBetColors.divider)
-                                    .frame(width: 8, height: 8)
-                                Text(window.rawValue)
-                                    .font(.custom("DM Mono", size: 13))
-                                    .foregroundColor(bettingWindow == window ? ClipBetColors.textPrimary : ClipBetColors.textSecondary)
-                                Spacer()
-                            }
-                            .padding(.vertical, 8)
-                        }
-                    }
-                }
+                // Event time
+                ClipBetDatePickerField(
+                    label: "EVENT TIME",
+                    date: $eventTime,
+                    showPicker: $showDatePicker
+                )
                 .padding(.horizontal, 24)
                 .padding(.vertical, 20)
 
@@ -315,33 +320,51 @@ struct CreateEventFlow: View {
                 // Location
                 VStack(alignment: .leading, spacing: 8) {
                     MonoLabelLeft(text: "LOCATION")
-
-                    HStack {
-                        Image(systemName: "location.fill")
-                            .font(.system(size: 12))
-                            .foregroundColor(ClipBetColors.yes)
-                        Text(locationName)
-                            .font(.custom("DM Mono", size: 13))
-                            .foregroundColor(ClipBetColors.textPrimary)
-                        Spacer()
-                        Text("auto")
-                            .font(.custom("DM Mono", size: 10))
-                            .foregroundColor(ClipBetColors.textFaint)
-                    }
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 14)
-                    .background(ClipBetColors.surface)
-                    .clipShape(RoundedRectangle(cornerRadius: 2))
+                    ClipBetTextField(
+                        placeholder: "Scotiabank Arena, Toronto",
+                        text: $locationName,
+                        autocapitalization: .words
+                    )
                 }
                 .padding(.horizontal, 24)
                 .padding(.vertical, 20)
 
                 ClipBetDivider()
 
+                // Minimum bet
+                VStack(alignment: .leading, spacing: 12) {
+                    MonoLabelLeft(text: "MINIMUM BET")
+                        .padding(.horizontal, 24)
+
+                    HStack(spacing: 8) {
+                        ForEach([5.0, 10.0, 25.0], id: \.self) { amount in
+                            Button {
+                                minimumBet = amount
+                            } label: {
+                                Text("$\(Int(amount))")
+                                    .font(.custom("DM Mono", size: 13))
+                                    .foregroundColor(minimumBet == amount ? ClipBetColors.surface : ClipBetColors.textSecondary)
+                                    .padding(.horizontal, 16)
+                                    .padding(.vertical, 10)
+                                    .background(minimumBet == amount ? ClipBetColors.dark : Color.clear)
+                                    .clipShape(RoundedRectangle(cornerRadius: 2))
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 2)
+                                            .stroke(ClipBetColors.divider, lineWidth: 1)
+                                    )
+                            }
+                        }
+                    }
+                    .padding(.horizontal, 24)
+                }
+                .padding(.vertical, 20)
+
+                ClipBetDivider()
+
                 // Preview button
                 ClipBetPrimaryButton(
-                    title: "PREVIEW EVENT",
-                    isEnabled: isFormValid
+                    title: isCreating ? "CREATING..." : "PREVIEW MARKET",
+                    isEnabled: isFormValid && !isCreating
                 ) {
                     withAnimation { step = .preview }
                 }
@@ -352,205 +375,323 @@ struct CreateEventFlow: View {
         .scrollIndicators(.hidden)
     }
 
+    private var isFormValid: Bool {
+        !eventName.trimmingCharacters(in: .whitespaces).isEmpty &&
+        outcomes.filter({ !$0.trimmingCharacters(in: .whitespaces).isEmpty }).count >= 2
+    }
+
     // MARK: - Preview View
 
     private var previewView: some View {
         ScrollView {
             VStack(spacing: 0) {
+
                 HStack {
-                    ClipBetBackButton { withAnimation { step = .form } }
+                    ClipBetBackButton {
+                        withAnimation { step = .form }
+                    }
                     Spacer()
-                    MonoLabel(text: "PREVIEW")
                 }
                 .padding(.horizontal, 24)
                 .padding(.top, 16)
 
-                Text("Event Preview")
+                Text("Preview")
                     .font(.custom("Cormorant Garamond", size: 28))
                     .fontWeight(.light)
                     .foregroundColor(ClipBetColors.textPrimary)
-                    .padding(.top, 20)
+                    .padding(.top, 16)
                     .padding(.bottom, 24)
 
                 ClipBetDivider()
 
                 // Preview card
-                VStack(spacing: 16) {
-                    StatusIndicator(status: .live)
-
-                    Text(eventName)
-                        .font(.custom("Cormorant Garamond", size: 24))
-                        .fontWeight(.light)
-                        .foregroundColor(ClipBetColors.textPrimary)
-                        .multilineTextAlignment(.center)
-
-                    MonoLabel(text: locationName)
-                }
-                .padding(.horizontal, 32)
-                .padding(.vertical, 28)
-
-                ClipBetDivider()
-
-                // Outcomes preview
                 VStack(spacing: 0) {
-                    ForEach(validOutcomes.indices, id: \.self) { index in
-                        HStack {
-                            Circle()
-                                .fill(index == 0 ? ClipBetColors.yes : ClipBetColors.no)
-                                .frame(width: 6, height: 6)
-                            Text(validOutcomes[index])
-                                .font(.custom("DM Mono", size: 14))
-                                .foregroundColor(ClipBetColors.textPrimary)
-                            Spacer()
-                            Text("0%")
-                                .font(.custom("Cormorant Garamond", size: 22))
-                                .fontWeight(.light)
+                    if let image = eventImage {
+                        Image(uiImage: image)
+                            .resizable()
+                            .scaledToFill()
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 160)
+                            .clipped()
+                        ClipBetDivider()
+                    }
+
+                    VStack(spacing: 12) {
+                        StatusIndicator(status: .live)
+
+                        Text(eventName)
+                            .font(.custom("Cormorant Garamond", size: 24))
+                            .fontWeight(.light)
+                            .foregroundColor(ClipBetColors.textPrimary)
+                            .multilineTextAlignment(.center)
+
+                        if !eventDescription.isEmpty {
+                            Text(eventDescription)
+                                .font(.custom("DM Mono", size: 11))
+                                .foregroundColor(ClipBetColors.textSecondary)
+                                .multilineTextAlignment(.center)
+                        }
+
+                        HStack(spacing: 16) {
+                            if !locationName.isEmpty {
+                                HStack(spacing: 4) {
+                                    Image(systemName: "mappin")
+                                        .font(.system(size: 9))
+                                    Text(locationName)
+                                        .font(.custom("DM Mono", size: 10))
+                                }
                                 .foregroundColor(ClipBetColors.textFaint)
-                        }
-                        .padding(.vertical, 12)
+                            }
 
-                        if index < validOutcomes.count - 1 {
-                            ClipBetDivider()
+                            HStack(spacing: 4) {
+                                Image(systemName: "clock")
+                                    .font(.system(size: 9))
+                                let formatter = DateFormatter()
+                                let _ = formatter.dateFormat = "MMM d, h:mm a"
+                                Text(formatter.string(from: eventTime))
+                                    .font(.custom("DM Mono", size: 10))
+                            }
+                            .foregroundColor(ClipBetColors.textFaint)
+                        }
+                    }
+                    .padding(.horizontal, 24)
+                    .padding(.vertical, 24)
+
+                    ClipBetDivider()
+
+                    // Outcomes preview
+                    VStack(spacing: 0) {
+                        ForEach(validOutcomes.indices, id: \.self) { index in
+                            HStack {
+                                Circle()
+                                    .fill(index == 0 ? ClipBetColors.yes : ClipBetColors.no)
+                                    .frame(width: 8, height: 8)
+                                Text(validOutcomes[index])
+                                    .font(.custom("DM Mono", size: 14))
+                                    .foregroundColor(ClipBetColors.textPrimary)
+                                Spacer()
+                            }
+                            .padding(.horizontal, 24)
+                            .padding(.vertical, 12)
+
+                            if index < validOutcomes.count - 1 {
+                                ClipBetDivider()
+                            }
                         }
                     }
                 }
+                .background(ClipBetColors.surface.opacity(0.3))
+                .clipShape(RoundedRectangle(cornerRadius: 2))
                 .padding(.horizontal, 24)
-                .padding(.vertical, 16)
+                .padding(.vertical, 24)
 
                 ClipBetDivider()
 
-                // Settings summary
-                VStack(spacing: 0) {
-                    ReceiptRow(label: "MIN BET", value: "$\(Int(minimumBet))")
-                    ReceiptRow(label: "WINDOW", value: bettingWindow.rawValue)
-                    ReceiptRow(label: "FEE", value: "5% platform fee")
-                }
-                .padding(.horizontal, 24)
-                .padding(.vertical, 16)
-
-                ClipBetDivider()
-
-                // Go Live
-                Button {
-                    generatedEventId = UUID()
-                    withAnimation { step = .qrCode }
-                } label: {
-                    HStack(spacing: 8) {
-                        Circle()
-                            .fill(ClipBetColors.accent)
-                            .frame(width: 8, height: 8)
-                        Text("GO LIVE")
-                            .font(.custom("DM Mono", size: 13))
-                            .kerning(2.4)
-                    }
-                    .foregroundColor(ClipBetColors.bg)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 16)
-                    .background(ClipBetColors.dark)
-                    .clipShape(RoundedRectangle(cornerRadius: 2))
+                // Create button
+                ClipBetPrimaryButton(
+                    title: isCreating ? "CREATING MARKET..." : "CREATE MARKET",
+                    isEnabled: !isCreating
+                ) {
+                    createMarket()
                 }
                 .padding(.horizontal, 24)
                 .padding(.vertical, 24)
+
+                ClipBetSecondaryButton(title: "EDIT") {
+                    withAnimation { step = .form }
+                }
+                .padding(.horizontal, 24)
+                .padding(.bottom, 24)
             }
         }
         .scrollIndicators(.hidden)
-    }
-
-    // MARK: - QR Code View
-
-    private var qrCodeView: some View {
-        VStack(spacing: 0) {
-            Spacer()
-
-            VStack(spacing: 24) {
-                Image(systemName: "checkmark")
-                    .font(.system(size: 28, weight: .light))
-                    .foregroundColor(ClipBetColors.yes)
-
-                Text("Event is Live")
-                    .font(.custom("Cormorant Garamond", size: 32))
-                    .fontWeight(.light)
-                    .foregroundColor(ClipBetColors.textPrimary)
-
-                MonoLabel(text: eventName)
-            }
-
-            Spacer()
-
-            // QR code placeholder (simulated)
-            VStack(spacing: 16) {
-                // QR visual
-                ZStack {
-                    RoundedRectangle(cornerRadius: 2)
-                        .fill(Color.white)
-                        .frame(width: 200, height: 200)
-
-                    VStack(spacing: 8) {
-                        Image(systemName: "qrcode")
-                            .font(.system(size: 80))
-                            .foregroundColor(ClipBetColors.dark)
-
-                        Text("ClipBet")
-                            .font(.custom("DM Mono", size: 8))
-                            .foregroundColor(ClipBetColors.textSecondary)
-                    }
-                }
-                .padding(16)
-                .background(ClipBetColors.surface)
-                .clipShape(RoundedRectangle(cornerRadius: 2))
-
-                // URL
-                let shortId = generatedEventId.uuidString.prefix(8).lowercased()
-                Text("clipbet.io/event/\(shortId)")
-                    .font(.custom("DM Mono", size: 12))
-                    .foregroundColor(ClipBetColors.textSecondary)
-            }
-
-            Spacer()
-
-            // Actions
-            VStack(spacing: 12) {
-                ClipBetPrimaryButton(title: "SHARE QR CODE", icon: "square.and.arrow.up") { }
-
-                ClipBetSecondaryButton(title: "VIEW DASHBOARD") { }
-            }
-            .padding(.horizontal, 24)
-            .padding(.bottom, 40)
-        }
-    }
-
-    // MARK: - Helpers
-
-    private func simulateSignIn() {
-        // Mock: simulate Sign in with Apple
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
-            isSignedIn = true
-            // First time user goes to TOS, returning user skips to form
-            withAnimation {
-                step = isReturning ? .form : .tos
-            }
-        }
-    }
-
-    private var isFormValid: Bool {
-        !eventName.trimmingCharacters(in: .whitespaces).isEmpty &&
-        validOutcomes.count >= 2
     }
 
     private var validOutcomes: [String] {
         outcomes.filter { !$0.trimmingCharacters(in: .whitespaces).isEmpty }
     }
 
-    private func tosSection(_ title: String, _ body: String) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text(title)
-                .font(.custom("DM Mono", size: 12))
-                .kerning(1)
-                .foregroundColor(ClipBetColors.textPrimary)
-            Text(body)
-                .font(.custom("DM Mono", size: 11))
-                .foregroundColor(ClipBetColors.textSecondary)
-                .lineSpacing(3)
+    private func createMarket() {
+        isCreating = true
+
+        ClipBetAPI.shared.createEvent(
+            name: eventName,
+            description: eventDescription.isEmpty ? nil : eventDescription,
+            imageURL: nil, // Image would be uploaded to storage in production
+            options: validOutcomes,
+            minimumBet: minimumBet,
+            organizerId: organizerId,
+            locationName: locationName.isEmpty ? nil : locationName,
+            locationLat: nil,
+            locationLng: nil,
+            eventTime: eventTime
+        ) { result in
+            isCreating = false
+            switch result {
+            case .success(let (event, url)):
+                self.createdEvent = event
+                self.qrURL = url
+                withAnimation { step = .qrCard }
+            case .failure:
+                // Fallback for demo
+                let mockId = UUID()
+                self.createdEvent = PredictionEvent(
+                    id: mockId,
+                    name: eventName,
+                    description: eventDescription.isEmpty ? nil : eventDescription,
+                    imageURL: nil,
+                    location: locationName.isEmpty ? "Unknown" : locationName,
+                    locationLat: 0, locationLng: 0,
+                    organizer: "You",
+                    organizerId: UUID(),
+                    status: .live,
+                    outcomes: validOutcomes.map { BetOutcome(id: UUID(), name: $0, totalAmount: 0, betCount: 0) },
+                    minimumBet: minimumBet,
+                    bettingWindow: .manual,
+                    createdAt: Date(),
+                    eventTime: eventTime
+                )
+                self.qrURL = "clipbet.io/event/\(mockId.uuidString.prefix(8).lowercased())"
+                withAnimation { step = .qrCard }
+            }
         }
+    }
+
+    // MARK: - QR Card View (Printable PDF)
+
+    private var qrCardView: some View {
+        ScrollView {
+            VStack(spacing: 0) {
+
+                Text("Your Market is Live")
+                    .font(.custom("Cormorant Garamond", size: 28))
+                    .fontWeight(.light)
+                    .foregroundColor(ClipBetColors.textPrimary)
+                    .padding(.top, 32)
+                    .padding(.bottom, 8)
+
+                MonoLabel(text: "Print this card and place it at your venue")
+                    .padding(.bottom, 24)
+
+                ClipBetDivider()
+
+                // Printable card
+                VStack(spacing: 0) {
+                    // Event header
+                    VStack(spacing: 12) {
+                        Text("CLIPBET")
+                            .font(.custom("DM Mono", size: 11))
+                            .kerning(3)
+                            .foregroundColor(ClipBetColors.textFaint)
+
+                        if let image = eventImage {
+                            Image(uiImage: image)
+                                .resizable()
+                                .scaledToFill()
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 120)
+                                .clipped()
+                                .clipShape(RoundedRectangle(cornerRadius: 2))
+                        }
+
+                        Text(eventName)
+                            .font(.custom("Cormorant Garamond", size: 22))
+                            .fontWeight(.light)
+                            .foregroundColor(ClipBetColors.textPrimary)
+                            .multilineTextAlignment(.center)
+
+                        if !eventDescription.isEmpty {
+                            Text(eventDescription)
+                                .font(.custom("DM Mono", size: 10))
+                                .foregroundColor(ClipBetColors.textSecondary)
+                                .multilineTextAlignment(.center)
+                                .lineSpacing(2)
+                        }
+
+                        if !locationName.isEmpty {
+                            HStack(spacing: 4) {
+                                Image(systemName: "mappin")
+                                    .font(.system(size: 9))
+                                Text(locationName)
+                                    .font(.custom("DM Mono", size: 10))
+                            }
+                            .foregroundColor(ClipBetColors.textFaint)
+                        }
+                    }
+                    .padding(.horizontal, 24)
+                    .padding(.vertical, 24)
+
+                    ClipBetDivider()
+
+                    // QR Code
+                    VStack(spacing: 16) {
+                        QRCodeView(url: qrURL, size: 180)
+                            .padding(16)
+                            .background(Color.white)
+                            .clipShape(RoundedRectangle(cornerRadius: 4))
+
+                        Text("SCAN TO PREDICT")
+                            .font(.custom("DM Mono", size: 12))
+                            .kerning(2)
+                            .foregroundColor(ClipBetColors.textSecondary)
+
+                        Text(qrURL)
+                            .font(.custom("DM Mono", size: 10))
+                            .foregroundColor(ClipBetColors.textFaint)
+                    }
+                    .padding(.vertical, 24)
+
+                    ClipBetDivider()
+
+                    // Footer
+                    Text("CLIPBET · LIVE NOW")
+                        .font(.custom("DM Mono", size: 9))
+                        .kerning(2)
+                        .foregroundColor(ClipBetColors.textFaint)
+                        .padding(.vertical, 16)
+                }
+                .background(ClipBetColors.surface.opacity(0.3))
+                .clipShape(RoundedRectangle(cornerRadius: 2))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 2)
+                        .stroke(ClipBetColors.divider, lineWidth: 1)
+                )
+                .padding(.horizontal, 24)
+                .padding(.vertical, 24)
+
+                // Actions
+                VStack(spacing: 12) {
+                    // Share
+                    if let url = URL(string: "https://\(qrURL)") {
+                        ShareLink(item: url) {
+                            HStack(spacing: 8) {
+                                Image(systemName: "square.and.arrow.up")
+                                    .font(.system(size: 14))
+                                Text("SHARE")
+                                    .font(.custom("DM Mono", size: 13))
+                                    .kerning(1.4)
+                            }
+                            .foregroundColor(ClipBetColors.textPrimary)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 14)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 2)
+                                    .stroke(ClipBetColors.dark, lineWidth: 1)
+                            )
+                        }
+                    }
+
+                    // Go to Dashboard
+                    ClipBetPrimaryButton(title: "GO TO DASHBOARD") {
+                        if let event = createdEvent {
+                            onEventCreated?(event, qrURL, organizerId)
+                        }
+                    }
+                }
+                .padding(.horizontal, 24)
+                .padding(.bottom, 32)
+            }
+        }
+        .scrollIndicators(.hidden)
     }
 }

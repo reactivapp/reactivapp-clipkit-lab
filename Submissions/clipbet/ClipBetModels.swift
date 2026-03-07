@@ -30,6 +30,7 @@ enum ClipBetColors {
 // MARK: - Event Status
 
 enum EventStatus: String, CaseIterable {
+    case planned = "PLANNED"
     case live = "LIVE"
     case betsClosed = "BETS CLOSED"
     case resolved = "RESOLVED"
@@ -37,6 +38,7 @@ enum EventStatus: String, CaseIterable {
 
     var dotColor: Color {
         switch self {
+        case .planned:     return ClipBetColors.textSecondary
         case .live:        return ClipBetColors.accent
         case .betsClosed:  return ClipBetColors.textSecondary
         case .resolved:    return ClipBetColors.yes
@@ -75,6 +77,8 @@ struct BetOutcome: Identifiable, Hashable {
 struct PredictionEvent: Identifiable {
     let id: UUID
     let name: String
+    let description: String?
+    let imageURL: String?
     let location: String
     let locationLat: Double
     let locationLng: Double
@@ -85,12 +89,28 @@ struct PredictionEvent: Identifiable {
     let minimumBet: Double
     let bettingWindow: BettingWindow
     let createdAt: Date
+    var eventTime: Date?
+    var eventEndTime: Date?
     var startedAt: Date?
     var closedAt: Date?
     var resolvedAt: Date?
     var resolvedOutcomeId: UUID?
 
-    // Pool calculations
+    // MARK: - Event State
+
+    var isExpired: Bool {
+        status == .resolved || status == .cancelled
+    }
+
+    var isAcceptingBets: Bool {
+        status == .live
+    }
+
+    var isPlanned: Bool {
+        status == .planned
+    }
+
+    // MARK: - Pool Calculations
 
     var totalPool: Double {
         outcomes.reduce(0) { $0 + $1.totalAmount }
@@ -124,7 +144,26 @@ struct PredictionEvent: Identifiable {
         String(format: "$%.0f", totalPool)
     }
 
+    var formattedEventTime: String? {
+        guard let eventTime else { return nil }
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMM d, h:mm a"
+        return formatter.string(from: eventTime)
+    }
+
     var timeSinceCreated: String {
+        // For planned events, show time until start
+        if let eventTime, status == .planned {
+            let interval = eventTime.timeIntervalSince(Date())
+            if interval > 0 {
+                let minutes = Int(interval) / 60
+                let hours = minutes / 60
+                if hours > 0 {
+                    return "starts in \(hours)h \(minutes % 60)m"
+                }
+                return "starts in \(minutes)m"
+            }
+        }
         let interval = Date().timeIntervalSince(createdAt)
         let minutes = Int(interval) / 60
         let hours = minutes / 60

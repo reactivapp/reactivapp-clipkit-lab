@@ -363,3 +363,208 @@ struct ClipBetTag: View {
             )
     }
 }
+
+// MARK: - QR Code View (CoreImage)
+
+import CoreImage.CIFilterBuiltins
+
+struct QRCodeView: View {
+    let url: String
+    var size: CGFloat = 200
+
+    var body: some View {
+        if let image = generateQRCode(from: url) {
+            Image(uiImage: image)
+                .interpolation(.none)
+                .resizable()
+                .scaledToFit()
+                .frame(width: size, height: size)
+        } else {
+            // Fallback icon
+            Image(systemName: "qrcode")
+                .font(.system(size: size * 0.6))
+                .foregroundColor(ClipBetColors.dark)
+                .frame(width: size, height: size)
+        }
+    }
+
+    private func generateQRCode(from string: String) -> UIImage? {
+        let context = CIContext()
+        let filter = CIFilter.qrCodeGenerator()
+        filter.message = Data(string.utf8)
+        filter.correctionLevel = "M"
+
+        guard let ciImage = filter.outputImage else { return nil }
+        let scale = size / ciImage.extent.width
+        let scaledImage = ciImage.transformed(by: CGAffineTransform(scaleX: scale, y: scale))
+        guard let cgImage = context.createCGImage(scaledImage, from: scaledImage.extent) else { return nil }
+        return UIImage(cgImage: cgImage)
+    }
+}
+
+// MARK: - Loading View
+
+struct ClipBetLoadingView: View {
+    var message: String = "Loading..."
+
+    var body: some View {
+        VStack(spacing: 16) {
+            Spacer()
+            ProgressView()
+                .tint(ClipBetColors.textSecondary)
+            Text(message)
+                .font(.custom("DM Mono", size: 11))
+                .kerning(1.4)
+                .foregroundColor(ClipBetColors.textSecondary)
+            Spacer()
+        }
+        .frame(maxWidth: .infinity)
+    }
+}
+
+// MARK: - Error View
+
+struct ClipBetErrorView: View {
+    let message: String
+    let onRetry: () -> Void
+
+    var body: some View {
+        VStack(spacing: 16) {
+            Spacer()
+            Image(systemName: "exclamationmark.triangle")
+                .font(.system(size: 28, weight: .light))
+                .foregroundColor(ClipBetColors.no)
+            Text(message)
+                .font(.custom("DM Mono", size: 12))
+                .foregroundColor(ClipBetColors.textSecondary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 32)
+            ClipBetSecondaryButton(title: "TRY AGAIN", action: onRetry)
+                .padding(.horizontal, 48)
+            Spacer()
+        }
+        .frame(maxWidth: .infinity)
+    }
+}
+
+// MARK: - Text Editor (Multi-line, Editorial Style)
+
+struct ClipBetTextEditor: View {
+    let placeholder: String
+    @Binding var text: String
+
+    var body: some View {
+        ZStack(alignment: .topLeading) {
+            if text.isEmpty {
+                Text(placeholder)
+                    .font(.custom("DM Mono", size: 14))
+                    .foregroundColor(ClipBetColors.textFaint)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 14)
+            }
+            TextEditor(text: $text)
+                .font(.custom("DM Mono", size: 14))
+                .foregroundColor(ClipBetColors.textPrimary)
+                .scrollContentBackground(.hidden)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 10)
+        }
+        .frame(minHeight: 80)
+        .background(ClipBetColors.surface)
+        .clipShape(RoundedRectangle(cornerRadius: 2))
+    }
+}
+
+// MARK: - Image Picker
+
+import PhotosUI
+
+struct ClipBetImagePicker: UIViewControllerRepresentable {
+    @Binding var selectedImage: UIImage?
+    @Environment(\.dismiss) private var dismiss
+
+    func makeUIViewController(context: Context) -> PHPickerViewController {
+        var config = PHPickerConfiguration()
+        config.selectionLimit = 1
+        config.filter = .images
+        let picker = PHPickerViewController(configuration: config)
+        picker.delegate = context.coordinator
+        return picker
+    }
+
+    func updateUIViewController(_ uiViewController: PHPickerViewController, context: Context) {}
+
+    func makeCoordinator() -> Coordinator { Coordinator(self) }
+
+    class Coordinator: NSObject, PHPickerViewControllerDelegate {
+        let parent: ClipBetImagePicker
+
+        init(_ parent: ClipBetImagePicker) {
+            self.parent = parent
+        }
+
+        func picker(_ picker: PHPickerViewController, didFinishPicking results: [PHPickerResult]) {
+            parent.dismiss()
+            guard let provider = results.first?.itemProvider,
+                  provider.canLoadObject(ofClass: UIImage.self) else { return }
+            provider.loadObject(ofClass: UIImage.self) { image, _ in
+                DispatchQueue.main.async {
+                    self.parent.selectedImage = image as? UIImage
+                }
+            }
+        }
+    }
+}
+
+// MARK: - Date Picker Field (Editorial Style)
+
+struct ClipBetDatePickerField: View {
+    let label: String
+    @Binding var date: Date
+    var showPicker: Binding<Bool>
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            MonoLabelLeft(text: label)
+
+            Button {
+                showPicker.wrappedValue.toggle()
+            } label: {
+                HStack {
+                    Image(systemName: "calendar")
+                        .font(.system(size: 12))
+                        .foregroundColor(ClipBetColors.yes)
+                    Text(formattedDate)
+                        .font(.custom("DM Mono", size: 13))
+                        .foregroundColor(ClipBetColors.textPrimary)
+                    Spacer()
+                    Image(systemName: "chevron.down")
+                        .font(.system(size: 10))
+                        .foregroundColor(ClipBetColors.textFaint)
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 14)
+                .background(ClipBetColors.surface)
+                .clipShape(RoundedRectangle(cornerRadius: 2))
+            }
+
+            if showPicker.wrappedValue {
+                DatePicker(
+                    "",
+                    selection: $date,
+                    in: Date()...,
+                    displayedComponents: [.date, .hourAndMinute]
+                )
+                .datePickerStyle(.graphical)
+                .tint(ClipBetColors.dark)
+                .padding(.horizontal, 8)
+            }
+        }
+    }
+
+    private var formattedDate: String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMM d, yyyy · h:mm a"
+        return formatter.string(from: date)
+    }
+}
