@@ -1,5 +1,6 @@
 import SwiftUI
 import SmartSpectraSwiftSDK
+import Speech
 internal import AVFoundation
 
 struct TriageAppClipExperience: ClipExperience {
@@ -26,6 +27,13 @@ struct TriageAppClipExperience: ClipExperience {
     @State private var isSubmitting: Bool = false
     @State private var submitted: Bool = false
     @State private var errorMessage: String? = nil
+
+    // Dictation
+    @State private var isDictating: Bool = false
+    private let speechRecognizer = SFSpeechRecognizer(locale: Locale(identifier: "en-US"))
+    @State private var recognitionRequest: SFSpeechAudioBufferRecognitionRequest? = nil
+    @State private var recognitionTask: SFSpeechRecognitionTask? = nil
+    private let audioEngine = AVAudioEngine()
 
     // Rolling 5-second vitals buffers: (timestamp, value)
     @State private var hrBuffer: [(Date, Float)] = []
@@ -85,9 +93,28 @@ struct TriageAppClipExperience: ClipExperience {
                                 .font(.headline)
                                 .foregroundColor(.primary)
                             
-                            TextField("Describe how you feel...", text: $symptoms)
-                                .textFieldStyle(RoundedBorderTextFieldStyle())
+                            HStack(spacing: 8) {
+                                TextField("Describe how you feel...", text: $symptoms)
+                                    .textFieldStyle(RoundedBorderTextFieldStyle())
+                                    .disabled(isSubmitting)
+
+                                Button {
+                                    isDictating ? stopDictation() : startDictation()
+                                } label: {
+                                    Image(systemName: isDictating ? "mic.fill" : "mic")
+                                        .font(.system(size: 20))
+                                        .foregroundColor(isDictating ? .red : .accentColor)
+                                        .frame(width: 44, height: 44)
+                                        .background(
+                                            Circle()
+                                                .fill(isDictating
+                                                    ? Color.red.opacity(0.12)
+                                                    : Color.accentColor.opacity(0.08))
+                                        )
+                                }
                                 .disabled(isSubmitting)
+                                .accessibilityLabel(isDictating ? "Stop dictation" : "Start dictation")
+                            }
                                 
                             let hrMedian = median(of: hrBuffer)
                             let rrMedian = median(of: rrBuffer)
@@ -258,5 +285,63 @@ struct TriageAppClipExperience: ClipExperience {
         return sorted.count.isMultiple(of: 2)
             ? (sorted[mid - 1] + sorted[mid]) / 2
             : sorted[mid]
+    }
+
+    // MARK: - Dictation
+
+    private func startDictation() {
+        SFSpeechRecognizer.requestAuthorization { status in
+            DispatchQueue.main.async {
+                guard status == .authorized, let recognizer = speechRecognizer, recognizer.isAvailable else {
+                    errorMessage = "Speech recognition is not available."
+                    return
+                }
+                do {
+                    let audioSession = AVAudioSession.sharedInstance()
+                    try audioSession.setCategory(.record, mode: .measurement, options: .duckOthers)
+                    try audioSession.setActive(true, options: .notifyOthersOnDeactivation)
+
+                    let request = SFSpeechAudioBufferRecognitionRequest()
+                    request.shouldReportPartialResults = true
+                    recognitionRequest = request
+
+                    recognitionTask = recognizer.recognitionTask(with: request) { result, error in
+                        if let result = result {
+                            let text = result.bestTranscription.formattedString
+                            if !text.isEmpty {
+                                symptoms = text
+                            }
+                        }
+                        if error != nil || (result?.isFinal ?? false) {
+                            stopDictation()
+                        }
+                    }
+
+                    let inputNode = audioEngine.inputNode
+                    let format = inputNode.outputFormat(forBus: 0)
+                    inputNode.installTap(onBus: 0, bufferSize: 1024, format: format) { buffer, _ in
+                        request.append(buffer)
+                    }
+
+                    audioEngine.prepare()
+                    try audioEngine.start()
+                    isDictating = true
+                } catch {
+                    errorMessage = "Dictation failed to start: \(error.localizedDescription)"
+                    stopDictation()
+                }
+            }
+        }
+    }
+
+    private func stopDictation() {
+        audioEngine.stop()
+        audioEngine.inputNode.removeTap(onBus: 0)
+        recognitionRequest?.endAudio()
+        recognitionRequest = nil
+        recognitionTask?.cancel()
+        recognitionTask = nil
+        try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+        isDictating = false
     }
 }

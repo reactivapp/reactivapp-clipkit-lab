@@ -10,6 +10,7 @@
 
 import SwiftUI
 import SmartSpectraSwiftSDK
+import Speech
 internal import AVFoundation
 
 struct TriageAppClipExperience: ClipExperience {
@@ -36,6 +37,19 @@ struct TriageAppClipExperience: ClipExperience {
     @State private var isSubmitting: Bool = false
     @State private var submitted: Bool = false
     @State private var errorMessage: String? = nil
+
+    // Dictation
+    @State private var isDictating: Bool = false
+    private let speechRecognizer = SFSpeechRecognizer(locale: Locale(identifier: "en-US"))
+    @State private var recognitionRequest: SFSpeechAudioBufferRecognitionRequest? = nil
+    @State private var recognitionTask: SFSpeechRecognitionTask? = nil
+    private let audioEngine = AVAudioEngine()
+
+    // Rolling 5-second vitals buffers: (timestamp, value)
+    @State private var hrBuffer: [(Date, Float)] = []
+    @State private var rrBuffer: [(Date, Float)] = []
+    @State private var bpBuffer: [(Date, Float)] = []
+    private let bufferWindow: TimeInterval = 5.0
 
     @ObservedObject private var sdk = SmartSpectraSwiftSDK.shared
     @ObservedObject private var vitalsProcessor = SmartSpectraVitalsProcessor.shared
@@ -89,14 +103,34 @@ struct TriageAppClipExperience: ClipExperience {
                                 .font(.headline)
                                 .foregroundColor(.primary)
                             
-                            TextField("Describe how you feel...", text: $symptoms)
-                                .textFieldStyle(RoundedBorderTextFieldStyle())
+                            HStack(spacing: 8) {
+                                TextField("Describe how you feel...", text: $symptoms)
+                                    .textFieldStyle(RoundedBorderTextFieldStyle())
+                                    .disabled(isSubmitting)
+
+                                Button {
+                                    isDictating ? stopDictation() : startDictation()
+                                } label: {
+                                    Image(systemName: isDictating ? "mic.fill" : "mic")
+                                        .font(.system(size: 20))
+                                        .foregroundColor(isDictating ? .red : .accentColor)
+                                        .frame(width: 44, height: 44)
+                                        .background(
+                                            Circle()
+                                                .fill(isDictating
+                                                    ? Color.red.opacity(0.12)
+                                                    : Color.accentColor.opacity(0.08))
+                                        )
+                                }
                                 .disabled(isSubmitting)
+                                .accessibilityLabel(isDictating ? "Stop dictation" : "Start dictation")
+                            }
                                 
-                            let hr = sdk.metricsBuffer?.pulse.rate.last?.value
-                            let rr = sdk.metricsBuffer?.breathing.rate.last?.value
-                            
-                            if hr == nil && rr == nil {
+                            let hrMedian = median(of: hrBuffer)
+                            let rrMedian = median(of: rrBuffer)
+                            let bpMedian = median(of: bpBuffer)
+
+                            if hrMedian == nil && rrMedian == nil && bpMedian == nil {
                                 Text(vitalsProcessor.statusHint.isEmpty ? "Waiting for face..." : vitalsProcessor.statusHint)
                                     .font(.subheadline)
                                     .foregroundColor(.secondary)
@@ -104,7 +138,7 @@ struct TriageAppClipExperience: ClipExperience {
                                     .padding(.top, 8)
                             } else {
                                 HStack(spacing: 24) {
-                                    if let hr = hr {
+                                    if let hr = hrMedian {
                                         VStack(alignment: .leading) {
                                             Text("Heart Rate")
                                                 .font(.caption)
@@ -114,7 +148,7 @@ struct TriageAppClipExperience: ClipExperience {
                                                 .foregroundColor(.red)
                                         }
                                     }
-                                    if let rr = rr {
+                                    if let rr = rrMedian {
                                         VStack(alignment: .leading) {
                                             Text("Breathing")
                                                 .font(.caption)
@@ -122,6 +156,16 @@ struct TriageAppClipExperience: ClipExperience {
                                             Text("\(Int(rr)) RPM")
                                                 .font(.headline)
                                                 .foregroundColor(.blue)
+                                        }
+                                    }
+                                    if let bp = bpMedian {
+                                        VStack(alignment: .leading) {
+                                            Text("Blood Pressure")
+                                                .font(.caption)
+                                                .foregroundColor(.secondary)
+                                            Text("\(Int(bp)) mmHg")
+                                                .font(.headline)
+                                                .foregroundColor(.purple)
                                         }
                                     }
                                 }
@@ -162,6 +206,24 @@ struct TriageAppClipExperience: ClipExperience {
             vitalsProcessor.stopRecording()
             vitalsProcessor.stopProcessing()
         }
+        .onChange(of: sdk.metricsBuffer) { metrics in
+            guard let metrics = metrics else { return }
+            let now = Date()
+            let cutoff = now.addingTimeInterval(-bufferWindow)
+
+            if let hr = metrics.pulse.rate.last?.value {
+                hrBuffer.append((now, hr))
+                hrBuffer.removeAll { $0.0 < cutoff }
+            }
+            if let rr = metrics.breathing.rate.last?.value {
+                rrBuffer.append((now, rr))
+                rrBuffer.removeAll { $0.0 < cutoff }
+            }
+            if let bp = metrics.bloodPressure.phasic.last?.value {
+                bpBuffer.append((now, bp))
+                bpBuffer.removeAll { $0.0 < cutoff }
+            }
+        }
     }
 
     private func submitSymptoms() {
@@ -178,18 +240,12 @@ struct TriageAppClipExperience: ClipExperience {
         // Include seat number and symptoms
         var payload: [String: Any] = [
             "symptoms": symptoms,
-            "seatNumber": "Unknown", // Default seat number as requested
-            "bloodPressure": "120/80"  // Leaving empty for now
+            "seatNumber": "Unknown"
         ]
-        
-        if let metrics = sdk.metricsBuffer {
-            if let hr = metrics.pulse.rate.last?.value {
-                payload["heartRate"] = Int(hr)
-            }
-            if let rr = metrics.breathing.rate.last?.value {
-                payload["respiratoryRate"] = Int(rr)
-            }
-        }
+
+        if let hr = median(of: hrBuffer) { payload["heartRate"] = Int(hr) }
+        if let rr = median(of: rrBuffer) { payload["respiratoryRate"] = Int(rr) }
+        if let bp = median(of: bpBuffer) { payload["bloodPressure"] = Int(bp) }
         
         do {
             request.httpBody = try JSONSerialization.data(withJSONObject: payload)
@@ -228,6 +284,75 @@ struct TriageAppClipExperience: ClipExperience {
                 }
             }
         }.resume()
+    }
+
+    // Median over a rolling buffer of (Date, Float) samples.
+    private func median(of buffer: [(Date, Float)]) -> Float? {
+        let values = buffer.map { $0.1 }
+        guard !values.isEmpty else { return nil }
+        let sorted = values.sorted()
+        let mid = sorted.count / 2
+        return sorted.count.isMultiple(of: 2)
+            ? (sorted[mid - 1] + sorted[mid]) / 2
+            : sorted[mid]
+    }
+
+    // MARK: - Dictation
+
+    private func startDictation() {
+        SFSpeechRecognizer.requestAuthorization { status in
+            DispatchQueue.main.async {
+                guard status == .authorized, let recognizer = speechRecognizer, recognizer.isAvailable else {
+                    errorMessage = "Speech recognition is not available."
+                    return
+                }
+                do {
+                    let audioSession = AVAudioSession.sharedInstance()
+                    try audioSession.setCategory(.record, mode: .measurement, options: .duckOthers)
+                    try audioSession.setActive(true, options: .notifyOthersOnDeactivation)
+
+                    let request = SFSpeechAudioBufferRecognitionRequest()
+                    request.shouldReportPartialResults = true
+                    recognitionRequest = request
+
+                    recognitionTask = recognizer.recognitionTask(with: request) { result, error in
+                        if let result = result {
+                            let text = result.bestTranscription.formattedString
+                            if !text.isEmpty {
+                                symptoms = text
+                            }
+                        }
+                        if error != nil || (result?.isFinal ?? false) {
+                            stopDictation()
+                        }
+                    }
+
+                    let inputNode = audioEngine.inputNode
+                    let format = inputNode.outputFormat(forBus: 0)
+                    inputNode.installTap(onBus: 0, bufferSize: 1024, format: format) { buffer, _ in
+                        request.append(buffer)
+                    }
+
+                    audioEngine.prepare()
+                    try audioEngine.start()
+                    isDictating = true
+                } catch {
+                    errorMessage = "Dictation failed to start: \(error.localizedDescription)"
+                    stopDictation()
+                }
+            }
+        }
+    }
+
+    private func stopDictation() {
+        audioEngine.stop()
+        audioEngine.inputNode.removeTap(onBus: 0)
+        recognitionRequest?.endAudio()
+        recognitionRequest = nil
+        recognitionTask?.cancel()
+        recognitionTask = nil
+        try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+        isDictating = false
     }
 }
 
