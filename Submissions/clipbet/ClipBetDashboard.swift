@@ -38,7 +38,7 @@ struct OrganizerDashboard: View {
                 VStack(spacing: 12) {
                     Text("Dashboard")
                         .font(.custom("Cormorant Garamond", size: 28))
-                        .fontWeight(.light)
+                        .fontWeight(.regular)
                         .foregroundColor(ClipBetColors.textPrimary)
 
                     StatusIndicator(status: event.status)
@@ -80,7 +80,7 @@ struct OrganizerDashboard: View {
 
                     Text(event.name)
                         .font(.custom("Cormorant Garamond", size: 22))
-                        .fontWeight(.light)
+                        .fontWeight(.regular)
                         .foregroundColor(ClipBetColors.textPrimary)
                         .multilineTextAlignment(.center)
 
@@ -132,7 +132,7 @@ struct OrganizerDashboard: View {
                                 Spacer()
                                 Text(String(format: "%.0f%%", event.percentage(for: outcome)))
                                     .font(.custom("Cormorant Garamond", size: 20))
-                                    .fontWeight(.light)
+                                    .fontWeight(.regular)
                                     .foregroundColor(index == 0 ? ClipBetColors.yes : ClipBetColors.no)
                             }
 
@@ -183,14 +183,10 @@ struct OrganizerDashboard: View {
                             closeBets()
                         }
 
+                    if event.status == .live || event.status == .planned {
                         // Cancel & refund
-                        Button {
+                        ClipBetSecondaryButton(title: "CANCEL & REFUND ALL") {
                             showCancelConfirm = true
-                        } label: {
-                            Text("CANCEL & REFUND ALL")
-                                .font(.custom("DM Mono", size: 12))
-                                .kerning(1.2)
-                                .foregroundColor(ClipBetColors.no)
                         }
                     }
 
@@ -296,7 +292,7 @@ struct OrganizerDashboard: View {
             VStack(spacing: 0) {
                 Text("Select Winner")
                     .font(.custom("Cormorant Garamond", size: 24))
-                    .fontWeight(.light)
+                    .fontWeight(.regular)
                     .foregroundColor(ClipBetColors.textPrimary)
                     .padding(.top, 24)
                     .padding(.bottom, 8)

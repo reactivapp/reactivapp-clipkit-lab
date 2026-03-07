@@ -102,8 +102,8 @@ final class ClipBetPaymentManager {
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in
             guard let self else { return }
 
-            // Simulate 95% success rate
-            let success = Double.random(in: 0...1) < 0.95
+            // Always succeed for demo!
+            let success = true
 
             if success {
                 let txId = "pi_\(UUID().uuidString.prefix(8))"
@@ -196,7 +196,7 @@ struct ClipBetApplePayButton: View {
                 HStack(spacing: 8) {
                     if isProcessing {
                         ProgressView()
-                            .tint(ClipBetColors.dark)
+                            .tint(ClipBetColors.bg)
                     } else {
                         Image(systemName: "apple.logo")
                             .font(.system(size: 18))
@@ -205,14 +205,14 @@ struct ClipBetApplePayButton: View {
                             .kerning(2)
                     }
                 }
-                .foregroundColor(ClipBetColors.dark)
+                .foregroundColor(ClipBetColors.bg)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 18)
-                .background(Color.white)
+                .background(ClipBetColors.dark)
                 .clipShape(RoundedRectangle(cornerRadius: 2))
+                .opacity(isEnabled ? 1.0 : 0.5)
             }
             .disabled(!isEnabled || isProcessing)
-            .opacity(isEnabled ? 1.0 : 0.5)
 
             // Fallback: Pay with card (still Stripe underneath, no branding)
             Button(action: onCardFallback) {

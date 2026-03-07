@@ -59,7 +59,7 @@ struct OutcomeRow: View {
 
                 Text(String(format: "%.0f%%", percentage))
                     .font(.custom("Cormorant Garamond", size: 28))
-                    .fontWeight(.light)
+                    .fontWeight(.regular)
                     .foregroundColor(color)
             }
 
@@ -164,7 +164,7 @@ struct StatColumn: View {
         VStack(spacing: 4) {
             Text(value)
                 .font(.custom("Cormorant Garamond", size: 26))
-                .fontWeight(.light)
+                .fontWeight(.regular)
                 .foregroundColor(ClipBetColors.textPrimary)
 
             Text(label)
@@ -199,8 +199,9 @@ struct ClipBetPrimaryButton: View {
             .foregroundColor(ClipBetColors.bg)
             .frame(maxWidth: .infinity)
             .padding(.vertical, 16)
-            .background(isEnabled ? ClipBetColors.dark : ClipBetColors.textFaint)
+            .background(ClipBetColors.dark)
             .clipShape(RoundedRectangle(cornerRadius: 2))
+            .opacity(isEnabled ? 1.0 : 0.5)
         }
         .disabled(!isEnabled)
     }
@@ -215,14 +216,15 @@ struct ClipBetSecondaryButton: View {
     var body: some View {
         Button(action: action) {
             Text(title)
-                .font(.custom("DM Mono", size: 11))
-                .kerning(1.4)
-                .foregroundColor(ClipBetColors.textSecondary)
+                .font(.custom("DM Mono", size: 13))
+                .kerning(2.4)
+                .foregroundColor(ClipBetColors.textPrimary)
                 .frame(maxWidth: .infinity)
-                .padding(.vertical, 14)
+                .padding(.vertical, 16)
+                .background(Color.white)
                 .overlay(
                     RoundedRectangle(cornerRadius: 2)
-                        .stroke(ClipBetColors.divider, lineWidth: 1)
+                        .stroke(ClipBetColors.textPrimary, lineWidth: 1.5)
                 )
         }
     }
@@ -242,10 +244,10 @@ struct AmountButton: View {
                 .foregroundColor(isSelected ? ClipBetColors.bg : ClipBetColors.textPrimary)
                 .padding(.horizontal, 16)
                 .padding(.vertical, 12)
-                .background(isSelected ? ClipBetColors.dark : Color.clear)
+                .background(isSelected ? ClipBetColors.dark : Color.white)
                 .overlay(
                     RoundedRectangle(cornerRadius: 2)
-                        .stroke(isSelected ? Color.clear : ClipBetColors.divider, lineWidth: 1)
+                        .stroke(isSelected ? Color.clear : ClipBetColors.textPrimary, lineWidth: 1.5)
                 )
                 .clipShape(RoundedRectangle(cornerRadius: 2))
         }

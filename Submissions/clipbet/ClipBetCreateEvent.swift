@@ -87,7 +87,7 @@ struct CreateEventFlow: View {
 
                 Text("Create a Market")
                     .font(.custom("Cormorant Garamond", size: 28))
-                    .fontWeight(.light)
+                    .fontWeight(.regular)
                     .foregroundColor(ClipBetColors.textPrimary)
 
                 Text("Sign in to create prediction markets at your event")
@@ -152,7 +152,7 @@ struct CreateEventFlow: View {
 
                 Text("Terms of Service")
                     .font(.custom("Cormorant Garamond", size: 28))
-                    .fontWeight(.light)
+                    .fontWeight(.regular)
                     .foregroundColor(ClipBetColors.textPrimary)
                     .padding(.top, 32)
                     .padding(.bottom, 24)
@@ -185,7 +185,7 @@ struct CreateEventFlow: View {
         HStack(alignment: .top, spacing: 12) {
             Text(number)
                 .font(.custom("Cormorant Garamond", size: 22))
-                .fontWeight(.light)
+                .fontWeight(.regular)
                 .foregroundColor(ClipBetColors.yes)
                 .frame(width: 20)
             Text(text)
@@ -211,7 +211,7 @@ struct CreateEventFlow: View {
 
                 Text("Create Market")
                     .font(.custom("Cormorant Garamond", size: 28))
-                    .fontWeight(.light)
+                    .fontWeight(.regular)
                     .foregroundColor(ClipBetColors.textPrimary)
                     .padding(.top, 32)
                     .padding(.bottom, 24)
@@ -423,7 +423,7 @@ struct CreateEventFlow: View {
 
                 Text("Preview")
                     .font(.custom("Cormorant Garamond", size: 28))
-                    .fontWeight(.light)
+                    .fontWeight(.regular)
                     .foregroundColor(ClipBetColors.textPrimary)
                     .padding(.top, 16)
                     .padding(.bottom, 24)
@@ -447,7 +447,7 @@ struct CreateEventFlow: View {
 
                         Text(eventName)
                             .font(.custom("Cormorant Garamond", size: 24))
-                            .fontWeight(.light)
+                            .fontWeight(.regular)
                             .foregroundColor(ClipBetColors.textPrimary)
                             .multilineTextAlignment(.center)
 
@@ -592,7 +592,7 @@ struct CreateEventFlow: View {
 
                 Text("Your Market is Live")
                     .font(.custom("Cormorant Garamond", size: 28))
-                    .fontWeight(.light)
+                    .fontWeight(.regular)
                     .foregroundColor(ClipBetColors.textPrimary)
                     .padding(.top, 32)
                     .padding(.bottom, 8)
@@ -623,7 +623,7 @@ struct CreateEventFlow: View {
 
                         Text(eventName)
                             .font(.custom("Cormorant Garamond", size: 22))
-                            .fontWeight(.light)
+                            .fontWeight(.regular)
                             .foregroundColor(ClipBetColors.textPrimary)
                             .multilineTextAlignment(.center)
 
