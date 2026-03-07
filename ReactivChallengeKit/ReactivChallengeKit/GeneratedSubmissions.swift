@@ -265,6 +265,8 @@ struct CauseData: Identifiable {
     let scenario: String
     let causeOptions: [String]
     let costPerMeal: Double
+    let bio: String
+    let websiteURL: String
 
     var progress: Double {
         guard dailyGoal > 0 else { return 0 }
@@ -282,7 +284,9 @@ struct CauseData: Identifiable {
             donorsThisWeek: 94,
             scenario: "A single mom skipped lunch so her kids could eat. Your gift means she doesn't have to choose.",
             causeOptions: ["Emergency food hampers", "Children's breakfast"],
-            costPerMeal: 2.50
+            costPerMeal: 2.50,
+            bio: "Hamilton Food Share has been the central food distribution hub for Hamilton since 1984. They coordinate a network of 160+ emergency food programs and served over 18,000 people monthly in 2024.",
+            websiteURL: "https://www.hamiltonfoodshare.org"
         ),
         CauseData(
             id: "toronto-daily-bread",
@@ -294,7 +298,9 @@ struct CauseData: Identifiable {
             donorsThisWeek: 217,
             scenario: "A retired teacher lines up before dawn. Your gift keeps the shelves stocked when she arrives.",
             causeOptions: ["Hot meal programs", "Grocery essentials"],
-            costPerMeal: 2.00
+            costPerMeal: 2.00,
+            bio: "Daily Bread Food Bank has fought hunger in Toronto since 1983. They operate the city's largest network of food programs, serving over 270,000 client visits per month across 200+ member agencies.",
+            websiteURL: "https://www.dailybread.ca"
         ),
         CauseData(
             id: "vancouver-food-bank",
@@ -306,7 +312,9 @@ struct CauseData: Identifiable {
             donorsThisWeek: 156,
             scenario: "A student chose rent over food this month. Your gift makes sure no one goes hungry tonight.",
             causeOptions: ["Community kitchen", "Student meal packs"],
-            costPerMeal: 3.00
+            costPerMeal: 3.00,
+            bio: "Greater Vancouver Food Bank is BC's largest food bank, established in 1982. They provide food to over 100,000 people each month through 150 community agency members across Metro Vancouver.",
+            websiteURL: "https://www.foodbank.bc.ca"
         ),
     ]
 
@@ -576,8 +584,28 @@ struct CauseLandingView: View {
                     .font(.system(size: 16).italic())
                     .foregroundStyle(.giveGreen)
 
+                VStack(spacing: 8) {
+                    Text(cause.bio)
+                        .font(.system(size: 13))
+                        .foregroundStyle(.giveTextSecondary)
+                        .multilineTextAlignment(.center)
+
+                    if let url = URL(string: cause.websiteURL) {
+                        Link(destination: url) {
+                            HStack(spacing: 4) {
+                                Image(systemName: "globe")
+                                    .font(.system(size: 12))
+                                Text(cause.websiteURL.replacingOccurrences(of: "https://www.", with: ""))
+                                    .font(.system(size: 13, weight: .medium))
+                            }
+                            .foregroundStyle(.giveGreen)
+                        }
+                    }
+                }
+                .padding(.horizontal, 24)
+
                 Text(cause.scenario)
-                    .font(.system(size: 14))
+                    .font(.system(size: 14).italic())
                     .foregroundStyle(.giveTextSecondary)
                     .multilineTextAlignment(.center)
                     .lineLimit(2)

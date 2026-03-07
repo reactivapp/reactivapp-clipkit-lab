@@ -28,8 +28,28 @@ struct CauseLandingView: View {
                     .font(.system(size: 16).italic())
                     .foregroundStyle(.giveGreen)
 
+                VStack(spacing: 8) {
+                    Text(cause.bio)
+                        .font(.system(size: 13))
+                        .foregroundStyle(.giveTextSecondary)
+                        .multilineTextAlignment(.center)
+
+                    if let url = URL(string: cause.websiteURL) {
+                        Link(destination: url) {
+                            HStack(spacing: 4) {
+                                Image(systemName: "globe")
+                                    .font(.system(size: 12))
+                                Text(cause.websiteURL.replacingOccurrences(of: "https://www.", with: ""))
+                                    .font(.system(size: 13, weight: .medium))
+                            }
+                            .foregroundStyle(.giveGreen)
+                        }
+                    }
+                }
+                .padding(.horizontal, 24)
+
                 Text(cause.scenario)
-                    .font(.system(size: 14))
+                    .font(.system(size: 14).italic())
                     .foregroundStyle(.giveTextSecondary)
                     .multilineTextAlignment(.center)
                     .lineLimit(2)
