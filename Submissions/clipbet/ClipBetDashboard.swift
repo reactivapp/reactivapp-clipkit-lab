@@ -7,24 +7,6 @@
 
 import SwiftUI
 
-// MARK: - Dashboard Experience (Standalone Entry Point)
-
-struct ClipBetDashboardExperience: ClipExperience {
-    static let urlPattern = "clipbet.io/dashboard/:eventId"
-    static let clipName = "ClipBet Dashboard"
-    static let clipDescription = "Manage your prediction market. Resolve outcomes and distribute winnings."
-    static let teamName = "ClipBet"
-
-    static let touchpoint: JourneyTouchpoint = .onSite
-    static let invocationSource: InvocationSource = .qrCode
-
-    let context: ClipContext
-
-    var body: some View {
-        OrganizerDashboard()
-    }
-}
-
 // MARK: - Dashboard View
 
 struct OrganizerDashboard: View {

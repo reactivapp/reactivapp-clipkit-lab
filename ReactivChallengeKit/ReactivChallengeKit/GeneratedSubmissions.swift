@@ -385,24 +385,6 @@ struct ClipBetTag: View {
 
 import SwiftUI
 
-// MARK: - Create Event Experience (Standalone Entry Point)
-
-struct ClipBetCreateExperience: ClipExperience {
-    static let urlPattern = "clipbet.io/create"
-    static let clipName = "ClipBet Create"
-    static let clipDescription = "Create a prediction market for your event in seconds."
-    static let teamName = "ClipBet"
-
-    static let touchpoint: JourneyTouchpoint = .onSite
-    static let invocationSource: InvocationSource = .qrCode
-
-    let context: ClipContext
-
-    var body: some View {
-        CreateEventFlow()
-    }
-}
-
 // MARK: - Create Event Flow
 
 struct CreateEventFlow: View {
@@ -961,24 +943,6 @@ struct CreateEventFlow: View {
 //
 
 import SwiftUI
-
-// MARK: - Dashboard Experience (Standalone Entry Point)
-
-struct ClipBetDashboardExperience: ClipExperience {
-    static let urlPattern = "clipbet.io/dashboard/:eventId"
-    static let clipName = "ClipBet Dashboard"
-    static let clipDescription = "Manage your prediction market. Resolve outcomes and distribute winnings."
-    static let teamName = "ClipBet"
-
-    static let touchpoint: JourneyTouchpoint = .onSite
-    static let invocationSource: InvocationSource = .qrCode
-
-    let context: ClipContext
-
-    var body: some View {
-        OrganizerDashboard()
-    }
-}
 
 // MARK: - Dashboard View
 

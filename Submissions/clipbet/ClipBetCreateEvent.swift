@@ -7,24 +7,6 @@
 
 import SwiftUI
 
-// MARK: - Create Event Experience (Standalone Entry Point)
-
-struct ClipBetCreateExperience: ClipExperience {
-    static let urlPattern = "clipbet.io/create"
-    static let clipName = "ClipBet Create"
-    static let clipDescription = "Create a prediction market for your event in seconds."
-    static let teamName = "ClipBet"
-
-    static let touchpoint: JourneyTouchpoint = .onSite
-    static let invocationSource: InvocationSource = .qrCode
-
-    let context: ClipContext
-
-    var body: some View {
-        CreateEventFlow()
-    }
-}
-
 // MARK: - Create Event Flow
 
 struct CreateEventFlow: View {
