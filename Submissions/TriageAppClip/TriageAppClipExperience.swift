@@ -27,6 +27,38 @@ struct TriageAppClipExperience: ClipExperience {
     )
     static let invocationSource: InvocationSource = .qrCode
 
+    // On-theme notification strategy for the triage flow
+    private static let triageNotifications: [NotificationTemplate] = [
+        NotificationTemplate(
+            title: "Check-in received",
+            body: "Your symptoms have been submitted. A nurse will be with you shortly.",
+            journeyStage: "Check-In",
+            triggerDescription: "Sent immediately after submission",
+            delayFromInvocation: 0
+        ),
+        NotificationTemplate(
+            title: "Vitals processed",
+            body: "Heart rate, respiratory rate, and blood pressure recorded. Triage priority assigned.",
+            journeyStage: "Processing",
+            triggerDescription: "Sent once vitals analysis completes",
+            delayFromInvocation: 60 * 2
+        ),
+        NotificationTemplate(
+            title: "A nurse is on the way",
+            body: "You'll be seen next. Please stay in your seat.",
+            journeyStage: "Queue",
+            triggerDescription: "Sent when nurse acknowledges patient",
+            delayFromInvocation: 60 * 10
+        ),
+        NotificationTemplate(
+            title: "Follow-up resources",
+            body: "Based on your visit, here are recommended next steps and care instructions.",
+            journeyStage: "Post-Visit",
+            triggerDescription: "Sent after discharge (within 8h window)",
+            delayFromInvocation: 60 * 60 * 2
+        ),
+    ]
+
     let context: ClipContext
 
     // Stages
@@ -134,6 +166,9 @@ struct TriageAppClipExperience: ClipExperience {
                     if submitted {
                         ClipSuccessOverlay(message: "Symptoms received! Please wait for a nurse.")
                             .padding(.top, 40)
+
+                        NotificationTimeline(templates: Self.triageNotifications)
+                            .padding(.top, 24)
                     } else {
                         // Title for current stage
                         if currentStage == .faceScan {
@@ -322,7 +357,7 @@ struct TriageAppClipExperience: ClipExperience {
                         } else if currentStage == .symptoms {
                             VStack(spacing: 24) {
                                 // Text area with dictation inside
-                                ZStack(alignment: .topTrailing) {
+                                ZStack(alignment: .bottomTrailing) {
                                     ZStack(alignment: .topLeading) {
                                         if #available(iOS 16.0, *) {
                                             TextEditor(text: $symptoms)
