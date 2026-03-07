@@ -364,7 +364,7 @@ struct TriageAppClipExperience: ClipExperience {
             .scrollIndicators(.hidden)
         }
         .onAppear {
-            requestSeatNumber = context.queryParameters["seatNumber"] ?? ""
+            requestSeatNumber = context.queryParameters["seat"] ?? ""
 
             if Self.useMockVitals {
                 startMockVitals()
@@ -441,7 +441,7 @@ struct TriageAppClipExperience: ClipExperience {
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         
         // Build payload matching the API format
-        let seatNumber = context.queryParameters["seatNumber"].flatMap(Int.init) ?? 1
+        let seatNumber = context.queryParameters["seat"].flatMap(Int.init) ?? 1
         let hrValue = median(of: hrBuffer).map { Int($0) } ?? -1
         let rrValue = median(of: rrBuffer).map { Int($0) } ?? -1
         let bpValue = median(of: bpBuffer).map { Int($0) } ?? -1
