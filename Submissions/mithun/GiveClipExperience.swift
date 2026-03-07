@@ -34,23 +34,11 @@ struct GiveClipExperience: ClipExperience {
                 case .payment:
                     PaymentView(cause: cause)
                 case .confirmation:
-                    confirmationPlaceholder
+                    ImpactConfirmationView(cause: cause)
                 }
             }
             .animation(.spring(duration: 0.35), value: donationState.currentScreen)
         }
         .environmentObject(donationState)
-    }
-
-    // MARK: - Placeholder screen (replaced in Phase 4)
-
-    private var confirmationPlaceholder: some View {
-        VStack(spacing: 16) {
-            Spacer()
-            ClipSuccessOverlay(
-                message: "You just fed a family in \(cause.city) today."
-            )
-            Spacer()
-        }
     }
 }
