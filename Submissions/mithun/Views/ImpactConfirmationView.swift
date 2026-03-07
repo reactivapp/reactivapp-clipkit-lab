@@ -160,25 +160,37 @@ struct ImpactConfirmationView: View {
     }
 
     private func scheduleImpactNotification() {
-        let center = UNUserNotificationCenter.current()
-        center.requestAuthorization(options: [.alert, .sound]) { granted, _ in
-            guard granted else { return }
+        let causeName = cause.name
+        let causeCity = cause.city
+        let causeId = cause.id
+        let mealCount = newMealCount
 
-            let content = UNMutableNotificationContent()
-            content.title = cause.name
-            content.body = "Today's count: \(newMealCount) meals packed across \(cause.city). Thank you for being part of it."
-            content.sound = .default
-            content.categoryIdentifier = "GIVE_IMPACT"
+        Task { @MainActor in
+            let center = UNUserNotificationCenter.current()
 
-            // 10s for demo; 4 hours (14400s) in production
-            let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 10, repeats: false)
-            let request = UNNotificationRequest(
-                identifier: "givekit-impact-\(cause.id)",
-                content: content,
-                trigger: trigger
-            )
+            GiveClipNotificationDelegate.shared.install(on: center)
 
-            center.add(request)
+            do {
+                let granted = try await center.requestAuthorization(options: [.alert, .sound, .badge])
+                guard granted else { return }
+
+                let content = UNMutableNotificationContent()
+                content.title = causeName
+                content.body = "Today's count: \(mealCount) meals packed across \(causeCity). Thank you for being part of it."
+                content.sound = .default
+                content.categoryIdentifier = "GIVE_IMPACT"
+
+                let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 10, repeats: false)
+                let request = UNNotificationRequest(
+                    identifier: "givekit-impact-\(causeId)",
+                    content: content,
+                    trigger: trigger
+                )
+
+                try await center.add(request)
+            } catch {
+                // Silently continue
+            }
         }
     }
 
@@ -189,5 +201,21 @@ struct ImpactConfirmationView: View {
            let root = windowScene.windows.first?.rootViewController {
             root.present(activityVC, animated: true)
         }
+    }
+}
+
+final class GiveClipNotificationDelegate: NSObject, UNUserNotificationCenterDelegate, @unchecked Sendable {
+    static let shared = GiveClipNotificationDelegate()
+
+    func install(on center: UNUserNotificationCenter) {
+        center.delegate = self
+    }
+
+    nonisolated func userNotificationCenter(
+        _ center: UNUserNotificationCenter,
+        willPresent notification: UNNotification,
+        withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
+    ) {
+        completionHandler([.banner, .sound])
     }
 }
