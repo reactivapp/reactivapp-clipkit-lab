@@ -13,6 +13,9 @@ struct ReactivChallengeKitApp: App {
     var body: some Scene {
         WindowGroup {
             SimulatorShell(router: router)
+                .onOpenURL { incomingURL in
+                    router.invoke(urlString: incomingURL.absoluteString)
+                }
         }
     }
 }

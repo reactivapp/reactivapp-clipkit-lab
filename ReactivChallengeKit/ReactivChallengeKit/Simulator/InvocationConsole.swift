@@ -10,6 +10,9 @@ import SwiftUI
 struct InvocationConsole: View {
     @Bindable var router: ClipRouter
     @State private var urlText = ""
+    @State private var nfcStatusMessage: String?
+    @State private var showNFCSimulatorSheet = false
+    @State private var nfcPayloadText = "prod_hoodie"
     @FocusState private var isTextFieldFocused: Bool
 
     var body: some View {
@@ -18,6 +21,13 @@ struct InvocationConsole: View {
                 Text(error)
                     .font(.system(size: 12, weight: .medium))
                     .foregroundStyle(.orange)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
+
+            if let nfcStatusMessage {
+                Text(nfcStatusMessage)
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(.blue)
                     .transition(.move(edge: .bottom).combined(with: .opacity))
             }
 
@@ -42,6 +52,12 @@ struct InvocationConsole: View {
                                 .font(.system(size: 16))
                                 .foregroundStyle(.tertiary)
                         }
+                    }
+
+                    Button(action: openNFCSimulatorSheet) {
+                        Image(systemName: "wave.3.right.circle.fill")
+                            .font(.system(size: 28))
+                            .foregroundStyle(.blue)
                     }
 
                     Button(action: invokeURL) {
@@ -87,12 +103,80 @@ struct InvocationConsole: View {
             }
         }
         .animation(.easeOut(duration: 0.2), value: router.errorMessage)
+        .sheet(isPresented: $showNFCSimulatorSheet) {
+            nfcSimulatorSheet
+        }
+    }
+
+    private var nfcSimulatorSheet: some View {
+        NavigationStack {
+            VStack(alignment: .leading, spacing: 14) {
+                Text("Simulate NFC Tag Payload")
+                    .font(.system(size: 24, weight: .bold, design: .rounded))
+
+                Text("No paid Apple Developer account needed. Paste tag content as either a product ID (`prod_hoodie`) or full URL.")
+                    .font(.system(size: 13, weight: .medium, design: .rounded))
+                    .foregroundStyle(.secondary)
+
+                TextField("prod_hoodie", text: $nfcPayloadText)
+                    .font(.system(size: 16, weight: .semibold, design: .monospaced))
+                    .autocorrectionDisabled()
+                    .textInputAutocapitalization(.never)
+                    .padding(12)
+                    .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 12))
+
+                HStack(spacing: 8) {
+                    quickPayloadButton("prod_hoodie")
+                    quickPayloadButton("prod_shirt")
+                    quickPayloadButton("clip.clipstakes.app/v/prod_hoodie")
+                }
+
+                Spacer(minLength: 0)
+
+                Button("Invoke From Simulated NFC") {
+                    invokeFromSimulatedNFC(payload: nfcPayloadText)
+                }
+                .buttonStyle(.borderedProminent)
+                .disabled(nfcPayloadText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+            }
+            .padding(18)
+        }
+        .presentationDetents([.medium])
+    }
+
+    private func quickPayloadButton(_ payload: String) -> some View {
+        Button {
+            nfcPayloadText = payload
+        } label: {
+            Text(payload)
+                .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                .lineLimit(1)
+        }
+        .buttonStyle(.bordered)
     }
 
     private func invokeURL() {
         let trimmed = urlText.trimmingCharacters(in: .whitespaces)
         guard !trimmed.isEmpty else { return }
+        nfcStatusMessage = nil
         isTextFieldFocused = false
         router.invoke(urlString: trimmed)
+    }
+
+    private func openNFCSimulatorSheet() {
+        isTextFieldFocused = false
+        showNFCSimulatorSheet = true
+    }
+
+    private func invokeFromSimulatedNFC(payload: String) {
+        guard let normalized = NFCInvocationScanner.normalizeInvocationURL(from: payload) else {
+            nfcStatusMessage = "Could not parse NFC payload. Use a product ID like prod_hoodie or full viewer URL."
+            return
+        }
+
+        showNFCSimulatorSheet = false
+        urlText = normalized.replacingOccurrences(of: "https://", with: "")
+        nfcStatusMessage = "Simulated NFC opened \(urlText)."
+        router.invoke(urlString: normalized)
     }
 }
