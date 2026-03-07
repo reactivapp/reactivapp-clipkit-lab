@@ -28,7 +28,7 @@ struct GiveClipExperience: ClipExperience {
             Group {
                 switch donationState.currentScreen {
                 case .landing:
-                    landingPlaceholder
+                    CauseLandingView(cause: cause)
                 case .amount:
                     amountPlaceholder
                 case .payment:
@@ -42,39 +42,7 @@ struct GiveClipExperience: ClipExperience {
         .environmentObject(donationState)
     }
 
-    // MARK: - Placeholder screens (replaced in Phases 1–4)
-
-    private var landingPlaceholder: some View {
-        ScrollView {
-            VStack(spacing: 20) {
-                Image(systemName: "fork.knife")
-                    .font(.system(size: 64))
-                    .foregroundStyle(.green)
-                    .padding(.top, 32)
-
-                ClipHeader(
-                    title: cause.name,
-                    subtitle: cause.city,
-                    systemImage: "fork.knife"
-                )
-
-                Text(cause.scenario)
-                    .font(.system(size: 14))
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 32)
-
-                Text("\(cause.mealsToday) / \(cause.dailyGoal) meals today")
-                    .font(.system(size: 14, weight: .bold))
-
-                ClipActionButton(title: "Feed Someone Today", icon: "heart.fill") {
-                    withAnimation { donationState.currentScreen = .amount }
-                }
-            }
-            .padding(.bottom, 16)
-        }
-        .scrollIndicators(.hidden)
-    }
+    // MARK: - Placeholder screens (replaced in Phases 2–4)
 
     private var amountPlaceholder: some View {
         ScrollView {
