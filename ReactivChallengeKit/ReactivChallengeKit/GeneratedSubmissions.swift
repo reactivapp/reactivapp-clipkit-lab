@@ -383,17 +383,24 @@ struct AmountSelectionView: View {
     let cause: CauseData
     @EnvironmentObject var donationState: DonationState
 
+    @State private var isOtherSelected = false
+    @State private var customAmountText = ""
+    @FocusState private var isCustomFieldFocused: Bool
+
     private let columns = [
         GridItem(.flexible(), spacing: 12),
         GridItem(.flexible(), spacing: 12),
     ]
 
-    private let amounts: [(amount: Int?, icon: String, label: String)] = [
+    private let presetAmounts: [(amount: Int, icon: String, label: String)] = [
         (5, "person.fill", "Feed 1 child today"),
         (10, "house.fill", "Feed a family for a day"),
         (25, "shippingbox.fill", "Stock a shelf for a week"),
-        (nil, "plus.circle.fill", "Choose your amount"),
     ]
+
+    private var isPresetSelected: Bool {
+        !isOtherSelected && [5, 10, 25].contains(donationState.selectedAmount)
+    }
 
     var body: some View {
         ScrollView {
@@ -405,22 +412,69 @@ struct AmountSelectionView: View {
                     .padding(.top, 24)
 
                 LazyVGrid(columns: columns, spacing: 12) {
-                    ForEach(amounts, id: \.icon) { item in
+                    ForEach(presetAmounts, id: \.icon) { item in
                         AmountCard(
                             amount: item.amount,
                             icon: item.icon,
                             label: item.label,
-                            isSelected: donationState.selectedAmount == (item.amount ?? 0)
+                            isSelected: !isOtherSelected && donationState.selectedAmount == item.amount
                         ) {
-                            if let amount = item.amount {
-                                withAnimation(.easeInOut(duration: 0.2)) {
-                                    donationState.selectedAmount = amount
-                                }
+                            withAnimation(.easeInOut(duration: 0.2)) {
+                                isOtherSelected = false
+                                donationState.selectedAmount = item.amount
+                                isCustomFieldFocused = false
                             }
+                        }
+                    }
+
+                    AmountCard(
+                        amount: nil,
+                        icon: "plus.circle.fill",
+                        label: "Choose your amount",
+                        isSelected: isOtherSelected
+                    ) {
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            isOtherSelected = true
+                            isCustomFieldFocused = true
                         }
                     }
                 }
                 .padding(.horizontal, 16)
+
+                if isOtherSelected {
+                    HStack(spacing: 4) {
+                        Text("$")
+                            .font(.system(size: 28, weight: .bold))
+                            .foregroundStyle(.giveGreen)
+
+                        TextField("0", text: $customAmountText)
+                            .font(.system(size: 28, weight: .bold))
+                            .foregroundStyle(.giveTextPrimary)
+                            .keyboardType(.numberPad)
+                            .focused($isCustomFieldFocused)
+                            .onChange(of: customAmountText) { _, newValue in
+                                let filtered = newValue.filter { $0.isNumber }
+                                if filtered != newValue {
+                                    customAmountText = filtered
+                                }
+                                if let value = Int(filtered), value > 0 {
+                                    donationState.selectedAmount = min(value, 9999)
+                                }
+                            }
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 14)
+                    .background(
+                        RoundedRectangle(cornerRadius: 14)
+                            .fill(Color.giveLightGreen)
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 14)
+                            .strokeBorder(Color.giveGreen, lineWidth: 1.5)
+                    )
+                    .padding(.horizontal, 16)
+                    .transition(.opacity.combined(with: .move(edge: .top)))
+                }
 
                 VStack(spacing: 10) {
                     Text("Where should your gift go?")
@@ -461,6 +515,7 @@ struct AmountSelectionView: View {
                     .multilineTextAlignment(.center)
 
                 Button {
+                    isCustomFieldFocused = false
                     withAnimation(.spring(duration: 0.35)) {
                         donationState.currentScreen = .payment
                     }
@@ -472,6 +527,8 @@ struct AmountSelectionView: View {
                         .frame(height: 56)
                         .background(.giveGreen, in: RoundedRectangle(cornerRadius: 16))
                 }
+                .disabled(isOtherSelected && (Int(customAmountText) ?? 0) < 1)
+                .opacity(isOtherSelected && (Int(customAmountText) ?? 0) < 1 ? 0.5 : 1.0)
                 .padding(.horizontal, 16)
             }
             .padding(.bottom, 16)
