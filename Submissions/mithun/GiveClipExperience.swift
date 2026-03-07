@@ -30,7 +30,7 @@ struct GiveClipExperience: ClipExperience {
                 case .landing:
                     CauseLandingView(cause: cause)
                 case .amount:
-                    amountPlaceholder
+                    AmountSelectionView(cause: cause)
                 case .payment:
                     paymentPlaceholder
                 case .confirmation:
@@ -42,30 +42,7 @@ struct GiveClipExperience: ClipExperience {
         .environmentObject(donationState)
     }
 
-    // MARK: - Placeholder screens (replaced in Phases 2–4)
-
-    private var amountPlaceholder: some View {
-        ScrollView {
-            VStack(spacing: 20) {
-                ClipHeader(
-                    title: "How much would you like to give?",
-                    subtitle: "Every dollar feeds a neighbour",
-                    systemImage: "dollarsign.circle"
-                )
-                .padding(.top, 16)
-
-                Text("$\(donationState.selectedAmount)")
-                    .font(.system(size: 48, weight: .bold))
-                    .foregroundStyle(.green)
-
-                ClipActionButton(title: "Continue to Give", icon: "arrow.right.circle.fill") {
-                    withAnimation { donationState.currentScreen = .payment }
-                }
-            }
-            .padding(.bottom, 16)
-        }
-        .scrollIndicators(.hidden)
-    }
+    // MARK: - Placeholder screens (replaced in Phases 3–4)
 
     private var paymentPlaceholder: some View {
         ScrollView {
