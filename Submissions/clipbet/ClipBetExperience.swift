@@ -71,9 +71,9 @@ struct ClipBetExperience: ClipExperience {
     @State private var notificationOptInStatus: Bool? = nil
     @State private var newBettorsAdded = 0
     @State private var newAmountAdded = 0.0
-    // MARK: - Mock Notification State
     @State private var mockNotifTitle: String? = nil
     @State private var mockNotifBody: String? = nil
+    @State private var showDemoMenu = false
 
     var body: some View {
         ZStack {
@@ -105,6 +105,9 @@ struct ClipBetExperience: ClipExperience {
                         self.createdEventQRURL = qrURL
                         self.organizerId = orgId
                         withAnimation { currentScreen = .dashboard }
+                    },
+                    onCancel: {
+                        withAnimation { currentScreen = .landing }
                     }
                 )
                 .transition(.move(edge: .trailing).combined(with: .opacity))
@@ -112,7 +115,10 @@ struct ClipBetExperience: ClipExperience {
                 OrganizerDashboard(
                     event: createdEvent ?? event,
                     qrURL: createdEventQRURL,
-                    organizerId: organizerId
+                    organizerId: organizerId,
+                    onBack: {
+                        withAnimation { currentScreen = .landing }
+                    }
                 )
                 .transition(.move(edge: .trailing).combined(with: .opacity))
             }
@@ -156,6 +162,59 @@ struct ClipBetExperience: ClipExperience {
             }
         }
         .animation(.easeInOut(duration: 0.3), value: currentScreen)
+        .overlay(
+            Group {
+                // Demo Menu Overlay
+                if showDemoMenu {
+                    ZStack {
+                        Color.black.opacity(0.4)
+                            .ignoresSafeArea()
+                            .onTapGesture {
+                                withAnimation { showDemoMenu = false }
+                            }
+                        
+                        VStack(spacing: 0) {
+                            Text("Demo Menu")
+                                .font(.custom("Cormorant Garamond", size: 24))
+                                .fontWeight(.light)
+                                .padding(.vertical, 16)
+                            
+                            ClipBetDivider()
+                            
+                            demoMenuButton(title: "Main Landing", screen: .landing)
+                            demoMenuButton(title: "Place Bet", screen: .placeBet)
+                            demoMenuButton(title: "Create Event", screen: .createEvent)
+                            demoMenuButton(title: "Dashboard", screen: .dashboard)
+                            demoMenuButton(title: "Success", screen: .success)
+                            
+                            Spacer()
+                        }
+                        .frame(width: 250, height: 350)
+                        .background(ClipBetColors.bg)
+                        .cornerRadius(12)
+                        .shadow(radius: 20)
+                        .transition(.scale.combined(with: .opacity))
+                    }
+                }
+            }
+            .zIndex(1001)
+        )
+        .overlay(
+            Button {
+                withAnimation { showDemoMenu.toggle() }
+            } label: {
+                Image(systemName: "line.3.horizontal")
+                    .font(.system(size: 20))
+                    .foregroundColor(ClipBetColors.bg)
+                    .padding(12)
+                    .background(ClipBetColors.textPrimary)
+                    .clipShape(Circle())
+                    .shadow(radius: 4)
+            }
+            .padding(.trailing, 16)
+            .padding(.top, 16) // Slightly better positioning relative to safe area
+            , alignment: .topTrailing
+        )
         .onAppear {
             UNUserNotificationCenter.current().delegate = sharedForegroundNotificationDelegate
             loadEvent()
@@ -948,6 +1007,12 @@ struct ClipBetExperience: ClipExperience {
                         .font(.custom("DM Mono", size: 11))
                         .foregroundColor(ClipBetColors.textSecondary)
                 }
+                .padding(.bottom, 24)
+                
+                ClipBetSecondaryButton(title: "BACK TO EVENT") {
+                    withAnimation { currentScreen = .landing }
+                }
+                .padding(.horizontal, 24)
                 .padding(.bottom, 40)
             }
         }
@@ -1029,6 +1094,36 @@ struct ClipBetExperience: ClipExperience {
                 }
                 withAnimation { currentScreen = .success }
             }
+        }
+    }
+
+    private func demoMenuButton(title: String, screen: Screen) -> some View {
+        Button {
+            // For dashboard demo map mock data to organizer state if missing
+            if screen == .dashboard && self.createdEvent == nil {
+                self.createdEvent = self.event
+                self.createdEventQRURL = "clipbet.io/event/\(self.event.id.uuidString.prefix(8).lowercased())"
+                self.organizerId = self.event.organizerId.uuidString
+            }
+            
+            withAnimation {
+                currentScreen = screen
+                showDemoMenu = false
+            }
+        } label: {
+            HStack {
+                Text(title)
+                    .font(.custom("DM Mono", size: 14))
+                    .foregroundColor(currentScreen == screen ? ClipBetColors.yes : ClipBetColors.textPrimary)
+                Spacer()
+                if currentScreen == screen {
+                    Image(systemName: "checkmark")
+                        .foregroundColor(ClipBetColors.yes)
+                        .font(.system(size: 12))
+                }
+            }
+            .padding(.horizontal, 24)
+            .padding(.vertical, 16)
         }
     }
 }

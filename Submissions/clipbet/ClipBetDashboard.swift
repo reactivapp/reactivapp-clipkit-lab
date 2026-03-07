@@ -12,6 +12,7 @@ struct OrganizerDashboard: View {
     @State var event: PredictionEvent
     var qrURL: String?
     var organizerId: String?
+    var onBack: (() -> Void)?
 
     @State private var generatedPDFURL: URL?
 
@@ -23,6 +24,15 @@ struct OrganizerDashboard: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 0) {
+                // Header Back Button
+                HStack {
+                    ClipBetBackButton {
+                        onBack?()
+                    }
+                    Spacer()
+                }
+                .padding(.horizontal, 24)
+                .padding(.top, 16)
 
                 // Header
                 VStack(spacing: 12) {

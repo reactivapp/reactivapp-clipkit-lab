@@ -12,6 +12,7 @@ import SwiftUI
 struct CreateEventFlow: View {
 
     var onEventCreated: ((PredictionEvent, String, String) -> Void)?
+    var onCancel: (() -> Void)?
 
     enum Step {
         case signIn
@@ -68,6 +69,15 @@ struct CreateEventFlow: View {
 
     private var signInView: some View {
         VStack(spacing: 0) {
+            HStack {
+                ClipBetBackButton {
+                    onCancel?()
+                }
+                Spacer()
+            }
+            .padding(.horizontal, 24)
+            .padding(.top, 16)
+            
             Spacer()
 
             VStack(spacing: 20) {
@@ -131,6 +141,14 @@ struct CreateEventFlow: View {
     private var termsView: some View {
         ScrollView {
             VStack(spacing: 0) {
+                HStack {
+                    ClipBetBackButton {
+                        onCancel?()
+                    }
+                    Spacer()
+                }
+                .padding(.horizontal, 24)
+                .padding(.top, 16)
 
                 Text("Terms of Service")
                     .font(.custom("Cormorant Garamond", size: 28))
@@ -182,6 +200,14 @@ struct CreateEventFlow: View {
     private var formView: some View {
         ScrollView {
             VStack(spacing: 0) {
+                HStack {
+                    ClipBetBackButton {
+                        onCancel?()
+                    }
+                    Spacer()
+                }
+                .padding(.horizontal, 24)
+                .padding(.top, 16)
 
                 Text("Create Market")
                     .font(.custom("Cormorant Garamond", size: 28))
