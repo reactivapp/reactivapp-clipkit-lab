@@ -1,5 +1,8 @@
 //  ClipBetModels.swift
-//  ClipBet — Hyperlocal Prediction Markets via App Clips
+//  ClipBet
+//
+//  Data models for events, bets, organizers, and outcomes.
+//  Based on the full backend schema (Part 8).
 //
 
 import Foundation
@@ -8,20 +11,20 @@ import SwiftUI
 // MARK: - Design System Colors
 
 enum ClipBetColors {
-    static let bg           = Color(red: 250/255, green: 248/255, blue: 245/255) // #FAF8F5
-    static let surface      = Color(red: 240/255, green: 236/255, blue: 228/255) // #F0ECE4
-    static let divider      = Color(red: 226/255, green: 221/255, blue: 213/255) // #E2DDD5
-    static let textPrimary  = Color(red: 26/255,  green: 24/255,  blue: 20/255)  // #1A1814
-    static let textSecondary = Color(red: 122/255, green: 117/255, blue: 111/255) // #7A756F
-    static let textFaint    = Color(red: 176/255, green: 169/255, blue: 159/255) // #B0A99F
+    static let bg           = Color(red: 250/255, green: 248/255, blue: 245/255) // FAF8F5
+    static let surface      = Color(red: 240/255, green: 236/255, blue: 228/255) // F0ECE4
+    static let divider      = Color(red: 226/255, green: 221/255, blue: 213/255) // E2DDD5
+    static let textPrimary  = Color(red: 26/255,  green: 24/255,  blue: 20/255)  // 1A1814
+    static let textSecondary = Color(red: 122/255, green: 117/255, blue: 111/255) // 7A756F
+    static let textFaint    = Color(red: 176/255, green: 169/255, blue: 159/255) // B0A99F
 
-    static let yes          = Color(red: 123/255, green: 184/255, blue: 154/255) // #7BB89A
-    static let yesFill      = Color(red: 196/255, green: 224/255, blue: 212/255) // #C4E0D4
-    static let no           = Color(red: 201/255, green: 123/255, blue: 123/255) // #C97B7B
-    static let noFill       = Color(red: 245/255, green: 206/255, blue: 206/255) // #F5CECE
-    static let accent       = Color(red: 232/255, green: 160/255, blue: 160/255) // #E8A0A0
+    static let yes          = Color(red: 123/255, green: 184/255, blue: 154/255) // 7BB89A
+    static let yesFill      = Color(red: 196/255, green: 224/255, blue: 212/255) // C4E0D4
+    static let no           = Color(red: 201/255, green: 123/255, blue: 123/255) // C97B7B
+    static let noFill       = Color(red: 245/255, green: 206/255, blue: 206/255) // F5CECE
+    static let accent       = Color(red: 232/255, green: 160/255, blue: 160/255) // E8A0A0
 
-    static let dark         = Color(red: 26/255,  green: 24/255,  blue: 20/255)  // #1A1814
+    static let dark         = Color(red: 26/255,  green: 24/255,  blue: 20/255)  // 1A1814
 }
 
 // MARK: - Event Status
@@ -46,7 +49,15 @@ enum EventStatus: String, CaseIterable {
     }
 }
 
-// MARK: - Bet Outcome
+// MARK: - Betting Window
+
+enum BettingWindow: String {
+    case manual = "Close Manually"
+    case atStart = "Close at Start"
+    case stayOpen = "Stay Open During Event"
+}
+
+// MARK: - Bet Outcome (Option)
 
 struct BetOutcome: Identifiable, Hashable {
     let id: UUID
@@ -65,12 +76,21 @@ struct PredictionEvent: Identifiable {
     let id: UUID
     let name: String
     let location: String
+    let locationLat: Double
+    let locationLng: Double
     let organizer: String
+    let organizerId: UUID
     var status: EventStatus
     var outcomes: [BetOutcome]
     let minimumBet: Double
+    let bettingWindow: BettingWindow
     let createdAt: Date
+    var startedAt: Date?
+    var closedAt: Date?
+    var resolvedAt: Date?
     var resolvedOutcomeId: UUID?
+
+    // Pool calculations
 
     var totalPool: Double {
         outcomes.reduce(0) { $0 + $1.totalAmount }
@@ -115,6 +135,25 @@ struct PredictionEvent: Identifiable {
     }
 }
 
+// MARK: - Bet Status
+
+enum BetStatus: String {
+    case pending = "Pending"
+    case confirmed = "Confirmed"
+    case won = "Won"
+    case lost = "Lost"
+    case refunded = "Refunded"
+}
+
+// MARK: - Payout Status
+
+enum PayoutStatus: String {
+    case none = "None"
+    case processing = "Processing"
+    case completed = "Completed"
+    case failed = "Failed"
+}
+
 // MARK: - User Bet
 
 struct UserBet: Identifiable {
@@ -123,61 +162,50 @@ struct UserBet: Identifiable {
     let outcomeId: UUID
     let amount: Double
     let nickname: String
-    let timestamp: Date
+    let email: String
+    var status: BetStatus
+    var payoutAmount: Double?
+    var payoutStatus: PayoutStatus
+    let createdAt: Date
+    var stripePaymentIntentId: String?
 }
 
-// MARK: - Mock Data
+// MARK: - Organizer
 
-enum ClipBetMockData {
+struct EventOrganizer: Identifiable {
+    let id: UUID
+    let appleUserId: String
+    var stripeConnectId: String?
+    let tosAgreedAt: Date?
+    let verifiedAt: Date?
+    var eventsCreated: Int
+    var disputesAgainst: Int
+    var rating: Double
 
-    static let outcomes1: [BetOutcome] = [
-        BetOutcome(id: UUID(), name: "Raptors win", totalAmount: 1250, betCount: 23),
-        BetOutcome(id: UUID(), name: "Celtics win", totalAmount: 890, betCount: 17),
-    ]
+    var isVerified: Bool {
+        verifiedAt != nil && stripeConnectId != nil
+    }
 
-    static let outcomes2: [BetOutcome] = [
-        BetOutcome(id: UUID(), name: "Under 30 min", totalAmount: 340, betCount: 12),
-        BetOutcome(id: UUID(), name: "30–60 min", totalAmount: 520, betCount: 18),
-        BetOutcome(id: UUID(), name: "Over 60 min", totalAmount: 180, betCount: 7),
-    ]
+    var isFirstTime: Bool {
+        tosAgreedAt == nil
+    }
+}
 
-    static let outcomes3: [BetOutcome] = [
-        BetOutcome(id: UUID(), name: "Yes, encore", totalAmount: 680, betCount: 31),
-        BetOutcome(id: UUID(), name: "No encore", totalAmount: 220, betCount: 9),
-    ]
+// MARK: - Dispute
 
-    static let events: [PredictionEvent] = [
-        PredictionEvent(
-            id: UUID(),
-            name: "Will the Raptors beat the Celtics tonight?",
-            location: "Scotiabank Arena, Toronto",
-            organizer: "ArenaHost",
-            status: .live,
-            outcomes: outcomes1,
-            minimumBet: 5,
-            createdAt: Calendar.current.date(byAdding: .minute, value: -47, to: Date()) ?? Date()
-        ),
-        PredictionEvent(
-            id: UUID(),
-            name: "How long will the opening act play?",
-            location: "Rogers Centre, Toronto",
-            organizer: "ConcertOps",
-            status: .live,
-            outcomes: outcomes2,
-            minimumBet: 5,
-            createdAt: Calendar.current.date(byAdding: .minute, value: -12, to: Date()) ?? Date()
-        ),
-        PredictionEvent(
-            id: UUID(),
-            name: "Will there be an encore?",
-            location: "Massey Hall, Toronto",
-            organizer: "LiveNation",
-            status: .live,
-            outcomes: outcomes3,
-            minimumBet: 5,
-            createdAt: Calendar.current.date(byAdding: .hour, value: -1, to: Date()) ?? Date()
-        ),
-    ]
+enum DisputeStatus: String {
+    case open = "Open"
+    case resolved = "Resolved"
+    case rejected = "Rejected"
+}
 
-    static var primaryEvent: PredictionEvent { events[0] }
+struct BetDispute: Identifiable {
+    let id: UUID
+    let eventId: UUID
+    let bettorId: UUID
+    let reason: String
+    var status: DisputeStatus
+    let createdAt: Date
+    var resolvedAt: Date?
+    var resolution: String?
 }
