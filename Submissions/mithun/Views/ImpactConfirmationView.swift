@@ -11,8 +11,12 @@ struct ImpactConfirmationView: View {
     @State private var showDetails = false
     @State private var updatedProgress: CGFloat = 0
 
+    private var mealsProvided: Int {
+        donationState.mealsProvided
+    }
+
     private var newMealCount: Int {
-        cause.mealsToday + 1
+        cause.mealsToday + mealsProvided
     }
 
     private var newProgress: CGFloat {
@@ -32,7 +36,7 @@ struct ImpactConfirmationView: View {
                     .opacity(showCheckmark ? 1.0 : 0.0)
 
                 if showText {
-                    Text("You just fed a family in \(cause.city) today.")
+                    Text("You just provided \(mealsProvided) meal\(mealsProvided == 1 ? "" : "s") in \(cause.city) today.")
                         .font(.system(size: 22, weight: .bold))
                         .foregroundStyle(.giveTextPrimary)
                         .multilineTextAlignment(.center)
@@ -161,6 +165,7 @@ struct ImpactConfirmationView: View {
         let causeCity = cause.city
         let causeId = cause.id
         let mealCount = newMealCount
+        let provided = mealsProvided
 
         Task { @MainActor in
             let center = UNUserNotificationCenter.current()
@@ -173,7 +178,7 @@ struct ImpactConfirmationView: View {
 
                 let content = UNMutableNotificationContent()
                 content.title = causeName
-                content.body = "Today's count: \(mealCount) meals packed across \(causeCity). Thank you for being part of it."
+                content.body = "Your $\(donationState.finalAmount) provided \(provided) meals. Today's count: \(mealCount) meals packed across \(causeCity). Thank you!"
                 content.sound = .default
                 content.categoryIdentifier = "GIVE_IMPACT"
 
@@ -192,7 +197,7 @@ struct ImpactConfirmationView: View {
     }
 
     private func shareGiveClip() {
-        let text = "I just helped feed a family in \(cause.city) with one tap. \(cause.mealsToday + 1) meals packed today. Join in: givekit.ca/cause/\(cause.id)"
+        let text = "I just provided \(mealsProvided) meals in \(cause.city) with one tap. \(newMealCount) meals packed today. Join in: givekit.ca/cause/\(cause.id)"
         let activityVC = UIActivityViewController(activityItems: [text], applicationActivities: nil)
         if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
            let root = windowScene.windows.first?.rootViewController {

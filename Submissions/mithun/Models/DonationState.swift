@@ -32,12 +32,15 @@ final class DonationState: ObservableObject {
         roundUpSelected && selectedAmount == 10 ? 12 : selectedAmount
     }
 
+    var mealsProvided: Int {
+        max(Int(Double(finalAmount) / cause.costPerMeal), 1)
+    }
+
     var impactLabel: String {
-        switch selectedAmount {
-        case 5: return "Feed 1 child today"
-        case 10: return "Feed a family for a day"
-        case 25: return "Stock a shelf for a week"
-        default: return "Make a difference today"
+        let meals = mealsProvided
+        if meals == 1 {
+            return "Provide 1 meal today"
         }
+        return "Provide \(meals) meals today"
     }
 }

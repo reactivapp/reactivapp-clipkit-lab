@@ -10,6 +10,7 @@ struct CauseData: Identifiable {
     let donorsThisWeek: Int
     let scenario: String
     let causeOptions: [String]
+    let costPerMeal: Double
 
     var progress: Double {
         guard dailyGoal > 0 else { return 0 }
@@ -26,7 +27,8 @@ struct CauseData: Identifiable {
             dailyGoal: 1000,
             donorsThisWeek: 94,
             scenario: "A single mom skipped lunch so her kids could eat. Your gift means she doesn't have to choose.",
-            causeOptions: ["Emergency food hampers", "Children's breakfast"]
+            causeOptions: ["Emergency food hampers", "Children's breakfast"],
+            costPerMeal: 2.50
         ),
         CauseData(
             id: "toronto-daily-bread",
@@ -37,7 +39,8 @@ struct CauseData: Identifiable {
             dailyGoal: 1500,
             donorsThisWeek: 217,
             scenario: "A retired teacher lines up before dawn. Your gift keeps the shelves stocked when she arrives.",
-            causeOptions: ["Hot meal programs", "Grocery essentials"]
+            causeOptions: ["Hot meal programs", "Grocery essentials"],
+            costPerMeal: 2.00
         ),
         CauseData(
             id: "vancouver-food-bank",
@@ -48,7 +51,8 @@ struct CauseData: Identifiable {
             dailyGoal: 900,
             donorsThisWeek: 156,
             scenario: "A student chose rent over food this month. Your gift makes sure no one goes hungry tonight.",
-            causeOptions: ["Community kitchen", "Student meal packs"]
+            causeOptions: ["Community kitchen", "Student meal packs"],
+            costPerMeal: 3.00
         ),
     ]
 
