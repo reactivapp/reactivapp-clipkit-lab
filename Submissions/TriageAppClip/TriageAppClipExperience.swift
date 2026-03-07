@@ -1,6 +1,7 @@
 import SwiftUI
 import SmartSpectraSwiftSDK
 import Speech
+import VisionKit
 internal import AVFoundation
 
 struct TriageAppClipExperience: ClipExperience {
@@ -30,6 +31,10 @@ struct TriageAppClipExperience: ClipExperience {
     @State private var isSubmitting: Bool = false
     @State private var submitted: Bool = false
     @State private var errorMessage: String? = nil
+
+    // Health card scanner
+    @State private var healthCardNumber: String = ""
+    @State private var showCardScanner: Bool = false
 
     // Dictation
     @State private var isDictating: Bool = false
@@ -186,6 +191,49 @@ struct TriageAppClipExperience: ClipExperience {
                         }
                         .padding(.horizontal, 24)
 
+                        // Health card (optional)
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Health Card (Optional)")
+                                .font(.headline)
+                                .foregroundColor(.primary)
+
+                            HStack(spacing: 8) {
+                                TextField("Card number", text: $healthCardNumber)
+                                    .textFieldStyle(RoundedBorderTextFieldStyle())
+                                    .font(.body.monospacedDigit())
+                                    .disabled(isSubmitting)
+
+                                if !healthCardNumber.isEmpty {
+                                    Button {
+                                        healthCardNumber = ""
+                                    } label: {
+                                        Image(systemName: "xmark.circle.fill")
+                                            .foregroundColor(.secondary)
+                                    }
+                                }
+
+                                Button {
+                                    showCardScanner = true
+                                } label: {
+                                    Image(systemName: "camera.viewfinder")
+                                        .font(.system(size: 20))
+                                        .foregroundColor(.accentColor)
+                                        .frame(width: 44, height: 44)
+                                        .background(
+                                            Circle()
+                                                .fill(Color.accentColor.opacity(0.08))
+                                        )
+                                }
+                                .disabled(isSubmitting)
+                                .accessibilityLabel("Scan health card")
+                            }
+
+                            Text("Scan your Ontario health card or type the number.")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                        .padding(.horizontal, 24)
+
                         if let errorMessage = errorMessage {
                             Text(errorMessage)
                                 .foregroundColor(.red)
@@ -245,6 +293,9 @@ struct TriageAppClipExperience: ClipExperience {
                 bpBuffer.removeAll { $0.0 < cutoff }
             }
         }
+        .sheet(isPresented: $showCardScanner) {
+            HealthCardScannerView(scannedNumber: $healthCardNumber)
+        }
     }
 
     private func submitSymptoms() {
@@ -264,7 +315,7 @@ struct TriageAppClipExperience: ClipExperience {
         let rrValue = median(of: rrBuffer).map { Int($0) } ?? -1
         let bpValue = median(of: bpBuffer).map { Int($0) } ?? -1
         let bloodPressureString = "\(bpValue)"
-        let healthCard = context.queryParameters["healthCardNumber"] ?? "unknown"
+        let healthCard = healthCardNumber.isEmpty ? "unknown" : healthCardNumber
 
         let payload: [String: Any] = [
             "seatNumber": seatNumber,
