@@ -27,6 +27,8 @@ struct ClipBetExperience: ClipExperience {
         case placeBet
         case confirm
         case success
+        case createEvent
+        case dashboard
     }
 
     @State private var currentScreen: Screen = .landing
@@ -57,6 +59,12 @@ struct ClipBetExperience: ClipExperience {
             case .success:
                 successView
                     .transition(.scale(scale: 0.95).combined(with: .opacity))
+            case .createEvent:
+                CreateEventFlow()
+                    .transition(.move(edge: .trailing).combined(with: .opacity))
+            case .dashboard:
+                OrganizerDashboard()
+                    .transition(.move(edge: .trailing).combined(with: .opacity))
             }
         }
         .animation(.easeInOut(duration: 0.3), value: currentScreen)
@@ -141,6 +149,10 @@ struct ClipBetExperience: ClipExperience {
                 VStack(spacing: 12) {
                     ClipBetPrimaryButton(title: "PLACE A BET") {
                         withAnimation { currentScreen = .placeBet }
+                    }
+
+                    ClipBetSecondaryButton(title: "CREATE YOUR OWN EVENT") {
+                        withAnimation { currentScreen = .createEvent }
                     }
                 }
                 .padding(.horizontal, 24)

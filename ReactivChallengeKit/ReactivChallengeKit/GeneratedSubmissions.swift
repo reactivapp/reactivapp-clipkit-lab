@@ -374,6 +374,1124 @@ struct ClipBetTag: View {
     }
 }
 
+// MARK: - From Submissions/clipbet/ClipBetCreateEvent.swift
+
+//  ClipBetCreateEvent.swift
+//  ClipBet
+//
+//  Create Event flow for organizers.
+//  Sign in with Apple -> (first time: TOS + Stripe Connect) -> Form -> Preview -> QR
+//
+
+import SwiftUI
+
+// MARK: - Create Event Experience (Standalone Entry Point)
+
+struct ClipBetCreateExperience: ClipExperience {
+    static let urlPattern = "clipbet.io/create"
+    static let clipName = "ClipBet Create"
+    static let clipDescription = "Create a prediction market for your event in seconds."
+    static let teamName = "ClipBet"
+
+    static let touchpoint: JourneyTouchpoint = .onSite
+    static let invocationSource: InvocationSource = .qrCode
+
+    let context: ClipContext
+
+    var body: some View {
+        CreateEventFlow()
+    }
+}
+
+// MARK: - Create Event Flow
+
+struct CreateEventFlow: View {
+    enum Step {
+        case signIn
+        case tos
+        case form
+        case preview
+        case qrCode
+    }
+
+    @State private var step: Step = .signIn
+    @State private var isReturning = false
+    @State private var appeared = false
+
+    // Form state
+    @State private var eventName = ""
+    @State private var outcomes: [String] = ["", ""]
+    @State private var minimumBet: Double = 5
+    @State private var bettingWindow: BettingWindow = .manual
+    @State private var locationName = "Detecting location..."
+    @State private var tosAccepted = false
+    @State private var isSignedIn = false
+    @State private var generatedEventId = UUID()
+
+    var body: some View {
+        ZStack {
+            ClipBetColors.bg.ignoresSafeArea()
+
+            switch step {
+            case .signIn:
+                signInView
+                    .transition(.opacity)
+            case .tos:
+                tosView
+                    .transition(.move(edge: .trailing).combined(with: .opacity))
+            case .form:
+                formView
+                    .transition(.move(edge: .trailing).combined(with: .opacity))
+            case .preview:
+                previewView
+                    .transition(.move(edge: .trailing).combined(with: .opacity))
+            case .qrCode:
+                qrCodeView
+                    .transition(.scale(scale: 0.95).combined(with: .opacity))
+            }
+        }
+        .animation(.easeInOut(duration: 0.3), value: step)
+        .onAppear {
+            withAnimation(.easeOut(duration: 0.6).delay(0.1)) {
+                appeared = true
+            }
+            // Simulate location detection
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                locationName = "Scotiabank Arena, Toronto"
+            }
+        }
+    }
+
+    // MARK: - Sign In View
+
+    private var signInView: some View {
+        VStack(spacing: 0) {
+            Spacer()
+
+            VStack(spacing: 24) {
+                Text("ClipBet")
+                    .font(.custom("Cormorant Garamond", size: 36))
+                    .fontWeight(.light)
+                    .foregroundColor(ClipBetColors.textPrimary)
+                    .opacity(appeared ? 1 : 0)
+
+                Text("Create a Prediction Market")
+                    .font(.custom("Cormorant Garamond", size: 24))
+                    .fontWeight(.light)
+                    .foregroundColor(ClipBetColors.textSecondary)
+
+                MonoLabel(text: "ORGANIZERS MUST SIGN IN")
+            }
+
+            Spacer()
+
+            VStack(spacing: 16) {
+                // Sign in with Apple button
+                Button {
+                    simulateSignIn()
+                } label: {
+                    HStack(spacing: 8) {
+                        Image(systemName: "apple.logo")
+                            .font(.system(size: 18))
+                        Text("SIGN IN WITH APPLE")
+                            .font(.custom("DM Mono", size: 13))
+                            .kerning(2)
+                    }
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 18)
+                    .background(Color.black)
+                    .clipShape(RoundedRectangle(cornerRadius: 2))
+                }
+
+                Text("Required to create and manage events")
+                    .font(.custom("DM Mono", size: 10))
+                    .foregroundColor(ClipBetColors.textFaint)
+            }
+            .padding(.horizontal, 24)
+            .padding(.bottom, 40)
+        }
+    }
+
+    // MARK: - Terms of Service View
+
+    private var tosView: some View {
+        ScrollView {
+            VStack(spacing: 0) {
+                HStack {
+                    ClipBetBackButton { withAnimation { step = .signIn } }
+                    Spacer()
+                }
+                .padding(.horizontal, 24)
+                .padding(.top, 16)
+
+                Text("Terms of Service")
+                    .font(.custom("Cormorant Garamond", size: 28))
+                    .fontWeight(.light)
+                    .foregroundColor(ClipBetColors.textPrimary)
+                    .padding(.top, 20)
+                    .padding(.bottom, 24)
+
+                ClipBetDivider()
+
+                VStack(alignment: .leading, spacing: 16) {
+                    tosSection("Platform Fee", "ClipBet charges a 5% platform fee on all prediction market pools. This fee is deducted before winnings are distributed.")
+                    tosSection("Resolution", "As an organizer, you must resolve events within 24 hours. Failure to resolve results in automatic refunds to all bettors.")
+                    tosSection("Cancellation", "You may cancel an event at any time before resolution. All bettors will receive full refunds.")
+                    tosSection("Payouts", "Payouts are processed via Stripe Connect. You must complete Stripe onboarding to receive your organizer share.")
+                    tosSection("Disputes", "Bettors may dispute your resolution. ClipBet reserves the right to reverse outcomes and issue refunds.")
+                }
+                .padding(.horizontal, 24)
+                .padding(.vertical, 24)
+
+                ClipBetDivider()
+
+                VStack(spacing: 16) {
+                    Button {
+                        tosAccepted = true
+                        withAnimation { step = .form }
+                    } label: {
+                        Text("I AGREE TO THE TERMS")
+                            .font(.custom("DM Mono", size: 13))
+                            .kerning(2.4)
+                            .foregroundColor(ClipBetColors.bg)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 16)
+                            .background(ClipBetColors.dark)
+                            .clipShape(RoundedRectangle(cornerRadius: 2))
+                    }
+                }
+                .padding(.horizontal, 24)
+                .padding(.vertical, 24)
+            }
+        }
+        .scrollIndicators(.hidden)
+    }
+
+    // MARK: - Event Form View
+
+    private var formView: some View {
+        ScrollView {
+            VStack(spacing: 0) {
+                HStack {
+                    ClipBetBackButton {
+                        withAnimation { step = isReturning ? .signIn : .tos }
+                    }
+                    Spacer()
+                    MonoLabel(text: "NEW EVENT")
+                }
+                .padding(.horizontal, 24)
+                .padding(.top, 16)
+
+                Text("Create Event")
+                    .font(.custom("Cormorant Garamond", size: 28))
+                    .fontWeight(.light)
+                    .foregroundColor(ClipBetColors.textPrimary)
+                    .padding(.top, 20)
+                    .padding(.bottom, 24)
+
+                ClipBetDivider()
+
+                // Event Name
+                VStack(alignment: .leading, spacing: 8) {
+                    MonoLabelLeft(text: "EVENT NAME")
+                    ClipBetTextField(
+                        placeholder: "Will the Raptors win tonight?",
+                        text: $eventName,
+                        autocapitalization: .sentences
+                    )
+                }
+                .padding(.horizontal, 24)
+                .padding(.vertical, 20)
+
+                ClipBetDivider()
+
+                // Outcomes
+                VStack(alignment: .leading, spacing: 12) {
+                    HStack {
+                        MonoLabelLeft(text: "OUTCOMES")
+                        Spacer()
+                        MonoLabel(text: "\(outcomes.count) of 6")
+                    }
+
+                    ForEach(outcomes.indices, id: \.self) { index in
+                        HStack(spacing: 8) {
+                            Circle()
+                                .fill(index == 0 ? ClipBetColors.yes : ClipBetColors.no)
+                                .frame(width: 6, height: 6)
+
+                            TextField("Option \(index + 1)", text: $outcomes[index])
+                                .font(.custom("DM Mono", size: 14))
+                                .foregroundColor(ClipBetColors.textPrimary)
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 12)
+                                .background(ClipBetColors.surface)
+                                .clipShape(RoundedRectangle(cornerRadius: 2))
+
+                            if outcomes.count > 2 {
+                                Button {
+                                    outcomes.remove(at: index)
+                                } label: {
+                                    Image(systemName: "xmark")
+                                        .font(.system(size: 10, weight: .bold))
+                                        .foregroundColor(ClipBetColors.textFaint)
+                                        .frame(width: 28, height: 28)
+                                }
+                            }
+                        }
+                    }
+
+                    if outcomes.count < 6 {
+                        Button {
+                            outcomes.append("")
+                        } label: {
+                            HStack(spacing: 6) {
+                                Image(systemName: "plus")
+                                    .font(.system(size: 11))
+                                Text("ADD OUTCOME")
+                                    .font(.custom("DM Mono", size: 11))
+                                    .kerning(1.4)
+                            }
+                            .foregroundColor(ClipBetColors.textSecondary)
+                            .padding(.vertical, 10)
+                        }
+                    }
+                }
+                .padding(.horizontal, 24)
+                .padding(.vertical, 20)
+
+                ClipBetDivider()
+
+                // Minimum Bet
+                VStack(alignment: .leading, spacing: 12) {
+                    MonoLabelLeft(text: "MINIMUM BET")
+
+                    HStack(spacing: 8) {
+                        ForEach([1.0, 5.0, 10.0], id: \.self) { amount in
+                            AmountButton(
+                                amount: amount,
+                                isSelected: minimumBet == amount
+                            ) {
+                                minimumBet = amount
+                            }
+                        }
+                    }
+                }
+                .padding(.horizontal, 24)
+                .padding(.vertical, 20)
+
+                ClipBetDivider()
+
+                // Betting Window
+                VStack(alignment: .leading, spacing: 12) {
+                    MonoLabelLeft(text: "BETTING WINDOW")
+
+                    ForEach([BettingWindow.manual, .atStart, .stayOpen], id: \.rawValue) { window in
+                        Button {
+                            bettingWindow = window
+                        } label: {
+                            HStack {
+                                Circle()
+                                    .fill(bettingWindow == window ? ClipBetColors.dark : ClipBetColors.divider)
+                                    .frame(width: 8, height: 8)
+                                Text(window.rawValue)
+                                    .font(.custom("DM Mono", size: 13))
+                                    .foregroundColor(bettingWindow == window ? ClipBetColors.textPrimary : ClipBetColors.textSecondary)
+                                Spacer()
+                            }
+                            .padding(.vertical, 8)
+                        }
+                    }
+                }
+                .padding(.horizontal, 24)
+                .padding(.vertical, 20)
+
+                ClipBetDivider()
+
+                // Location
+                VStack(alignment: .leading, spacing: 8) {
+                    MonoLabelLeft(text: "LOCATION")
+
+                    HStack {
+                        Image(systemName: "location.fill")
+                            .font(.system(size: 12))
+                            .foregroundColor(ClipBetColors.yes)
+                        Text(locationName)
+                            .font(.custom("DM Mono", size: 13))
+                            .foregroundColor(ClipBetColors.textPrimary)
+                        Spacer()
+                        Text("auto")
+                            .font(.custom("DM Mono", size: 10))
+                            .foregroundColor(ClipBetColors.textFaint)
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 14)
+                    .background(ClipBetColors.surface)
+                    .clipShape(RoundedRectangle(cornerRadius: 2))
+                }
+                .padding(.horizontal, 24)
+                .padding(.vertical, 20)
+
+                ClipBetDivider()
+
+                // Preview button
+                ClipBetPrimaryButton(
+                    title: "PREVIEW EVENT",
+                    isEnabled: isFormValid
+                ) {
+                    withAnimation { step = .preview }
+                }
+                .padding(.horizontal, 24)
+                .padding(.vertical, 24)
+            }
+        }
+        .scrollIndicators(.hidden)
+    }
+
+    // MARK: - Preview View
+
+    private var previewView: some View {
+        ScrollView {
+            VStack(spacing: 0) {
+                HStack {
+                    ClipBetBackButton { withAnimation { step = .form } }
+                    Spacer()
+                    MonoLabel(text: "PREVIEW")
+                }
+                .padding(.horizontal, 24)
+                .padding(.top, 16)
+
+                Text("Event Preview")
+                    .font(.custom("Cormorant Garamond", size: 28))
+                    .fontWeight(.light)
+                    .foregroundColor(ClipBetColors.textPrimary)
+                    .padding(.top, 20)
+                    .padding(.bottom, 24)
+
+                ClipBetDivider()
+
+                // Preview card
+                VStack(spacing: 16) {
+                    StatusIndicator(status: .live)
+
+                    Text(eventName)
+                        .font(.custom("Cormorant Garamond", size: 24))
+                        .fontWeight(.light)
+                        .foregroundColor(ClipBetColors.textPrimary)
+                        .multilineTextAlignment(.center)
+
+                    MonoLabel(text: locationName)
+                }
+                .padding(.horizontal, 32)
+                .padding(.vertical, 28)
+
+                ClipBetDivider()
+
+                // Outcomes preview
+                VStack(spacing: 0) {
+                    ForEach(validOutcomes.indices, id: \.self) { index in
+                        HStack {
+                            Circle()
+                                .fill(index == 0 ? ClipBetColors.yes : ClipBetColors.no)
+                                .frame(width: 6, height: 6)
+                            Text(validOutcomes[index])
+                                .font(.custom("DM Mono", size: 14))
+                                .foregroundColor(ClipBetColors.textPrimary)
+                            Spacer()
+                            Text("0%")
+                                .font(.custom("Cormorant Garamond", size: 22))
+                                .fontWeight(.light)
+                                .foregroundColor(ClipBetColors.textFaint)
+                        }
+                        .padding(.vertical, 12)
+
+                        if index < validOutcomes.count - 1 {
+                            ClipBetDivider()
+                        }
+                    }
+                }
+                .padding(.horizontal, 24)
+                .padding(.vertical, 16)
+
+                ClipBetDivider()
+
+                // Settings summary
+                VStack(spacing: 0) {
+                    ReceiptRow(label: "MIN BET", value: "$\(Int(minimumBet))")
+                    ReceiptRow(label: "WINDOW", value: bettingWindow.rawValue)
+                    ReceiptRow(label: "FEE", value: "5% platform fee")
+                }
+                .padding(.horizontal, 24)
+                .padding(.vertical, 16)
+
+                ClipBetDivider()
+
+                // Go Live
+                Button {
+                    generatedEventId = UUID()
+                    withAnimation { step = .qrCode }
+                } label: {
+                    HStack(spacing: 8) {
+                        Circle()
+                            .fill(ClipBetColors.accent)
+                            .frame(width: 8, height: 8)
+                        Text("GO LIVE")
+                            .font(.custom("DM Mono", size: 13))
+                            .kerning(2.4)
+                    }
+                    .foregroundColor(ClipBetColors.bg)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 16)
+                    .background(ClipBetColors.dark)
+                    .clipShape(RoundedRectangle(cornerRadius: 2))
+                }
+                .padding(.horizontal, 24)
+                .padding(.vertical, 24)
+            }
+        }
+        .scrollIndicators(.hidden)
+    }
+
+    // MARK: - QR Code View
+
+    private var qrCodeView: some View {
+        VStack(spacing: 0) {
+            Spacer()
+
+            VStack(spacing: 24) {
+                Image(systemName: "checkmark")
+                    .font(.system(size: 28, weight: .light))
+                    .foregroundColor(ClipBetColors.yes)
+
+                Text("Event is Live")
+                    .font(.custom("Cormorant Garamond", size: 32))
+                    .fontWeight(.light)
+                    .foregroundColor(ClipBetColors.textPrimary)
+
+                MonoLabel(text: eventName)
+            }
+
+            Spacer()
+
+            // QR code placeholder (simulated)
+            VStack(spacing: 16) {
+                // QR visual
+                ZStack {
+                    RoundedRectangle(cornerRadius: 2)
+                        .fill(Color.white)
+                        .frame(width: 200, height: 200)
+
+                    VStack(spacing: 8) {
+                        Image(systemName: "qrcode")
+                            .font(.system(size: 80))
+                            .foregroundColor(ClipBetColors.dark)
+
+                        Text("ClipBet")
+                            .font(.custom("DM Mono", size: 8))
+                            .foregroundColor(ClipBetColors.textSecondary)
+                    }
+                }
+                .padding(16)
+                .background(ClipBetColors.surface)
+                .clipShape(RoundedRectangle(cornerRadius: 2))
+
+                // URL
+                let shortId = generatedEventId.uuidString.prefix(8).lowercased()
+                Text("clipbet.io/event/\(shortId)")
+                    .font(.custom("DM Mono", size: 12))
+                    .foregroundColor(ClipBetColors.textSecondary)
+            }
+
+            Spacer()
+
+            // Actions
+            VStack(spacing: 12) {
+                ClipBetPrimaryButton(title: "SHARE QR CODE", icon: "square.and.arrow.up") { }
+
+                ClipBetSecondaryButton(title: "VIEW DASHBOARD") { }
+            }
+            .padding(.horizontal, 24)
+            .padding(.bottom, 40)
+        }
+    }
+
+    // MARK: - Helpers
+
+    private func simulateSignIn() {
+        // Mock: simulate Sign in with Apple
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+            isSignedIn = true
+            // First time user goes to TOS, returning user skips to form
+            withAnimation {
+                step = isReturning ? .form : .tos
+            }
+        }
+    }
+
+    private var isFormValid: Bool {
+        !eventName.trimmingCharacters(in: .whitespaces).isEmpty &&
+        validOutcomes.count >= 2
+    }
+
+    private var validOutcomes: [String] {
+        outcomes.filter { !$0.trimmingCharacters(in: .whitespaces).isEmpty }
+    }
+
+    private func tosSection(_ title: String, _ body: String) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(title)
+                .font(.custom("DM Mono", size: 12))
+                .kerning(1)
+                .foregroundColor(ClipBetColors.textPrimary)
+            Text(body)
+                .font(.custom("DM Mono", size: 11))
+                .foregroundColor(ClipBetColors.textSecondary)
+                .lineSpacing(3)
+        }
+    }
+}
+
+// MARK: - From Submissions/clipbet/ClipBetDashboard.swift
+
+//  ClipBetDashboard.swift
+//  ClipBet
+//
+//  Organizer dashboard showing live pool stats.
+//  Includes Resolve, Cancel, Close Bets, and Share QR actions.
+//
+
+import SwiftUI
+
+// MARK: - Dashboard Experience (Standalone Entry Point)
+
+struct ClipBetDashboardExperience: ClipExperience {
+    static let urlPattern = "clipbet.io/dashboard/:eventId"
+    static let clipName = "ClipBet Dashboard"
+    static let clipDescription = "Manage your prediction market. Resolve outcomes and distribute winnings."
+    static let teamName = "ClipBet"
+
+    static let touchpoint: JourneyTouchpoint = .onSite
+    static let invocationSource: InvocationSource = .qrCode
+
+    let context: ClipContext
+
+    var body: some View {
+        OrganizerDashboard()
+    }
+}
+
+// MARK: - Dashboard View
+
+struct OrganizerDashboard: View {
+    @State private var event: PredictionEvent = ClipBetMockData.primaryEvent
+    @State private var showResolveSheet = false
+    @State private var showCancelConfirm = false
+    @State private var showCloseConfirm = false
+    @State private var selectedWinner: BetOutcome?
+    @State private var showResolveConfirm = false
+    @State private var appeared = false
+    @State private var paymentManager = ClipBetPaymentManager()
+
+    var body: some View {
+        ZStack {
+            ClipBetColors.bg.ignoresSafeArea()
+
+            ScrollView {
+                VStack(spacing: 0) {
+                    // Header
+                    VStack(spacing: 12) {
+                        Text("Dashboard")
+                            .font(.custom("Cormorant Garamond", size: 28))
+                            .fontWeight(.light)
+                            .foregroundColor(ClipBetColors.textPrimary)
+                            .opacity(appeared ? 1 : 0)
+                            .offset(y: appeared ? 0 : 8)
+
+                        StatusIndicator(status: event.status)
+                    }
+                    .padding(.top, 24)
+                    .padding(.bottom, 20)
+
+                    ClipBetDivider()
+
+                    // Event name
+                    Text(event.name)
+                        .font(.custom("Cormorant Garamond", size: 22))
+                        .fontWeight(.light)
+                        .foregroundColor(ClipBetColors.textPrimary)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 32)
+                        .padding(.vertical, 20)
+
+                    ClipBetDivider()
+
+                    // Pool stats
+                    HStack(spacing: 0) {
+                        StatColumn(value: event.formattedPool, label: "TOTAL POOL")
+                        ClipBetVerticalDivider()
+                        StatColumn(value: "\(event.totalBettors)", label: "BETTORS")
+                    }
+                    .padding(.vertical, 16)
+
+                    HStack(spacing: 0) {
+                        StatColumn(value: String(format: "$%.0f", event.platformFee), label: "PLATFORM FEE 5%")
+                        ClipBetVerticalDivider()
+                        StatColumn(value: String(format: "$%.0f", event.winnerPool), label: "WINNER POOL")
+                    }
+                    .padding(.vertical, 16)
+
+                    MonoLabel(text: "Started \(event.timeSinceCreated) ago")
+                        .padding(.bottom, 16)
+
+                    ClipBetDivider()
+
+                    // Outcomes with animated bars
+                    VStack(spacing: 0) {
+                        ForEach(Array(event.outcomes.enumerated()), id: \.element.id) { index, outcome in
+                            dashboardOutcomeRow(outcome: outcome, index: index)
+
+                            if index < event.outcomes.count - 1 {
+                                ClipBetDivider()
+                            }
+                        }
+                    }
+                    .padding(.horizontal, 24)
+                    .padding(.vertical, 16)
+
+                    ClipBetDivider()
+
+                    // Actions
+                    VStack(spacing: 12) {
+                        if event.status == .live {
+                            // Close Bets
+                            ClipBetSecondaryButton(title: "CLOSE BETS") {
+                                showCloseConfirm = true
+                            }
+
+                            // Resolve
+                            ClipBetPrimaryButton(title: "RESOLVE EVENT", icon: "checkmark.circle") {
+                                showResolveSheet = true
+                            }
+
+                            // Cancel
+                            Button {
+                                showCancelConfirm = true
+                            } label: {
+                                Text("CANCEL & REFUND ALL")
+                                    .font(.custom("DM Mono", size: 11))
+                                    .kerning(1.4)
+                                    .foregroundColor(ClipBetColors.no)
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 14)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 2)
+                                            .stroke(ClipBetColors.noFill, lineWidth: 1)
+                                    )
+                            }
+                        } else if event.status == .betsClosed {
+                            ClipBetPrimaryButton(title: "RESOLVE EVENT", icon: "checkmark.circle") {
+                                showResolveSheet = true
+                            }
+
+                            Button {
+                                showCancelConfirm = true
+                            } label: {
+                                Text("CANCEL & REFUND ALL")
+                                    .font(.custom("DM Mono", size: 11))
+                                    .kerning(1.4)
+                                    .foregroundColor(ClipBetColors.no)
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 14)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 2)
+                                            .stroke(ClipBetColors.noFill, lineWidth: 1)
+                                    )
+                            }
+                        } else if event.status == .resolved {
+                            resolvedBanner
+                        } else if event.status == .cancelled {
+                            cancelledBanner
+                        }
+
+                        // Share QR
+                        ClipBetSecondaryButton(title: "VIEW & SHARE QR") { }
+                    }
+                    .padding(.horizontal, 24)
+                    .padding(.vertical, 24)
+                }
+            }
+            .scrollIndicators(.hidden)
+
+            // Resolve sheet
+            if showResolveSheet {
+                resolveSheet
+            }
+
+            // Cancel confirmation
+            if showCancelConfirm {
+                cancelConfirmOverlay
+            }
+
+            // Close bets confirmation
+            if showCloseConfirm {
+                closeConfirmOverlay
+            }
+        }
+        .onAppear {
+            withAnimation(.easeOut(duration: 0.6).delay(0.1)) {
+                appeared = true
+            }
+        }
+    }
+
+    // MARK: - Dashboard Outcome Row
+
+    private func dashboardOutcomeRow(outcome: BetOutcome, index: Int) -> some View {
+        let pct = event.percentage(for: outcome)
+        let isFirst = index == 0
+        let color = isFirst ? ClipBetColors.yes : ClipBetColors.no
+        let isWinner = event.resolvedOutcomeId == outcome.id
+
+        return VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text(outcome.name)
+                    .font(.custom("DM Mono", size: 14))
+                    .foregroundColor(ClipBetColors.textPrimary)
+
+                if isWinner {
+                    ClipBetTag(text: "WINNER", color: ClipBetColors.yes)
+                }
+
+                Spacer()
+
+                Text(String(format: "%.0f%%", pct))
+                    .font(.custom("Cormorant Garamond", size: 28))
+                    .fontWeight(.light)
+                    .foregroundColor(color)
+            }
+
+            // Animated progress bar
+            GeometryReader { geo in
+                ZStack(alignment: .leading) {
+                    Rectangle()
+                        .fill(ClipBetColors.divider)
+                        .frame(height: 4)
+
+                    Rectangle()
+                        .fill(color)
+                        .frame(width: appeared ? geo.size.width * (pct / 100) : 0, height: 4)
+                        .animation(.easeOut(duration: 0.8).delay(Double(index) * 0.15), value: appeared)
+                }
+            }
+            .frame(height: 4)
+
+            HStack {
+                Text(outcome.formattedAmount)
+                    .font(.custom("DM Mono", size: 11))
+                    .foregroundColor(ClipBetColors.textSecondary)
+                Spacer()
+                Text("\(outcome.betCount) bets")
+                    .font(.custom("DM Mono", size: 11))
+                    .foregroundColor(ClipBetColors.textFaint)
+            }
+        }
+        .padding(.vertical, 16)
+    }
+
+    // MARK: - Resolve Sheet
+
+    private var resolveSheet: some View {
+        ZStack {
+            Color.black.opacity(0.5).ignoresSafeArea()
+                .onTapGesture {
+                    withAnimation { showResolveSheet = false }
+                }
+
+            VStack(spacing: 0) {
+                Spacer()
+
+                VStack(spacing: 0) {
+                    // Header
+                    HStack {
+                        Button {
+                            withAnimation { showResolveSheet = false }
+                        } label: {
+                            Image(systemName: "xmark")
+                                .font(.system(size: 14))
+                                .foregroundColor(ClipBetColors.textFaint)
+                        }
+                        Spacer()
+                    }
+                    .padding(.horizontal, 24)
+                    .padding(.top, 20)
+
+                    Text("Resolve Event")
+                        .font(.custom("Cormorant Garamond", size: 24))
+                        .fontWeight(.light)
+                        .foregroundColor(ClipBetColors.bg)
+                        .padding(.top, 8)
+                        .padding(.bottom, 4)
+
+                    MonoLabel(text: "SELECT THE WINNING OUTCOME")
+                        .padding(.bottom, 20)
+
+                    ClipBetDarkDivider()
+
+                    // Outcome selection
+                    ForEach(event.outcomes) { outcome in
+                        let isSelected = selectedWinner?.id == outcome.id
+                        let isFirst = event.outcomes.first?.id == outcome.id
+                        let pct = event.percentage(for: outcome)
+
+                        Button {
+                            selectedWinner = outcome
+                        } label: {
+                            HStack {
+                                Circle()
+                                    .fill(isSelected ? (isFirst ? ClipBetColors.yes : ClipBetColors.no) : ClipBetColors.textFaint)
+                                    .frame(width: 10, height: 10)
+
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(outcome.name)
+                                        .font(.custom("DM Mono", size: 14))
+                                        .foregroundColor(isSelected ? .white : ClipBetColors.textFaint)
+                                    Text("\(outcome.betCount) bettors share \(String(format: "$%.0f", event.winnerPool))")
+                                        .font(.custom("DM Mono", size: 10))
+                                        .foregroundColor(ClipBetColors.textFaint)
+                                }
+
+                                Spacer()
+
+                                Text(String(format: "%.0f%%", pct))
+                                    .font(.custom("Cormorant Garamond", size: 22))
+                                    .fontWeight(.light)
+                                    .foregroundColor(isSelected ? (isFirst ? ClipBetColors.yes : ClipBetColors.no) : ClipBetColors.textFaint)
+                            }
+                            .padding(.horizontal, 24)
+                            .padding(.vertical, 14)
+                        }
+
+                        ClipBetDarkDivider()
+                    }
+
+                    if let winner = selectedWinner {
+                        // Payout breakdown
+                        VStack(spacing: 4) {
+                            Text("\(winner.betCount) winners share")
+                                .font(.custom("DM Mono", size: 11))
+                                .foregroundColor(ClipBetColors.textFaint)
+                            Text(String(format: "$%.0f", event.winnerPool))
+                                .font(.custom("Cormorant Garamond", size: 28))
+                                .fontWeight(.light)
+                                .foregroundColor(ClipBetColors.yes)
+                        }
+                        .padding(.vertical, 16)
+                    }
+
+                    // Confirm button
+                    Button {
+                        resolveEvent()
+                    } label: {
+                        Text("CONFIRM RESOLUTION")
+                            .font(.custom("DM Mono", size: 13))
+                            .kerning(2)
+                            .foregroundColor(selectedWinner != nil ? ClipBetColors.dark : ClipBetColors.textFaint)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 16)
+                            .background(selectedWinner != nil ? Color.white : Color.white.opacity(0.2))
+                            .clipShape(RoundedRectangle(cornerRadius: 2))
+                    }
+                    .disabled(selectedWinner == nil)
+                    .padding(.horizontal, 24)
+                    .padding(.vertical, 16)
+
+                    Text("This cannot be undone")
+                        .font(.custom("DM Mono", size: 10))
+                        .foregroundColor(ClipBetColors.no)
+                        .padding(.bottom, 24)
+                }
+                .background(ClipBetColors.dark)
+                .clipShape(RoundedRectangle(cornerRadius: 2))
+            }
+            .ignoresSafeArea(edges: .bottom)
+        }
+    }
+
+    // MARK: - Cancel Confirm Overlay
+
+    private var cancelConfirmOverlay: some View {
+        ZStack {
+            Color.black.opacity(0.5).ignoresSafeArea()
+                .onTapGesture {
+                    withAnimation { showCancelConfirm = false }
+                }
+
+            VStack(spacing: 20) {
+                Text("Cancel Event?")
+                    .font(.custom("Cormorant Garamond", size: 24))
+                    .fontWeight(.light)
+                    .foregroundColor(ClipBetColors.bg)
+
+                Text("\(event.totalBettors) bettors will be fully refunded")
+                    .font(.custom("DM Mono", size: 12))
+                    .foregroundColor(ClipBetColors.textFaint)
+                    .multilineTextAlignment(.center)
+
+                VStack(spacing: 8) {
+                    Button {
+                        cancelEvent()
+                    } label: {
+                        Text("CANCEL & REFUND ALL")
+                            .font(.custom("DM Mono", size: 13))
+                            .kerning(1.6)
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 16)
+                            .background(ClipBetColors.no)
+                            .clipShape(RoundedRectangle(cornerRadius: 2))
+                    }
+
+                    Button {
+                        withAnimation { showCancelConfirm = false }
+                    } label: {
+                        Text("KEEP EVENT")
+                            .font(.custom("DM Mono", size: 12))
+                            .kerning(1.4)
+                            .foregroundColor(ClipBetColors.textFaint)
+                            .padding(.vertical, 12)
+                    }
+                }
+            }
+            .padding(28)
+            .background(ClipBetColors.dark)
+            .clipShape(RoundedRectangle(cornerRadius: 2))
+            .padding(.horizontal, 32)
+        }
+    }
+
+    // MARK: - Close Bets Confirm Overlay
+
+    private var closeConfirmOverlay: some View {
+        ZStack {
+            Color.black.opacity(0.5).ignoresSafeArea()
+                .onTapGesture {
+                    withAnimation { showCloseConfirm = false }
+                }
+
+            VStack(spacing: 20) {
+                Text("Close Bets?")
+                    .font(.custom("Cormorant Garamond", size: 24))
+                    .fontWeight(.light)
+                    .foregroundColor(ClipBetColors.bg)
+
+                Text("No new bets will be accepted. You can still resolve or cancel.")
+                    .font(.custom("DM Mono", size: 12))
+                    .foregroundColor(ClipBetColors.textFaint)
+                    .multilineTextAlignment(.center)
+
+                VStack(spacing: 8) {
+                    Button {
+                        closeBets()
+                    } label: {
+                        Text("CLOSE BETS")
+                            .font(.custom("DM Mono", size: 13))
+                            .kerning(1.6)
+                            .foregroundColor(ClipBetColors.dark)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 16)
+                            .background(Color.white)
+                            .clipShape(RoundedRectangle(cornerRadius: 2))
+                    }
+
+                    Button {
+                        withAnimation { showCloseConfirm = false }
+                    } label: {
+                        Text("KEEP OPEN")
+                            .font(.custom("DM Mono", size: 12))
+                            .kerning(1.4)
+                            .foregroundColor(ClipBetColors.textFaint)
+                            .padding(.vertical, 12)
+                    }
+                }
+            }
+            .padding(28)
+            .background(ClipBetColors.dark)
+            .clipShape(RoundedRectangle(cornerRadius: 2))
+            .padding(.horizontal, 32)
+        }
+    }
+
+    // MARK: - Status Banners
+
+    private var resolvedBanner: some View {
+        VStack(spacing: 8) {
+            Image(systemName: "checkmark.circle.fill")
+                .font(.system(size: 24))
+                .foregroundColor(ClipBetColors.yes)
+            Text("Event Resolved")
+                .font(.custom("DM Mono", size: 12))
+                .kerning(1.4)
+                .foregroundColor(ClipBetColors.yes)
+            Text("Winnings have been distributed")
+                .font(.custom("DM Mono", size: 10))
+                .foregroundColor(ClipBetColors.textFaint)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 20)
+        .background(ClipBetColors.yesFill)
+        .clipShape(RoundedRectangle(cornerRadius: 2))
+    }
+
+    private var cancelledBanner: some View {
+        VStack(spacing: 8) {
+            Image(systemName: "xmark.circle.fill")
+                .font(.system(size: 24))
+                .foregroundColor(ClipBetColors.no)
+            Text("Event Cancelled")
+                .font(.custom("DM Mono", size: 12))
+                .kerning(1.4)
+                .foregroundColor(ClipBetColors.no)
+            Text("All bettors have been refunded")
+                .font(.custom("DM Mono", size: 10))
+                .foregroundColor(ClipBetColors.textFaint)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 20)
+        .background(ClipBetColors.noFill)
+        .clipShape(RoundedRectangle(cornerRadius: 2))
+    }
+
+    // MARK: - Actions
+
+    private func resolveEvent() {
+        guard let winner = selectedWinner else { return }
+        event.resolvedOutcomeId = winner.id
+        event.status = .resolved
+        event.resolvedAt = Date()
+        withAnimation { showResolveSheet = false }
+
+        // In production: trigger Stripe Connect transfers
+        paymentManager.distributeWinnings(
+            event: event,
+            winningOutcomeId: winner.id
+        ) { _ in }
+    }
+
+    private func cancelEvent() {
+        event.status = .cancelled
+        withAnimation { showCancelConfirm = false }
+
+        // In production: trigger Stripe refunds
+        paymentManager.processRefund { _ in }
+    }
+
+    private func closeBets() {
+        event.status = .betsClosed
+        event.closedAt = Date()
+        withAnimation { showCloseConfirm = false }
+    }
+}
+
 // MARK: - From Submissions/clipbet/ClipBetExperience.swift
 
 //  ClipBetExperience.swift
@@ -405,6 +1523,8 @@ struct ClipBetExperience: ClipExperience {
         case placeBet
         case confirm
         case success
+        case createEvent
+        case dashboard
     }
 
     @State private var currentScreen: Screen = .landing
@@ -435,6 +1555,12 @@ struct ClipBetExperience: ClipExperience {
             case .success:
                 successView
                     .transition(.scale(scale: 0.95).combined(with: .opacity))
+            case .createEvent:
+                CreateEventFlow()
+                    .transition(.move(edge: .trailing).combined(with: .opacity))
+            case .dashboard:
+                OrganizerDashboard()
+                    .transition(.move(edge: .trailing).combined(with: .opacity))
             }
         }
         .animation(.easeInOut(duration: 0.3), value: currentScreen)
@@ -519,6 +1645,10 @@ struct ClipBetExperience: ClipExperience {
                 VStack(spacing: 12) {
                     ClipBetPrimaryButton(title: "PLACE A BET") {
                         withAnimation { currentScreen = .placeBet }
+                    }
+
+                    ClipBetSecondaryButton(title: "CREATE YOUR OWN EVENT") {
+                        withAnimation { currentScreen = .createEvent }
                     }
                 }
                 .padding(.horizontal, 24)
