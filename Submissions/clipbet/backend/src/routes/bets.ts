@@ -1,5 +1,5 @@
 // src/routes/bets.ts
-// Bet endpoints: place bet, get bets for event
+// Bet routes
 
 import { Router, Request, Response } from "express";
 import { supabase } from "../lib/supabase";
@@ -9,7 +9,7 @@ import { v4 as uuidv4 } from "uuid";
 const router = Router();
 
 // POST /events/:eventId/bets
-// Place a bet on an event outcome
+// Place bet
 router.post("/:eventId/bets", async (req: Request, res: Response) => {
   try {
     const eventId = req.params.eventId as string;
@@ -22,7 +22,7 @@ router.post("/:eventId/bets", async (req: Request, res: Response) => {
       return;
     }
 
-    // Verify event exists and is accepting bets
+    // Check event
     const { data: event, error: eventError } = await supabase
       .from("events")
       .select("*")
@@ -46,7 +46,7 @@ router.post("/:eventId/bets", async (req: Request, res: Response) => {
       return;
     }
 
-    // Verify option belongs to event
+    // Check option
     const { data: option, error: optError } = await supabase
       .from("options")
       .select("*")
@@ -59,7 +59,7 @@ router.post("/:eventId/bets", async (req: Request, res: Response) => {
       return;
     }
 
-    // Create Stripe PaymentIntent
+    // Setup payment
     const paymentIntent = await createBetPaymentIntent(
       amount,
       eventId,
@@ -67,7 +67,7 @@ router.post("/:eventId/bets", async (req: Request, res: Response) => {
       email
     );
 
-    // Create bet record
+    // Save bet
     const betId = uuidv4();
     const { error: betError } = await supabase.from("bets").insert({
       id: betId,
@@ -96,7 +96,7 @@ router.post("/:eventId/bets", async (req: Request, res: Response) => {
 });
 
 // GET /events/:eventId/bets
-// Get all bets for an event (organizer view)
+// Get bets
 router.get("/:eventId/bets", async (req: Request, res: Response) => {
   try {
     const { data: bets, error } = await supabase

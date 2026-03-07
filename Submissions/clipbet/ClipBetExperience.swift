@@ -45,8 +45,11 @@ struct ClipBetExperience: ClipExperience {
     @State private var paymentManager = ClipBetPaymentManager()
     @State private var loadError: String?
     @State private var createdEvent: PredictionEvent?
-    @State private var createdEventQRURL: String?
-    @State private var organizerId: String?
+    // MARK: - Live Data State
+    @State private var liveDataTimer: Timer?
+    @State private var notificationOptInStatus: Bool? = nil
+    @State private var newBettorsAdded = 0
+    @State private var newAmountAdded = 0.0
 
     var body: some View {
         ZStack {
@@ -97,6 +100,34 @@ struct ClipBetExperience: ClipExperience {
                 appeared = true
             }
         }
+        .onDisappear {
+            liveDataTimer?.invalidate()
+        }
+    }
+
+    // MARK: - Live Data Polling
+    private func startLiveDataPolling() {
+        guard ClipBetAPIConfig.useMockData else { return }
+        
+        liveDataTimer?.invalidate()
+        liveDataTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { _ in
+            DispatchQueue.main.async {
+                withAnimation {
+                    // Poll for new live bets
+                    self.newBettorsAdded += 1
+                    self.newAmountAdded += Double(Int.random(in: 5...25))
+                    
+                    // Update active event state
+                    if var currentEvent = ClipBetMockData.events.first {
+                        let randomIdx = Int.random(in: 0..<currentEvent.outcomes.count)
+                        currentEvent.outcomes[randomIdx].totalAmount += Double(Int.random(in: 5...25))
+                        currentEvent.outcomes[randomIdx].betCount += 1
+                        ClipBetMockData.primaryEvent = currentEvent
+                        self.event = currentEvent
+                    }
+                }
+            }
+        }
     }
 
     // MARK: - Load Event
@@ -111,6 +142,9 @@ struct ClipBetExperience: ClipExperience {
                     withAnimation { currentScreen = .expired }
                 } else {
                     withAnimation { currentScreen = .landing }
+                    if ClipBetAPIConfig.useMockData {
+                        startLiveDataPolling()
+                    }
                 }
             case .failure(let error):
                 self.loadError = error.localizedDescription
@@ -732,27 +766,72 @@ struct ClipBetExperience: ClipExperience {
                 ClipBetDivider()
 
                 // Notification opt-in
-                VStack(spacing: 12) {
-                    MonoLabel(text: "GET NOTIFIED WHEN RESULTS ARE IN")
+                if notificationOptInStatus == nil {
+                    VStack(spacing: 12) {
+                        MonoLabel(text: "GET NOTIFIED WHEN RESULTS ARE IN")
+                        Text("You will receive a notification within 8 hours when the event resolves.")
+                            .font(.custom("DM Mono", size: 10))
+                            .foregroundColor(ClipBetColors.textSecondary)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 32)
+                            .padding(.bottom, 8)
 
-                    Button { } label: {
-                        HStack(spacing: 8) {
-                            Image(systemName: "bell")
-                                .font(.system(size: 14))
-                            Text("ENABLE NOTIFICATIONS")
-                                .font(.custom("DM Mono", size: 12))
-                                .kerning(1.6)
+                        HStack(spacing: 16) {
+                            Button { 
+                                withAnimation { notificationOptInStatus = false }
+                            } label: {
+                                Text("NOT NOW")
+                                    .font(.custom("DM Mono", size: 12))
+                                    .kerning(1.6)
+                                    .foregroundColor(ClipBetColors.textSecondary)
+                                    .padding(.horizontal, 20)
+                                    .padding(.vertical, 14)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 2)
+                                            .stroke(ClipBetColors.divider, lineWidth: 1)
+                                    )
+                            }
+                            
+                            Button { 
+                                withAnimation { notificationOptInStatus = true }
+                            } label: {
+                                HStack(spacing: 8) {
+                                    Image(systemName: "bell.badge.fill")
+                                        .font(.system(size: 14))
+                                    Text("ENABLE")
+                                        .font(.custom("DM Mono", size: 12))
+                                        .kerning(1.6)
+                                }
+                                .foregroundColor(ClipBetColors.bg)
+                                .padding(.horizontal, 20)
+                                .padding(.vertical, 14)
+                                .background(ClipBetColors.textPrimary)
+                                .clipShape(RoundedRectangle(cornerRadius: 2))
+                            }
                         }
-                        .foregroundColor(ClipBetColors.textPrimary)
-                        .padding(.horizontal, 20)
-                        .padding(.vertical, 14)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 2)
-                                .stroke(ClipBetColors.divider, lineWidth: 1)
-                        )
                     }
+                    .padding(.vertical, 24)
+                } else if notificationOptInStatus == true {
+                    VStack(spacing: 8) {
+                        Image(systemName: "bell.fill")
+                            .foregroundColor(ClipBetColors.yes)
+                        Text("NOTIFICATIONS ENABLED FOR 8 HOURS")
+                            .font(.custom("DM Mono", size: 10))
+                            .kerning(1)
+                            .foregroundColor(ClipBetColors.yes)
+                    }
+                    .padding(.vertical, 24)
+                } else {
+                    VStack(spacing: 8) {
+                        Image(systemName: "bell.slash")
+                            .foregroundColor(ClipBetColors.textFaint)
+                        Text("NOTIFICATIONS DISABLED")
+                            .font(.custom("DM Mono", size: 10))
+                            .kerning(1)
+                            .foregroundColor(ClipBetColors.textFaint)
+                    }
+                    .padding(.vertical, 24)
                 }
-                .padding(.vertical, 24)
 
                 // Escrow info
                 VStack(spacing: 4) {

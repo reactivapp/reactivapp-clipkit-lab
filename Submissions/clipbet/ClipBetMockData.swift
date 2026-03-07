@@ -36,7 +36,7 @@ enum ClipBetMockData {
 
     // MARK: - Events
 
-    static let events: [PredictionEvent] = [
+    static var events: [PredictionEvent] = [
         // Live event
         PredictionEvent(
             id: UUID(),
@@ -97,7 +97,10 @@ enum ClipBetMockData {
         ),
     ]
 
-    static var primaryEvent: PredictionEvent { events[0] }
+    static var primaryEvent: PredictionEvent { 
+        get { events[0] }
+        set { events[0] = newValue }
+    }
     static var plannedEvent: PredictionEvent { events[1] }
     static var expiredEvent: PredictionEvent { events[2] }
 

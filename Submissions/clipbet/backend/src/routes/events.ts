@@ -1,5 +1,5 @@
 // src/routes/events.ts
-// Event endpoints: create, get, nearby, update status
+// Event routes
 
 import { Router, Request, Response } from "express";
 import { supabase } from "../lib/supabase";
@@ -8,7 +8,7 @@ import { v4 as uuidv4 } from "uuid";
 const router = Router();
 
 // GET /events/nearby?lat=&lng=&radius=
-// Returns events within radius (km) sorted by distance
+// Returns nearby events
 router.get("/nearby", async (req: Request, res: Response) => {
   try {
     const lat = parseFloat(req.query.lat as string);
@@ -20,7 +20,7 @@ router.get("/nearby", async (req: Request, res: Response) => {
       return;
     }
 
-    // Simple bounding box query (Haversine for production)
+    // Bounding box query
     const degreeOffset = radius / 111.32;
 
     const { data: events, error } = await supabase
@@ -38,7 +38,7 @@ router.get("/nearby", async (req: Request, res: Response) => {
       return;
     }
 
-    // Calculate distance and sort
+    // Sort by distance
     const withDistance = (events || []).map((event) => ({
       ...event,
       distance_km: haversine(
@@ -76,7 +76,7 @@ router.get("/:eventId", async (req: Request, res: Response) => {
 });
 
 // POST /events
-// Create a new prediction market
+// Create new event
 router.post("/", async (req: Request, res: Response) => {
   try {
     const {
@@ -108,7 +108,7 @@ router.post("/", async (req: Request, res: Response) => {
 
     const eventId = uuidv4();
 
-    // Create event
+    // Insert event
     const { error: eventError } = await supabase.from("events").insert({
       id: eventId,
       name,
@@ -130,7 +130,7 @@ router.post("/", async (req: Request, res: Response) => {
       return;
     }
 
-    // Create options
+    // Insert options
     const optionRows = options.map((opt: string) => ({
       id: uuidv4(),
       event_id: eventId,
@@ -146,17 +146,17 @@ router.post("/", async (req: Request, res: Response) => {
       return;
     }
 
-    // Increment organizer event count (non-critical)
+    // Update organizer count
     try {
       await supabase
         .from("organizers")
         .update({ events_created: (await supabase.from("organizers").select("events_created").eq("id", organizer_id).single()).data?.events_created + 1 || 1 })
         .eq("id", organizer_id);
     } catch {
-      // Non-critical, ignore
+      // Ignore error
     }
 
-    // Fetch complete event
+    // Get full event
     const { data: event } = await supabase
       .from("events")
       .select("*, options(*)")
@@ -173,7 +173,7 @@ router.post("/", async (req: Request, res: Response) => {
 });
 
 // PATCH /events/:eventId/status
-// Update event status (close bets, etc.)
+// Update event status
 router.patch("/:eventId/status", async (req: Request, res: Response) => {
   try {
     const { status } = req.body;
@@ -207,7 +207,7 @@ router.patch("/:eventId/status", async (req: Request, res: Response) => {
   }
 });
 
-// Haversine distance formula
+// Math for distance
 function haversine(
   lat1: number, lon1: number,
   lat2: number, lon2: number

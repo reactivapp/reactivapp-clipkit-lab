@@ -1,5 +1,5 @@
 // src/routes/organizers.ts
-// Organizer endpoints: sign in, onboarding, resolve, cancel
+// Organizer routes
 
 import { Router, Request, Response } from "express";
 import { supabase } from "../lib/supabase";
@@ -18,7 +18,7 @@ const PLATFORM_FEE_RATE = parseFloat(
 const router = Router();
 
 // POST /organizers/signin
-// Sign in with Apple - create or return existing organizer
+// Sign in with Apple
 router.post("/signin", async (req: Request, res: Response) => {
   try {
     const { apple_user_id } = req.body;
@@ -28,7 +28,7 @@ router.post("/signin", async (req: Request, res: Response) => {
       return;
     }
 
-    // Check if organizer exists
+    // Get organizer
     const { data: existing } = await supabase
       .from("organizers")
       .select("*")
@@ -45,7 +45,7 @@ router.post("/signin", async (req: Request, res: Response) => {
       return;
     }
 
-    // Create new organizer
+    // Create organizer
     const orgId = uuidv4();
     const { data: organizer, error } = await supabase
       .from("organizers")
@@ -73,7 +73,7 @@ router.post("/signin", async (req: Request, res: Response) => {
 });
 
 // POST /organizers/:id/tos
-// Accept Terms of Service
+// Accept TOS
 router.post("/:id/tos", async (req: Request, res: Response) => {
   try {
     const { data, error } = await supabase
@@ -95,15 +95,15 @@ router.post("/:id/tos", async (req: Request, res: Response) => {
 });
 
 // POST /organizers/:id/stripe-connect
-// Start Stripe Connect onboarding
+// Start Connect onboarding
 router.post("/:id/stripe-connect", async (req: Request, res: Response) => {
   try {
     const { email, return_url } = req.body;
 
-    // Create Stripe Connect account
+    // Create Connect account
     const accountId = await createConnectAccount(email || "");
 
-    // Save to organizer
+    // Save id
     await supabase
       .from("organizers")
       .update({
@@ -112,7 +112,7 @@ router.post("/:id/stripe-connect", async (req: Request, res: Response) => {
       })
       .eq("id", req.params.id);
 
-    // Get onboarding link
+    // Get link
     const onboardingUrl = await createConnectOnboardingLink(
       accountId,
       return_url || `${process.env.CLIPBET_BASE_URL}/create`
@@ -128,7 +128,7 @@ router.post("/:id/stripe-connect", async (req: Request, res: Response) => {
 });
 
 // POST /events/:eventId/resolve
-// Resolve event with winning outcome, trigger payouts
+// Resolve event
 router.post(
   "/events/:eventId/resolve",
   async (req: Request, res: Response) => {
@@ -143,7 +143,7 @@ router.post(
         return;
       }
 
-      // Verify event belongs to organizer
+      // Check event
       const { data: event, error: eventError } = await supabase
         .from("events")
         .select("*")
@@ -161,12 +161,12 @@ router.post(
         return;
       }
 
-      // Calculate payouts
+      // Find payouts
       const totalPool = parseFloat(event.total_pool) || 0;
       const platformFee = totalPool * PLATFORM_FEE_RATE;
       const winnerPool = totalPool - platformFee;
 
-      // Get winning option totals
+      // Get option totals
       const { data: winningOption } = await supabase
         .from("options")
         .select("*")
@@ -223,7 +223,7 @@ router.post(
         })
         .eq("id", eventId);
 
-      // Trigger Stripe transfers (production)
+      // Pay out
       const transferData = winnerBets.map((b) => ({
         email: b.email,
         amount: parseFloat(b.amount),
@@ -234,7 +234,7 @@ router.post(
 
       const result = await distributeWinnings(transferData, platformFee);
 
-      // Update payout status
+      // Update status
       if (result.success) {
         for (const bet of winnerBets) {
           await supabase
@@ -259,7 +259,7 @@ router.post(
 );
 
 // POST /events/:eventId/cancel
-// Cancel event and refund all bettors
+// Cancel event
 router.post(
   "/events/:eventId/cancel",
   async (req: Request, res: Response) => {
@@ -267,7 +267,7 @@ router.post(
       const { organizer_id } = req.body;
       const { eventId } = req.params;
 
-      // Verify ownership
+      // Check event
       const { data: event } = await supabase
         .from("events")
         .select("*")
@@ -292,7 +292,7 @@ router.post(
         .eq("event_id", eventId)
         .eq("status", "confirmed");
 
-      // Trigger Stripe refunds
+      // Refund on Stripe
       const paymentIds = (bets || [])
         .map((b) => b.stripe_payment_intent_id)
         .filter(Boolean);

@@ -9,7 +9,7 @@ dotenv.config();
 
 const stripeKey = process.env.STRIPE_SECRET_KEY;
 if (!stripeKey) {
-  console.warn("⚠️  STRIPE_SECRET_KEY not set — Stripe features disabled (mock mode)");
+  console.warn("STRIPE_SECRET_KEY not set — Stripe disabled");
 }
 
 export const stripe = stripeKey

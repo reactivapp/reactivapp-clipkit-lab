@@ -1,5 +1,5 @@
 // src/routes/webhooks.ts
-// Stripe webhook handlers for payment events
+// Webhook handlers
 
 import { Router, Request, Response } from "express";
 import { stripe } from "../lib/stripe";
@@ -11,7 +11,7 @@ const router = Router();
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
 // POST /webhooks/stripe
-// Handles Stripe webhook events
+// Handle webhooks
 router.post(
   "/stripe",
   async (req: Request, res: Response) => {
@@ -26,7 +26,7 @@ router.post(
           webhookSecret
         );
       } else {
-        // Development: parse without verification
+        // Dev parse
         event = req.body as Stripe.Event;
       }
     } catch (err) {
@@ -36,7 +36,7 @@ router.post(
     }
 
     switch (event.type) {
-      // Payment confirmed - bet is live
+      // Payment done
       case "payment_intent.succeeded": {
         const pi = event.data.object as Stripe.PaymentIntent;
         const eventId = pi.metadata.event_id;
@@ -44,13 +44,13 @@ router.post(
 
         if (pi.metadata.type !== "clipbet_bet") break;
 
-        // Update bet status to confirmed
+        // Update bet
         await supabase
           .from("bets")
           .update({ status: "confirmed" })
           .eq("stripe_payment_intent_id", pi.id);
 
-        // Update option totals
+        // Update totals
         const { data: bet } = await supabase
           .from("bets")
           .select("amount")
@@ -60,7 +60,7 @@ router.post(
         if (bet && optionId) {
           const amount = parseFloat(bet.amount);
 
-          // Increment option totals
+          // Add totals
           const { data: option } = await supabase
             .from("options")
             .select("total_bets, total_amount")
@@ -98,7 +98,7 @@ router.post(
         break;
       }
 
-      // Transfer to winner completed
+      // Transfer done
       case "transfer.created": {
         const transfer = event.data.object as Stripe.Transfer;
 
@@ -111,7 +111,7 @@ router.post(
       }
 
       default: {
-        // Handle transfer.failed (not in SDK type definitions)
+        // Handle failure
         const eventType = event.type as string;
         if (eventType === "transfer.failed") {
           const transfer = event.data.object as Stripe.Transfer;
@@ -137,7 +137,7 @@ router.post(
 );
 
 // POST /disputes
-// Submit a dispute for an event resolution
+// Submit dispute
 router.post("/disputes", async (req: Request, res: Response) => {
   try {
     const { event_id, bettor_email, reason } = req.body;
