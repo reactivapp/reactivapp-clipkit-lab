@@ -10,6 +10,16 @@
 		7409D7E92F525C060097EC9A /* ReactivChallengeKit.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ReactivChallengeKit.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		F0DDAA2D2F5C894800F4FDAF /* Exceptions for "../Submissions" folder in "ReactivChallengeKit" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				stageswag/StageswagClipExperience.swift,
+			);
+			target = 7409D7E82F525C060097EC9A /* ReactivChallengeKit */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		7409D7EB2F525C060097EC9A /* ReactivChallengeKit */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
@@ -18,6 +28,9 @@
 		};
 		74AB00012F525C060097EC9A /* ../Submissions */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				F0DDAA2D2F5C894800F4FDAF /* Exceptions for "../Submissions" folder in "ReactivChallengeKit" target */,
+			);
 			path = ../Submissions;
 			sourceTree = "<group>";
 		};
