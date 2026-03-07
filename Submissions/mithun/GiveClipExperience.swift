@@ -32,7 +32,7 @@ struct GiveClipExperience: ClipExperience {
                 case .amount:
                     AmountSelectionView(cause: cause)
                 case .payment:
-                    paymentPlaceholder
+                    PaymentView(cause: cause)
                 case .confirmation:
                     confirmationPlaceholder
                 }
@@ -42,26 +42,7 @@ struct GiveClipExperience: ClipExperience {
         .environmentObject(donationState)
     }
 
-    // MARK: - Placeholder screens (replaced in Phases 3–4)
-
-    private var paymentPlaceholder: some View {
-        ScrollView {
-            VStack(spacing: 20) {
-                ClipHeader(
-                    title: "Confirm Your Gift",
-                    subtitle: "$\(donationState.selectedAmount) to \(cause.name)",
-                    systemImage: "creditcard"
-                )
-                .padding(.top, 16)
-
-                ClipActionButton(title: "Give with Apple Pay", icon: "apple.logo") {
-                    withAnimation { donationState.currentScreen = .confirmation }
-                }
-            }
-            .padding(.bottom, 16)
-        }
-        .scrollIndicators(.hidden)
-    }
+    // MARK: - Placeholder screen (replaced in Phase 4)
 
     private var confirmationPlaceholder: some View {
         VStack(spacing: 16) {
