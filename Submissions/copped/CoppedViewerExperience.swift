@@ -199,10 +199,30 @@ struct CoppedViewerExperience: ClipExperience {
                 .padding(.bottom, 4)
             }
 
+            // FAB create button
+            Button {
+                if let outcome = checkoutOutcome {
+                    let url = URL(string: "https://clip.copped.app/c/\(outcome.receiptID)")!
+                    Task { await CoppedURLLauncher.open(url) }
+                }
+            } label: {
+                Image(systemName: "plus")
+                    .font(.system(size: 24, weight: .bold))
+                    .foregroundStyle(.white)
+                    .frame(width: 56, height: 56)
+                    .background(
+                        Circle()
+                            .fill(CoppedPalette.accent)
+                            .shadow(color: CoppedPalette.accent.opacity(0.4), radius: 12, y: 4)
+                    )
+            }
+            .buttonStyle(PlainButtonStyle())
+            .padding(.vertical, 4)
+
             FloatingTabBar(
                 items: tabBarItems,
                 selection: $selectedTab,
-                accentColor: .white,
+                inactiveColor: .primary.opacity(0.45),
                 bottomPadding: 8,
                 useLiquidGlass: true,
                 onSelectionChanged: { tab in

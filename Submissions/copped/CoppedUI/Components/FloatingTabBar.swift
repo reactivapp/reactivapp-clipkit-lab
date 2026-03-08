@@ -33,6 +33,7 @@ public struct FloatingTabBar: View {
     items: [TabBarItem],
     selection: Binding<Int>,
     accentColor: Color = UniversalColor.accent.color,
+    inactiveColor: Color = .white.opacity(Theme.current.layout.overlay.inactiveContent),
     bottomPadding: CGFloat = 24,
     useLiquidGlass: Bool = false,
     onSelectionChanged: ((Int) -> Void)? = nil
@@ -40,6 +41,7 @@ public struct FloatingTabBar: View {
     self.items = items
     self._selection = selection
     self.accentColor = accentColor
+    self.inactiveColor = inactiveColor
     self.bottomPadding = bottomPadding
     self.useLiquidGlass = useLiquidGlass
     self.onSelectionChanged = onSelectionChanged
