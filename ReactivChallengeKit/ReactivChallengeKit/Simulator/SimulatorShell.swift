@@ -42,8 +42,19 @@ struct ClipHostView: View {
 
     var body: some View {
         match.makeView()
+            .safeAreaInset(edge: .top, spacing: 0) {
+                VStack(spacing: 0) {
+                    topBar
+
+                    if showNotificationPanel {
+                        notificationPanel
+                            .transition(.move(edge: .top).combined(with: .opacity))
+                            .padding(.top, 8)
+                    }
+                }
+            }
             .safeAreaInset(edge: .bottom, spacing: 0) {
-                ConstraintBanner(urlPattern: match.experienceType.urlPattern)
+                ConstraintBanner()
                     .padding(.top, 8)
                     .padding(.bottom, 4)
             }
