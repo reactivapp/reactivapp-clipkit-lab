@@ -268,7 +268,14 @@ struct ClipBetBackButton: View {
                     .font(.custom("DM Mono", size: 11))
                     .kerning(1.6)
             }
-            .foregroundColor(ClipBetColors.textSecondary)
+            .foregroundColor(ClipBetColors.textPrimary)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+            .background(Color.white)
+            .overlay(
+                RoundedRectangle(cornerRadius: 2)
+                    .stroke(ClipBetColors.textPrimary, lineWidth: 1.5)
+            )
         }
     }
 }

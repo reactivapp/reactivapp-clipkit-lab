@@ -49,6 +49,7 @@ struct ClipBetExperience: ClipExperience {
         case success
         case createEvent
         case dashboard
+        case results
     }
 
     @State private var currentScreen: Screen = .loading
@@ -120,13 +121,16 @@ struct ClipBetExperience: ClipExperience {
                     }
                 )
                 .transition(.move(edge: .trailing).combined(with: .opacity))
+            case .results:
+                resultsView
+                    .transition(.opacity)
             }
             
             // In-app mock notification banner
             if let title = mockNotifTitle, let bodyStr = mockNotifBody {
                 Button {
                     if title == "Event Ended" {
-                        withAnimation { currentScreen = .expired }
+                        withAnimation { currentScreen = .results }
                     }
                     withAnimation(.easeOut) {
                         mockNotifTitle = nil
@@ -467,6 +471,134 @@ struct ClipBetExperience: ClipExperience {
 
                 MonoLabel(text: "This event was organized by \(event.organizer)")
                     .padding(.bottom, 24)
+            }
+        }
+        .scrollIndicators(.hidden)
+    }
+
+    // MARK: - Results View
+
+    private var resultsView: some View {
+        ScrollView {
+            VStack(spacing: 0) {
+
+                // Brand
+                VStack(spacing: 16) {
+                    Text("ClipBet")
+                        .font(.custom("Cormorant Garamond", size: 32))
+                        .fontWeight(.regular)
+                        .foregroundColor(ClipBetColors.textPrimary)
+
+                    StatusIndicator(status: event.status)
+                }
+                .padding(.top, 24)
+                .padding(.bottom, 20)
+
+                ClipBetDivider()
+
+                // Event ended message and Earnings
+                VStack(spacing: 16) {
+                    Image(systemName: "checkmark.seal.fill")
+                        .font(.system(size: 32))
+                        .foregroundColor(ClipBetColors.yes)
+
+                    Text("Event Results")
+                        .font(.custom("Cormorant Garamond", size: 26))
+                        .fontWeight(.regular)
+                        .foregroundColor(ClipBetColors.textPrimary)
+
+                    Text(event.name)
+                        .font(.custom("DM Mono", size: 13))
+                        .foregroundColor(ClipBetColors.textSecondary)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 24)
+
+                    // Win/Loss display
+                    if let selected = selectedOutcome {
+                        let isWinner = event.resolvedOutcomeId == selected.id
+                        let est = isWinner ? event.estimatedReturn(betAmount: betAmount, for: selected) : 0
+
+                        VStack(spacing: 8) {
+                            Text(isWinner ? "YOU WON!" : "NOT THIS TIME")
+                                .font(.custom("DM Mono", size: 14))
+                                .kerning(1.2)
+                                .foregroundColor(isWinner ? ClipBetColors.yes : ClipBetColors.no)
+                                
+                            Text("Total Earnings")
+                                .font(.custom("DM Mono", size: 11))
+                                .kerning(1.6)
+                                .foregroundColor(ClipBetColors.textSecondary)
+                                .padding(.top, 8)
+                                
+                            Text(String(format: "$%.2f", est))
+                                .font(.custom("Cormorant Garamond", size: 48))
+                                .fontWeight(.regular)
+                                .foregroundColor(ClipBetColors.textPrimary)
+                        }
+                        .padding(.top, 16)
+                    }
+                }
+                .padding(.vertical, 32)
+                .frame(maxWidth: .infinity)
+                .background(ClipBetColors.yesFill.opacity(0.3))
+
+                ClipBetDivider()
+
+                // Final results
+                HStack(spacing: 0) {
+                    StatColumn(value: event.formattedPool, label: "FINAL POOL")
+                    ClipBetVerticalDivider()
+                    StatColumn(value: "\(event.totalBettors)", label: "PARTICIPANTS")
+                }
+                .padding(.vertical, 20)
+
+                ClipBetDivider()
+
+                // Outcome results
+                VStack(spacing: 0) {
+                    ForEach(Array(event.outcomes.enumerated()), id: \.element.id) { index, outcome in
+                        HStack {
+                            OutcomeRow(
+                                outcome: outcome,
+                                percentage: event.percentage(for: outcome),
+                                isFirst: index == 0
+                            )
+                            Spacer()
+                            if event.resolvedOutcomeId == outcome.id {
+                                ClipBetTag(text: "WINNER", color: ClipBetColors.yes)
+                            } else if selectedOutcome?.id == outcome.id {
+                                ClipBetTag(text: "YOUR PICK", color: ClipBetColors.textSecondary)
+                            }
+                        }
+                        if index < event.outcomes.count - 1 {
+                            ClipBetDivider()
+                        }
+                    }
+                }
+                .padding(.horizontal, 24)
+                .padding(.vertical, 16)
+
+                ClipBetDivider()
+
+                // Receipt
+                VStack(spacing: 0) {
+                    MonoLabel(text: "YOUR BET DETAILS")
+                        .padding(.top, 24)
+                        .padding(.bottom, 16)
+                        
+                    ReceiptRow(label: "YOUR PICK", value: selectedOutcome?.name ?? "")
+                    ReceiptRow(label: "AMOUNT", value: String(format: "$%.0f", betAmount))
+                }
+                .padding(.horizontal, 24)
+
+                // CTA
+                VStack(spacing: 12) {
+                    ClipBetSecondaryButton(title: "BACK TO EVENT") {
+                        withAnimation { currentScreen = .expired }
+                    }
+                }
+                .padding(.horizontal, 24)
+                .padding(.vertical, 32)
             }
         }
         .scrollIndicators(.hidden)
@@ -868,12 +1000,12 @@ struct ClipBetExperience: ClipExperience {
                                 Text("NOT NOW")
                                     .font(.custom("DM Mono", size: 12))
                                     .kerning(1.6)
-                                    .foregroundColor(ClipBetColors.textSecondary)
+                                    .foregroundColor(ClipBetColors.textPrimary)
                                     .padding(.horizontal, 20)
                                     .padding(.vertical, 14)
                                     .overlay(
                                         RoundedRectangle(cornerRadius: 2)
-                                            .stroke(ClipBetColors.divider, lineWidth: 1)
+                                            .stroke(ClipBetColors.textPrimary, lineWidth: 1.5)
                                     )
                             }
                             
@@ -910,6 +1042,10 @@ struct ClipBetExperience: ClipExperience {
                                     .padding(.vertical, 10)
                                     .background(ClipBetColors.surface)
                                     .clipShape(RoundedRectangle(cornerRadius: 2))
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 2)
+                                            .stroke(ClipBetColors.textPrimary, lineWidth: 1)
+                                    )
                             }
                             Button { simulateNotification(type: 2) } label: {
                                 Text("SIMULATE: ENDED")
@@ -919,6 +1055,10 @@ struct ClipBetExperience: ClipExperience {
                                     .padding(.vertical, 10)
                                     .background(ClipBetColors.surface)
                                     .clipShape(RoundedRectangle(cornerRadius: 2))
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 2)
+                                            .stroke(ClipBetColors.textPrimary, lineWidth: 1)
+                                    )
                             }
                         }
                     }
@@ -944,21 +1084,7 @@ struct ClipBetExperience: ClipExperience {
                 }
                 .padding(.bottom, 24)
                 
-                // View Organizer Dashboard demo feature
-                Button {
-                    // For demo purposes, map mock data to organizer state if missing
-                    if self.createdEvent == nil {
-                        self.createdEvent = self.event
-                        self.createdEventQRURL = "clipbet.io/event/\(self.event.id.uuidString.prefix(8).lowercased())"
-                        self.organizerId = self.event.organizerId.uuidString
-                    }
-                    withAnimation { currentScreen = .dashboard }
-                } label: {
-                    Text("Switch to Organizer View (Demo)")
-                        .font(.custom("DM Mono", size: 11))
-                        .foregroundColor(ClipBetColors.textSecondary)
-                }
-                .padding(.bottom, 24)
+                // View Organizer Dashboard demo feature removed per requirements
                 
                 ClipBetSecondaryButton(title: "BACK TO EVENT") {
                     withAnimation { currentScreen = .landing }
@@ -1002,8 +1128,8 @@ struct ClipBetExperience: ClipExperience {
 
                 // Auto-redirect to the results screen after 3 seconds
                 DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
-                    if self.currentScreen != .expired && self.mockNotifTitle == "Event Ended" {
-                        withAnimation { self.currentScreen = .expired }
+                    if self.currentScreen != .results && self.mockNotifTitle == "Event Ended" {
+                        withAnimation { self.currentScreen = .results }
                         withAnimation(.easeOut) {
                             self.mockNotifTitle = nil
                             self.mockNotifBody = nil

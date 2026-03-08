@@ -129,7 +129,7 @@ struct CreateEventFlow: View {
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 16)
                 .background(Color.black)
-                .clipShape(RoundedRectangle(cornerRadius: 8))
+                .clipShape(RoundedRectangle(cornerRadius: 2))
             }
             .padding(.horizontal, 24)
             .padding(.bottom, 48)
@@ -372,11 +372,11 @@ struct CreateEventFlow: View {
                                     .foregroundColor(minimumBet == amount ? ClipBetColors.surface : ClipBetColors.textSecondary)
                                     .padding(.horizontal, 16)
                                     .padding(.vertical, 10)
-                                    .background(minimumBet == amount ? ClipBetColors.dark : Color.clear)
+                                    .background(minimumBet == amount ? ClipBetColors.dark : Color.white)
                                     .clipShape(RoundedRectangle(cornerRadius: 2))
                                     .overlay(
                                         RoundedRectangle(cornerRadius: 2)
-                                            .stroke(ClipBetColors.divider, lineWidth: 1)
+                                            .stroke(minimumBet == amount ? Color.clear : ClipBetColors.textPrimary, lineWidth: 1.5)
                                     )
                             }
                         }
@@ -701,9 +701,11 @@ struct CreateEventFlow: View {
                             .foregroundColor(ClipBetColors.textPrimary)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 14)
+                            .background(Color.white)
+                            .clipShape(RoundedRectangle(cornerRadius: 2))
                             .overlay(
                                 RoundedRectangle(cornerRadius: 2)
-                                    .stroke(ClipBetColors.dark, lineWidth: 1)
+                                    .stroke(ClipBetColors.textPrimary, lineWidth: 1.5)
                             )
                         }
                     }

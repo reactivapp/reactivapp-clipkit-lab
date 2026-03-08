@@ -185,8 +185,30 @@ struct OrganizerDashboard: View {
 
                     if event.status == .live || event.status == .planned {
                         // Cancel & refund
-                        ClipBetSecondaryButton(title: "CANCEL & REFUND ALL") {
-                            showCancelConfirm = true
+                        if showCancelConfirm {
+                            VStack(spacing: 8) {
+                                Text("All bettors will receive full refunds. This cannot be undone.")
+                                    .font(.custom("DM Mono", size: 10))
+                                    .foregroundColor(ClipBetColors.no)
+                                    .multilineTextAlignment(.center)
+                                    .padding(.bottom, 8)
+                                    
+                                ClipBetPrimaryButton(title: "YES, CANCEL EVENT") {
+                                    showCancelConfirm = false
+                                    cancelEvent()
+                                }
+                                
+                                ClipBetSecondaryButton(title: "KEEP OPEN") {
+                                    showCancelConfirm = false
+                                }
+                            }
+                            .padding()
+                            .background(ClipBetColors.surface)
+                            .clipShape(RoundedRectangle(cornerRadius: 2))
+                        } else {
+                            ClipBetSecondaryButton(title: "CANCEL & REFUND ALL") {
+                                withAnimation { showCancelConfirm = true }
+                            }
                         }
                     }
 
@@ -260,9 +282,11 @@ struct OrganizerDashboard: View {
                             .foregroundColor(ClipBetColors.textSecondary)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 12)
+                            .background(Color.white)
+                            .clipShape(RoundedRectangle(cornerRadius: 2))
                             .overlay(
                                 RoundedRectangle(cornerRadius: 2)
-                                    .stroke(ClipBetColors.divider, lineWidth: 1)
+                                    .stroke(ClipBetColors.textPrimary, lineWidth: 1.5)
                             )
                         }
                     }
@@ -276,12 +300,6 @@ struct OrganizerDashboard: View {
         .onDisappear { stopPolling() }
         .sheet(isPresented: $showResolveSheet) {
             resolveSheet
-        }
-        .alert("Cancel Event?", isPresented: $showCancelConfirm) {
-            Button("Cancel Event", role: .destructive) { cancelEvent() }
-            Button("Keep Open", role: .cancel) { }
-        } message: {
-            Text("All bettors will receive full refunds. This cannot be undone.")
         }
     }
 
@@ -333,8 +351,19 @@ struct OrganizerDashboard: View {
             .background(ClipBetColors.bg)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { showResolveSheet = false }
+                    Button { showResolveSheet = false } label: {
+                        Text("Cancel")
+                            .font(.custom("DM Mono", size: 12))
+                            .kerning(1.6)
+                            .foregroundColor(ClipBetColors.textPrimary)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 8)
+                            .background(Color.white)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 2)
+                                    .stroke(ClipBetColors.textPrimary, lineWidth: 1.5)
+                            )
+                    }
                 }
             }
         }
