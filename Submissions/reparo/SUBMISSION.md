@@ -90,7 +90,8 @@ How does this create measurable business impact? Be specific about:
 
 ### Demo Video
 
-Link: ___
+Link: [___](https://youtu.be/JoFuqZbOmnA
+)
 
 ### Screenshot(s)
 
