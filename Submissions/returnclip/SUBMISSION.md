@@ -1,6 +1,6 @@
 ## Team Name: ReturnClip
 ## Clip Name: ReturnclipClipExperience
-## Invocation URL Pattern: example.com/returnclip/:orderId
+## Invocation URL Pattern: example.com/returnclip/:orderId/:sku
 
 ---
 
@@ -29,7 +29,7 @@ Which user moment or touchpoint are you targeting?
 
 Product returns are one of the most frustrating post-purchase experiences. Customers must find their order email, navigate a website, log in, fill out forms, wait for approval, and then figure out shipping — a process that takes 10-15 minutes minimum and often results in abandonment. For brands, every abandoned return becomes a lost customer who never comes back.
 
-ReturnClip eliminates this friction entirely. A QR code on the packaging insert or shipping label launches an App Clip that completes the entire return in under 30 seconds: confirm the order, select the item, pick a reason, snap 3 photos, get instant AI-powered approval, and receive a return label. No app download, no login, no customer service queue.
+ReturnClip eliminates this friction entirely. A QR code on the packaging insert or shipping label launches an App Clip that completes the entire return in under 30 seconds: confirm the order, select the item, pick a reason, snap a photo, get instant AI-powered approval, and receive a return label. No app download, no login, no customer service queue.
 
 This is a uniquely App Clip-shaped problem — nobody would install an app just to make a return, but everyone wants the process to be instant when they need it.
 
