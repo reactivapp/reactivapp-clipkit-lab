@@ -108,7 +108,7 @@ Minimum expectation:
 - Invokable via your URL pattern in Invocation Console
 - At least one complete user flow with a clear end state
 
-The prototype demonstrates both bettor and operator flows running inside the Reactiv ClipKit simulator, with all data mocked locally (or managed via backend if applicable to the final demo).
+The prototype demonstrates both bettor and operator flows running inside the Reactiv ClipKit simulator, with all data mocked locally (or managed via backend-optional if applicable to the final demo).
 
 **Implemented screens and flows:**
 - **Discovery** (`/discover`): Entry point to view current event info or create a new market.
