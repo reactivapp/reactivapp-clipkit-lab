@@ -53,10 +53,10 @@ When people are at a bar, game, or concert, there is a lot of energy and strong 
 *(Note: For the demo, we use the App Clip launcher in the Reactiv lab project. In production, this would normally be QR or NFC).*
 
 **A. Bettor (fan) flow**
-1. **Launch:** A fan at a venue (or seeing a pole on the street, next to a bar, pub, skatepark, or any social location) scans a QR code (`clipbet.io/event/:eventId`). The Clip launches and displays event info, total pool, and active bettors. 
-2. **Bet:** The fan taps "Place a Bet", enters their email & an optional nickname, selects an outcome, and chooses a bet amount.
-3. **Confirm:** They check their estimated return, confirm, and pay using Apple Pay.
-4. **Success:** The bet is placed, a confirmation receipt is shown, and the user enables closure notifications before dismissing the Clip.
+1. **Launch:** Scan QR (`clipbet.io/event/:eventId`) to view event info, total pool, and active bettors.
+2. **Bet:** Tap "Place a Bet", select an outcome, and enter the amount.
+3. **Pay:** Check estimated returns and confirm payment with Apple Pay.
+4. **Success:** View confirmation and enable result notifications.
 
 **B. Organizer (operator) flow**
 1. **Launch & Setup:** An organizer launches the Clip via `clipbet.io/discover` (or a "Create your own" QR). They view the current event info, pool, and bettors.
@@ -64,12 +64,12 @@ When people are at a bar, game, or concert, there is a lot of energy and strong 
 3. **Create Market:** They upload an event photo, provide a name and description, add specific outcomes, and define the event time, location, and minimum bet amount.
 4. **Preview & Go Live:** The organizer previews the market and taps to create it.
 5. **Share the Market:** A unique QR code is generated and displayed. The organizer can scan it from another device or access core share functionality.
-6. **Manage:** They navigate to their dashboard to view the total pool, live bettors, organizer fee, and outcome breakdowns. They can close bets, cancel/refund all participants, resolve events, or generate a printable PDF.
+6. **Manage:** Persistent management (pool history, outcome resolution across events) is handled via the **ClipBet Website**, while the Clip provides a one-time view of current market performance for the event just created.
 
 **C. Potential / Discovery flow**
 1. A user launches `clipbet.io/discover` and sees "Browse Nearby Events" or "Create Event".
-2. Browsing would show nearby markets with distance, pool size, and status.
-3. Tapping a market takes them directly into the Bettor flow for that specific event.
+2. Tapping a market takes them directly into the Bettor flow for that specific event.
+
 
 **How does the 8-hour notification window factor into your strategy?**
 
@@ -89,15 +89,23 @@ Potential additions to quietly manage the market's lifecycle:
 
 ### 3. Platform Extensions (if applicable)
 
-Does your solution require new Reactiv Clips capabilities that do not exist today? If so, describe them and explain why they are required.
+**None required.**
 
-**1. Persistent organizer session & dashboard access:**
-- **Need:** An organizer should be able to close the Clip and later reopen it (from the same device) to access their dashboard without signing in again. While a full website might be better for managing many events, keeping this feature in the Clip still allows organizers to easily track multiple active markets at once.
-- **Approach:** A small secure session token stored locally tied to Sign in with Apple.
+**Current flows are App Clip compliant:**
+- **Bettor**: `clipbet.io/event/:eventId` → place bet → done (stateless)
+- **Quick organizer**: `clipbet.io/discover` → generate QR → done (stateless)
 
-**2. Role-aware Clip views (bettor vs organizer):**
-- **Need:** The same URL should show the bettor view or organizer view depending on who is using it.
-- **Approach:** On launch, the Clip checks user identity. If they are the owner, it shows the dashboard; otherwise, the normal betting UI.
+**No persistence needed:**
+- Organizers pre-register on website (19+, compliance)
+- Each Clip launch = fresh, independent task
+- No local tokens, no dashboard reopening, no identity checks in Clip
+- Resolution/management happens on website (`clipbet.io/my-markets` as  example)
+
+**Dedicated URLs = Separate Tasks:**
+- `/event/:eventId` is for bettors to interact with a specific market.
+- `/discover` is for organizers to quickly generate new market QRs.
+
+Both flows complete in under 30 seconds with zero stored state.
 
 ---
 
@@ -110,16 +118,16 @@ Minimum expectation:
 - Invokable via your URL pattern in Invocation Console
 - At least one complete user flow with a clear end state
 
-The prototype demonstrates both bettor and operator flows running inside the Reactiv ClipKit simulator, with all data mocked locally.
+The prototype demonstrates both bettor and organizer flows running inside the Reactiv ClipKit simulator, with all data mocked locally to showcase the complete user experience.
 
-**Implemented screens and flows:**
-- **Discovery** (`/discover`): Entry point to view current event info or create a new market.
-- **Event Landing** (`/event/:eventId`): Shows event photo, prediction question, outcome options, pool stats, and active bettors, along with "Place a Bet" and "Create Event" buttons (if applicable).
-- **Betting Flow:** Email & nickname input, outcome selection, amount input, and seamless Apple Pay confirmation with 'real-time' return estimates.
-- **Success/Receipt:** A confirmation screen proving the bet was placed, with an easy option to turn on notifications for when the event ends.
-- **Organizer Setup (Creation):** Sign In with Apple, TOS agreement, and a form to define photo, name, description, location, time, outcomes, and minimum bet.
-- **Market Preview & Launch:** A complete UI preview of the market before generating the live QR code and share sheet.
-- **Organizer Dashboard:** A comprehensive view of total pool, bettors, fee earned, outcome breakdowns, plus controls to close bets, refund all, resolve the event, or generate a printable PDF.
+**Screens and flows implemented:**
+- **Discovery** (`/discover`): Entry point for organizers to view active nearby markets or start the creation flow.
+- **Event Landing** (`/event/:eventId`): Dashboard featuring event description, pool stats, and active betting counts.
+- **Bettor Flow:** Sequential path through outcome selection, nickname/email input, and native Apple Pay payment sheet.
+- **Success & Receipt:** Confirmation screen showing bet details and result notification toggle.
+- **Organizer Setup (Creation):** Creation flow featuring **Sign In with Apple**, TOS agreement, and market metadata entry (question, outcomes, and event photo).
+- **Market Preview:** UI rendering of the market, allowing organizers to verify event details before generating the live QR.
+- **Organizer Dashboard (Demo):** Dashboard view showing live entry counts, platform fees, and resolution controls.
 
 ---
 
