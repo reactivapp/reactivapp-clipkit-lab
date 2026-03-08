@@ -157,7 +157,49 @@ struct ImpactConfirmationView: View {
             }
         }
 
+        writeBackboardMemory()
         scheduleImpactNotification()
+    }
+
+    // MARK: - Backboard Memory
+
+    private static let backboardAPIKey = "espr_N8iIQE8wNuJCq1VKebscrrB23EbGvbLHGaQF7BZoD54"
+    private static let backboardAssistantId = "6ae73c6a-9d50-47fa-a224-cecb3b4e94d4"
+
+    private func writeBackboardMemory() {
+        let amount = donationState.finalAmount
+        let meals = donationState.mealsProvided
+        let city = cause.city
+        let causeId = cause.id
+
+        Task.detached(priority: .utility) {
+            let formatter = ISO8601DateFormatter()
+            let timestamp = formatter.string(from: Date())
+
+            let metadata: [String: Any] = [
+                "causeId": causeId,
+                "binLocation": causeId,
+                "amount": amount,
+                "meals": meals,
+                "city": city,
+                "timestamp": timestamp,
+            ]
+            let body: [String: Any] = [
+                "content": "Donation: $\(amount), \(meals) meals, \(city), \(causeId)",
+                "metadata": metadata,
+            ]
+
+            guard let url = URL(string: "https://app.backboard.io/api/assistants/\(Self.backboardAssistantId)/memories"),
+                  let jsonData = try? JSONSerialization.data(withJSONObject: body) else { return }
+
+            var request = URLRequest(url: url)
+            request.httpMethod = "POST"
+            request.setValue(Self.backboardAPIKey, forHTTPHeaderField: "X-API-Key")
+            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            request.httpBody = jsonData
+
+            _ = try? await URLSession.shared.data(for: request)
+        }
     }
 
     private func scheduleImpactNotification() {
@@ -197,7 +239,7 @@ struct ImpactConfirmationView: View {
     }
 
     private func shareGiveClip() {
-        let text = "I just provided \(mealsProvided) meals in \(cause.city) with one tap. \(newMealCount) meals packed today. Join in: givekit.ca/cause/\(cause.id)"
+        let text = "I just funded \(mealsProvided) meals in \(cause.city) \u{1F96B} Tap to give: givekit.ca/cause/\(cause.id)"
         let activityVC = UIActivityViewController(activityItems: [text], applicationActivities: nil)
         if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
            let root = windowScene.windows.first?.rootViewController {
