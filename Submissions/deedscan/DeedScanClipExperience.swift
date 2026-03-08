@@ -18,6 +18,7 @@ private struct ListingResponse: Codable {
     let imageUrl: String?
     let sqft: Int?
     let bedrooms: Int?
+    let bathrooms: Int?
     let confidenceScore: Int?
     let latitude: Double?
     let longitude: Double?
@@ -235,6 +236,9 @@ struct DeedScanClipExperience: ClipExperience {
                         .font(.system(size: 14))
                         .foregroundStyle(.secondary)
                 }
+                Label("\(listing.bathrooms ?? 3) bath", systemImage: "shower.fill")
+                    .font(.system(size: 14))
+                    .foregroundStyle(.secondary)
                 if let sqft = listing.sqft {
                     Label("\(sqft) sqft", systemImage: "square.dashed")
                         .font(.system(size: 14))

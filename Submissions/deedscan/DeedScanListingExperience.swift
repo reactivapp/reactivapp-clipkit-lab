@@ -6,6 +6,7 @@
 
 import SwiftUI
 import UIKit
+import UserNotifications
 
 struct DeedScanListingExperience: ClipExperience {
     static let urlPattern = "deedscan.app/clip"
@@ -31,6 +32,7 @@ struct DeedScanListingExperience: ClipExperience {
     private static let agentSavings = "~$74,950"
     private static let savingsLabel = "💰 Saves \(agentSavings) vs. agent commission"
     private static let bedrooms = 4
+    private static let bathrooms = 3
     private static let sqft = 2400
     private static let aiScore = 91
     private static let aiLabel = "🛡️ \(aiScore)/100 Verified — No fraud signals"
@@ -39,7 +41,16 @@ struct DeedScanListingExperience: ClipExperience {
     private static let photo2 = "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1400&q=80"
     private static let neighbourhoodSummary = "8 min to Sheppard-Yonge · Loblaws 5 min walk · Earl Haig SS 0.6km"
 
+    /// Price drop: $5,000 off → $1,494,000
+    private static let newPriceFormatted = "$1,494,000 CAD"
+
+    /// Only schedule the price-drop notification once per app session.
+    private static var hasScheduledPriceDrop = false
+    /// When we scheduled it; used to show reduced price only after user returns 3+ s later (notification fired).
+    private static var priceDropScheduledAt: Date?
+
     @State private var showNeighbourhoodSheet = false
+    @State private var priceDropApplied = false
 
     var body: some View {
         ZStack {
@@ -62,26 +73,47 @@ struct DeedScanListingExperience: ClipExperience {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, 16)
 
-                    // 3. Price block
+                    // 3. Price block (strikethrough + new price when price drop applied, once only)
                     VStack(alignment: .leading, spacing: 10) {
-                        Text(Self.priceFormatted)
-                            .font(.system(size: 26, weight: .bold))
-                            .foregroundStyle(.primary)
-                        Text(Self.savingsLabel)
-                            .font(.system(size: 14, weight: .medium))
-                            .foregroundStyle(.white)
-                            .padding(.horizontal, 14)
-                            .padding(.vertical, 8)
-                            .background(Color.green, in: Capsule())
+                        if priceDropApplied {
+                            HStack(alignment: .firstTextBaseline, spacing: 10) {
+                                Text(Self.priceFormatted)
+                                    .font(.system(size: 22, weight: .semibold))
+                                    .foregroundStyle(.secondary)
+                                    .strikethrough(true, color: .secondary)
+                                Text(Self.newPriceFormatted)
+                                    .font(.system(size: 26, weight: .bold))
+                                    .foregroundStyle(.primary)
+                            }
+                            Text("Price reduced by $5,000")
+                                .font(.system(size: 14, weight: .medium))
+                                .foregroundStyle(.white)
+                                .padding(.horizontal, 14)
+                                .padding(.vertical, 8)
+                                .background(Color.blue, in: Capsule())
+                        } else {
+                            Text(Self.priceFormatted)
+                                .font(.system(size: 26, weight: .bold))
+                                .foregroundStyle(.primary)
+                            Text(Self.savingsLabel)
+                                .font(.system(size: 14, weight: .medium))
+                                .foregroundStyle(.white)
+                                .padding(.horizontal, 14)
+                                .padding(.vertical, 8)
+                                .background(Color.green, in: Capsule())
+                        }
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, 16)
 
-                    // 4. Specs row
-                    HStack(spacing: 12) {
-                        specChip("🛏 \(Self.bedrooms) beds")
-                        specChip("📐 \(Self.sqft) sq ft")
-                        specChip("0% Commission")
+                    // 4. Specs row (scrollable so all chips visible on narrow screens)
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 12) {
+                            specChip("🛏 \(Self.bedrooms) beds")
+                            specChip("🚿 \(Self.bathrooms) baths")
+                            specChip("📐 \(Self.sqft) sq ft")
+                            specChip("0% Commission")
+                        }
                     }
                     .padding(.horizontal, 16)
 
@@ -93,6 +125,18 @@ struct DeedScanListingExperience: ClipExperience {
                         .padding(.vertical, 10)
                         .background(Color.green, in: RoundedRectangle(cornerRadius: 12))
                         .padding(.horizontal, 16)
+
+                    // 5b. Price drop alert cue
+                    HStack(spacing: 6) {
+                        Image(systemName: "bell.fill")
+                            .foregroundStyle(.blue)
+                            .font(.caption)
+                        Text("You'll get a price drop alert if this listing changes")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(.vertical, 6)
+                    .padding(.horizontal, 16)
 
                     // 6. Neighbourhood Snapshot
                     VStack(alignment: .leading, spacing: 10) {
@@ -142,6 +186,61 @@ struct DeedScanListingExperience: ClipExperience {
             .scrollIndicators(.hidden)
             .sheet(isPresented: $showNeighbourhoodSheet) {
                 neighbourhoodSheet
+            }
+            .onReceive(NotificationCenter.default.publisher(for: UIApplication.willResignActiveNotification)) { _ in
+                Self.schedulePriceDropNotificationIfNeeded(
+                    listingId: "demo_listing_001",
+                    listingTitle: Self.title
+                )
+            }
+            .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
+                checkAndApplyPriceDrop()
+            }
+        }
+    }
+
+    /// When user returns 3+ seconds after we scheduled the notification, show the reduced price once (simulates tapping the notification).
+    private func checkAndApplyPriceDrop() {
+        guard let scheduledAt = Self.priceDropScheduledAt else { return }
+        guard Date().timeIntervalSince(scheduledAt) >= 3 else { return }
+        Self.priceDropScheduledAt = nil
+        Task { @MainActor in
+            withAnimation(.easeOut(duration: 0.35)) {
+                priceDropApplied = true
+            }
+        }
+    }
+
+    /// Schedules a local "price drop" notification 3s after the user leaves. Only schedules once per app session.
+    private static func schedulePriceDropNotificationIfNeeded(listingId: String, listingTitle: String) {
+        guard !hasScheduledPriceDrop else { return }
+
+        let center = UNUserNotificationCenter.current()
+
+        center.requestAuthorization(options: [.alert, .sound, .badge]) { granted, _ in
+            guard granted else { return }
+
+            hasScheduledPriceDrop = true
+            priceDropScheduledAt = Date()
+
+            let content = UNMutableNotificationContent()
+            content.title = "🏠 Price Drop Alert"
+            content.body = "\(listingTitle) — Seller just reduced the price by $5,000. Tap to view."
+            content.sound = .default
+            content.userInfo = ["url": "https://deedscan.app/clip?id=\(listingId)"]
+
+            let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 3, repeats: false)
+
+            let request = UNNotificationRequest(
+                identifier: "deedscan-pricedrop-\(listingId)",
+                content: content,
+                trigger: trigger
+            )
+
+            center.add(request) { error in
+                if let error = error {
+                    print("DeedScan notification error: \(error)")
+                }
             }
         }
     }
