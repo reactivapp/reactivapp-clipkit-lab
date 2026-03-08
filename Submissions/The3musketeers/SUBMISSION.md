@@ -124,8 +124,8 @@ in and explore.
 Link: https://youtube.com/shorts/6Q4t-1JGeUU?feature=share
 
 ### Screenshot(s)
-<img src= "Submissions/The3musketeers/screenshots/browse.png"/>
-<img src= "Submissions/The3musketeers/screenshots/checkingStock.png"/>
-<img src= "Submissions/The3musketeers/screenshots/outOfStock.png"/>
-<img src= "Submissions/The3musketeers/screenshots/checkOut.png"/>
-<img src= "Submissions/The3musketeers/screenshots/confirm.png"/>
+<img src= "screenshots/browse.png"/>
+<img src= "screenshots/checkingStock.png"/>
+<img src= "screenshots/outOfStock.png"/>
+<img src= "screenshots/checkOut.png"/>
+<img src= "screenshots/confirm.png"/>
