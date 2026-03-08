@@ -16,7 +16,7 @@ final class ClipRouter {
     ]
 
     static var allExperiences: [any ClipExperience.Type] {
-        builtInExperiences + ScanifyRegistry.all
+        builtInExperiences + SubmissionRegistry.all
     }
 
     struct MatchResult: Identifiable {
