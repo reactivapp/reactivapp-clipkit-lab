@@ -93,4 +93,14 @@ How does this create measurable business impact? Be specific about:
 [https://www.youtube.com/watch?v=JoFuqZbOmnA](https://www.youtube.com/watch?v=JoFuqZbOmnA)
 
 ### Screenshot(s)
+<img width="493" height="998" alt="Screenshot 2026-03-07 at 10 24 10 PM" src="https://github.com/user-attachments/assets/3977570b-029d-45b9-b646-2dc23c7d2e2b" />
+<img width="528" height="985" alt="Screenshot 2026-03-07 at 10 24 22 PM" src="https://github.com/user-attachments/assets/d8ad0bd2-68e4-4989-b2c6-a5e465f80887" />
+<img width="495" height="1060" alt="Screenshot 2026-03-07 at 10 24 55 PM" src="https://github.com/user-attachments/assets/d20a546c-58a3-480f-a769-789db37c29fd" />
+<img width="559" height="1038" alt="Screenshot 2026-03-07 at 10 25 11 PM" src="https://github.com/user-attachments/assets/cb578cb7-2cf4-4fa8-8a82-f9172f9fbc26" />
+<img width="567" height="1010" alt="Screenshot 2026-03-07 at 10 25 23 PM" src="https://github.com/user-attachments/assets/75409462-7143-4436-be06-52bafef20732" />
+<img width="516" height="999" alt="Screenshot 2026-03-07 at 10 25 29 PM" src="https://github.com/user-attachments/assets/c606c766-6dab-4725-8c2e-1575290c5cfe" />
+<img width="489" height="994" alt="Screenshot 2026-03-07 at 10 25 34 PM" src="https://github.com/user-attachments/assets/1b48e87e-0e0b-4cc4-8796-c05a6fb18adc" />
+<img width="501" height="1006" alt="Screenshot 2026-03-07 at 10 25 48 PM" src="https://github.com/user-attachments/assets/332ceef0-2d9d-43b8-a155-d8894061acee" />
+<img width="494" height="1057" alt="Screenshot 2026-03-07 at 11 18 00 PM" src="https://github.com/user-attachments/assets/80a19ec1-e724-43f4-ac31-db94ebe88a76" />
+<img width="508" height="1068" alt="Screenshot 2026-03-07 at 11 52 33 PM" src="https://github.com/user-attachments/assets/2868362a-4591-4d36-a198-703fe07b2de3" />
 
