@@ -116,7 +116,7 @@ private struct NaloxoneAdminSection: View {
                     Text("How to Administer Naloxone")
                         .font(.title2).bold()
                         .foregroundColor(.white)
-                    Text("Nasal spray & injection instructions")
+                    Text("Nasal spray instructions for common Naloxone kits such as NARCAN")
                         .font(.subheadline)
                         .foregroundColor(.white.opacity(0.9))
                 }
