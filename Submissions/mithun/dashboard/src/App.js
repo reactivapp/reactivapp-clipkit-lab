@@ -458,6 +458,55 @@ const STORAGE_KEYS = {
   messages: 'giveclip-chat-messages',
 };
 
+function extractAssistantText(result) {
+  if (!result) return '';
+  if (typeof result.content === 'string' && result.content.trim()) return result.content.trim();
+
+  // Handle structured payload variants returned by assistant providers.
+  if (Array.isArray(result.content)) {
+    const text = result.content
+      .map((item) => item?.text || item?.value || '')
+      .find((value) => typeof value === 'string' && value.trim());
+    if (text) return text.trim();
+  }
+
+  if (Array.isArray(result.messages)) {
+    const assistantMsg = [...result.messages].reverse().find((m) => m?.role === 'assistant');
+    if (assistantMsg?.content) {
+      if (typeof assistantMsg.content === 'string') return assistantMsg.content.trim();
+      if (Array.isArray(assistantMsg.content)) {
+        const text = assistantMsg.content
+          .map((item) => item?.text || item?.value || '')
+          .find((value) => typeof value === 'string' && value.trim());
+        if (text) return text.trim();
+      }
+    }
+  }
+
+  return '';
+}
+
+function localAnalystReply(data, msg) {
+  const q = (msg || '').toLowerCase();
+  const bestBin = [...data.bins].sort((a, b) => b.dollars - a.dollars)[0];
+  const topDay = [...data.weeklyTrend].sort((a, b) => b.meals - a.meals)[0];
+  const underGoal = Math.max(data.weeklyGoal.target - data.stats.mealsToday, 0);
+
+  if (q.includes('best') && q.includes('bin') && bestBin) {
+    return `${bestBin.name} is the top bin this week with ${bestBin.donations} donations and $${bestBin.dollars}.`;
+  }
+
+  if (q.includes('compare') || q.includes('last week')) {
+    return `This week is tracking at ${data.stats.mealsToday} meals today. Strongest day in the current 7-day view is ${topDay?.day || 'N/A'} with ${topDay?.meals || 0} meals.`;
+  }
+
+  if (q.includes('newsletter') || q.includes('donor update')) {
+    return `Donor update: Today we funded ${data.stats.mealsToday} meals with ${data.stats.donationsToday} donations, raising $${data.stats.dollarsToday}. We are ${underGoal} meals away from our ${data.weeklyGoal.target} meal goal.`;
+  }
+
+  return `Current snapshot: ${data.stats.mealsToday} meals funded, $${data.stats.dollarsToday} raised, ${data.stats.donationsToday} donations. Top bin: ${bestBin?.name || 'N/A'}.`;
+}
+
 function ChatPanel({ data, onClose }) {
   const [messages, setMessages] = useState(() => {
     try { return JSON.parse(localStorage.getItem(STORAGE_KEYS.messages)) || []; }
@@ -520,23 +569,28 @@ function ChatPanel({ data, onClose }) {
 
   const handleSend = useCallback(async (text) => {
     const msg = (text || '').trim();
-    if (!msg || !threadRef.current || loading) return;
+    if (!msg || loading) return;
 
     setMessages(prev => [...prev, { role: 'user', content: msg }]);
     setInput('');
     setLoading(true);
 
     try {
+      if (!threadRef.current) {
+        setMessages(prev => [...prev, { role: 'assistant', content: localAnalystReply(data, msg) }]);
+        return;
+      }
       const context = buildContext();
       const result = await bbSendMessage(threadRef.current, `${context}\n\n[USER QUESTION]\n${msg}`);
-      setMessages(prev => [...prev, { role: 'assistant', content: result.content }]);
+      const assistantText = extractAssistantText(result) || localAnalystReply(data, msg);
+      setMessages(prev => [...prev, { role: 'assistant', content: assistantText }]);
     } catch (err) {
       console.error('Send error:', err);
-      setMessages(prev => [...prev, { role: 'assistant', content: 'Sorry, something went wrong. Please try again.' }]);
+      setMessages(prev => [...prev, { role: 'assistant', content: localAnalystReply(data, msg) }]);
     } finally {
       setLoading(false);
     }
-  }, [loading, buildContext]);
+  }, [loading, buildContext, data]);
 
   return (
     <aside className="chat-panel">

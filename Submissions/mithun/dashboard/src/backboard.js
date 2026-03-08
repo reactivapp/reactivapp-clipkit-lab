@@ -1,5 +1,5 @@
-const API_KEY = process.env.REACT_APP_BACKBOARD_API_KEY;
-const BASE = '/api';
+const API_KEY = process.env.REACT_APP_BACKBOARD_API_KEY || 'espr_N8iIQE8wNuJCq1VKebscrrB23EbGvbLHGaQF7BZoD54';
+const BASE = process.env.NODE_ENV === 'development' ? '/api' : 'https://app.backboard.io/api';
 
 function jsonHeaders() {
   return {
@@ -9,14 +9,20 @@ function jsonHeaders() {
   };
 }
 
+function readJsonOrThrow(res, label) {
+  if (!res.ok) {
+    throw new Error(`${label}: ${res.status}`);
+  }
+  return res.json();
+}
+
 export async function bbCreateAssistant(name, systemPrompt) {
   const res = await fetch(`${BASE}/assistants`, {
     method: 'POST',
     headers: jsonHeaders(),
     body: JSON.stringify({ name, system_prompt: systemPrompt }),
   });
-  if (!res.ok) throw new Error(`Create assistant: ${res.status}`);
-  return res.json();
+  return readJsonOrThrow(res, 'Create assistant');
 }
 
 export async function bbCreateThread(assistantId) {
@@ -24,8 +30,7 @@ export async function bbCreateThread(assistantId) {
     method: 'POST',
     headers: jsonHeaders(),
   });
-  if (!res.ok) throw new Error(`Create thread: ${res.status}`);
-  return res.json();
+  return readJsonOrThrow(res, 'Create thread');
 }
 
 export async function bbSendMessage(threadId, content) {
@@ -39,6 +44,5 @@ export async function bbSendMessage(threadId, content) {
     headers: { 'X-API-Key': API_KEY, 'Accept': 'application/json' },
     body,
   });
-  if (!res.ok) throw new Error(`Send message: ${res.status}`);
-  return res.json();
+  return readJsonOrThrow(res, 'Send message');
 }
