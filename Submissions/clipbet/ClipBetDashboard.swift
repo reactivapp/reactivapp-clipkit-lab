@@ -384,6 +384,9 @@ struct OrganizerDashboard: View {
     
     // MARK: - PDF Generation
     
+    // basically this generates a full printable poster as a pdf file.
+    // it draws the event image, title, description, outcomes, and a qr code
+    // all onto a standard US letter page using apple's pdf renderer.
     private func generatePDF() -> URL? {
         let pdfMetaData = [
             kCGPDFContextCreator: "ClipBet",
@@ -413,12 +416,13 @@ struct OrganizerDashboard: View {
                     let imageHeight: CGFloat = 200
                     let imageRect = CGRect(x: margin, y: yOffset, width: contentWidth, height: imageHeight)
                     
-                    // Draw rounded clip
-                    let clipPath = UIBezierPath(roundedRect: imageRect, cornerRadius: 4)
+                // so we clip the image to a rounded rect first, then scale-to-fill
+                // basically: save the graphics state, clip, draw, then restore
+                let clipPath = UIBezierPath(roundedRect: imageRect, cornerRadius: 4)
                     context.cgContext.saveGState()
                     clipPath.addClip()
                     
-                    // Scale to fill
+                    // figure out aspect ratio so the image fills the box without stretching
                     let imageAspect = image.size.width / image.size.height
                     let rectAspect = contentWidth / imageHeight
                     var drawRect = imageRect
@@ -478,6 +482,8 @@ struct OrganizerDashboard: View {
                     .paragraphStyle: titleParagraph
                 ]
                 let titleRect = CGRect(x: margin, y: yOffset, width: contentWidth, height: 120)
+                // we need to measure how tall the title actually is so we don't
+                // waste space or overlap the next section
                 let titleBounds = event.name.boundingRect(
                     with: CGSize(width: contentWidth, height: .greatestFiniteMagnitude),
                     options: [.usesLineFragmentOrigin, .usesFontLeading],
@@ -578,6 +584,8 @@ struct OrganizerDashboard: View {
                 yOffset += 24
                 
                 // --- 10. QR Code ---
+                // we generate a qr code image using coreimage, then draw it
+                // centered on the page with a white box + border behind it
                 if let qrURLString = qrURL, let qrImage = generateQRCodeImage(from: qrURLString) {
                     let qrSize: CGFloat = 180
                     let qrX = (pageWidth - qrSize) / 2
@@ -647,6 +655,7 @@ struct OrganizerDashboard: View {
     
     // MARK: - PDF Helpers
     
+    // just draws a thin horizontal line, used as a section divider in the pdf
     private func drawDivider(in cgContext: CGContext, y: CGFloat, margin: CGFloat, width: CGFloat) {
         cgContext.setStrokeColor(UIColor(white: 0.85, alpha: 1).cgColor)
         cgContext.setLineWidth(0.5)
@@ -655,25 +664,34 @@ struct OrganizerDashboard: View {
         cgContext.strokePath()
     }
     
+    // uses coreimage to generate a qr code from a url string.
+    // the output is a tiny image so we scale it up to 180px
+    // before converting it to a UIImage for drawing in the pdf.
     private func generateQRCodeImage(from string: String) -> UIImage? {
         let ciContext = CIContext()
         let filter = CIFilter.qrCodeGenerator()
         filter.message = Data(string.utf8)
-        filter.correctionLevel = "M"
+        filter.correctionLevel = "M" // medium error correction
         
         guard let ciImage = filter.outputImage else { return nil }
+        // scale it up so it's not blurry in the pdf
         let scale: CGFloat = 180 / ciImage.extent.width
         let scaledImage = ciImage.transformed(by: CGAffineTransform(scaleX: scale, y: scale))
         guard let cgImage = ciContext.createCGImage(scaledImage, from: scaledImage.extent) else { return nil }
         return UIImage(cgImage: cgImage)
     }
     
+    // tries to download the event image from a url if there's no local image.
+    // this is a synchronous call so it blocks briefly, but it's fine
+    // since we only call this during pdf generation which is already off-screen.
     private func loadRemoteImage() -> UIImage? {
         guard let urlStr = event.imageURL, !urlStr.isEmpty,
               let url = URL(string: urlStr),
               let data = try? Data(contentsOf: url) else { return nil }
         return UIImage(data: data)
     }
+    
+    // tells the backend which outcome won. once resolved, winners get paid out.
     private func resolveEvent(winningOptionId: String) {
         isProcessing = true
         ClipBetAPI.shared.resolveEvent(
@@ -689,6 +707,7 @@ struct OrganizerDashboard: View {
         }
     }
 
+    // cancels the event entirely, everyone gets refunded
     private func cancelEvent() {
         isProcessing = true
         ClipBetAPI.shared.cancelEvent(
@@ -704,6 +723,8 @@ struct OrganizerDashboard: View {
 
     // MARK: - Polling
 
+    // polls the backend every 10 seconds to keep the dashboard data fresh.
+    // we skip this if running with mock data since there's nothing to poll.
     private func startPolling() {
         guard !ClipBetAPIConfig.useMockData else { return }
         refreshTimer = Timer.scheduledTimer(withTimeInterval: 10, repeats: true) { _ in
