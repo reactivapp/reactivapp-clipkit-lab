@@ -91,7 +91,7 @@ Both momsgoldendumplings.com/reserve/feedback and momsgoldendumplings.com/reserv
 
 ### Demo Video
 
-Link: https://youtube.com/shorts/T4hEG8byY54?feature=share
+Link: https://youtu.be/ncqaEHGjvGY
 
 ### Screenshot(s)
 
