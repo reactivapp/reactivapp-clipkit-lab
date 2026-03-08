@@ -224,8 +224,7 @@ function Header() {
     <header className="header">
       <div className="header-left">
         <div className="logo">
-          <span className="logo-icon">🍃</span>
-          <span className="logo-text">GiveClip</span>
+          <span className="logo-text">Flourish</span>
         </div>
         <div className="header-divider" />
         <div className="header-info">
