@@ -6,14 +6,12 @@
 //
 
 import SwiftUI
-import CoreImage.CIFilterBuiltins
 
 struct OrganizerDashboard: View {
 
     @State var event: PredictionEvent
     var qrURL: String?
     var organizerId: String?
-    var onBack: (() -> Void)?
 
     @State private var generatedPDFURL: URL?
 
@@ -25,21 +23,12 @@ struct OrganizerDashboard: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 0) {
-                // Header Back Button
-                HStack {
-                    ClipBetBackButton {
-                        onBack?()
-                    }
-                    Spacer()
-                }
-                .padding(.horizontal, 24)
-                .padding(.top, 16)
 
                 // Header
                 VStack(spacing: 12) {
                     Text("Dashboard")
                         .font(.custom("Cormorant Garamond", size: 28))
-                        .fontWeight(.regular)
+                        .fontWeight(.light)
                         .foregroundColor(ClipBetColors.textPrimary)
 
                     StatusIndicator(status: event.status)
@@ -81,7 +70,7 @@ struct OrganizerDashboard: View {
 
                     Text(event.name)
                         .font(.custom("Cormorant Garamond", size: 22))
-                        .fontWeight(.regular)
+                        .fontWeight(.light)
                         .foregroundColor(ClipBetColors.textPrimary)
                         .multilineTextAlignment(.center)
 
@@ -133,7 +122,7 @@ struct OrganizerDashboard: View {
                                 Spacer()
                                 Text(String(format: "%.0f%%", event.percentage(for: outcome)))
                                     .font(.custom("Cormorant Garamond", size: 20))
-                                    .fontWeight(.regular)
+                                    .fontWeight(.light)
                                     .foregroundColor(index == 0 ? ClipBetColors.yes : ClipBetColors.no)
                             }
 
@@ -184,32 +173,14 @@ struct OrganizerDashboard: View {
                             closeBets()
                         }
 
-                    if event.status == .live || event.status == .planned {
                         // Cancel & refund
-                        if showCancelConfirm {
-                            VStack(spacing: 8) {
-                                Text("All bettors will receive full refunds. This cannot be undone.")
-                                    .font(.custom("DM Mono", size: 10))
-                                    .foregroundColor(ClipBetColors.no)
-                                    .multilineTextAlignment(.center)
-                                    .padding(.bottom, 8)
-                                    
-                                ClipBetPrimaryButton(title: "YES, CANCEL EVENT") {
-                                    showCancelConfirm = false
-                                    cancelEvent()
-                                }
-                                
-                                ClipBetSecondaryButton(title: "KEEP OPEN") {
-                                    showCancelConfirm = false
-                                }
-                            }
-                            .padding()
-                            .background(ClipBetColors.surface)
-                            .clipShape(RoundedRectangle(cornerRadius: 2))
-                        } else {
-                            ClipBetSecondaryButton(title: "CANCEL & REFUND ALL") {
-                                withAnimation { showCancelConfirm = true }
-                            }
+                        Button {
+                            showCancelConfirm = true
+                        } label: {
+                            Text("CANCEL & REFUND ALL")
+                                .font(.custom("DM Mono", size: 12))
+                                .kerning(1.2)
+                                .foregroundColor(ClipBetColors.no)
                         }
                     }
 
@@ -280,14 +251,12 @@ struct OrganizerDashboard: View {
                                     .font(.custom("DM Mono", size: 12))
                                     .kerning(1.2)
                             }
-                            .foregroundColor(ClipBetColors.textPrimary)
+                            .foregroundColor(ClipBetColors.textSecondary)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 12)
-                            .background(Color.white)
-                            .clipShape(RoundedRectangle(cornerRadius: 2))
                             .overlay(
                                 RoundedRectangle(cornerRadius: 2)
-                                    .stroke(ClipBetColors.textPrimary, lineWidth: 1.5)
+                                    .stroke(ClipBetColors.divider, lineWidth: 1)
                             )
                         }
                     }
@@ -302,6 +271,12 @@ struct OrganizerDashboard: View {
         .sheet(isPresented: $showResolveSheet) {
             resolveSheet
         }
+        .alert("Cancel Event?", isPresented: $showCancelConfirm) {
+            Button("Cancel Event", role: .destructive) { cancelEvent() }
+            Button("Keep Open", role: .cancel) { }
+        } message: {
+            Text("All bettors will receive full refunds. This cannot be undone.")
+        }
     }
 
     // MARK: - Resolve Sheet
@@ -311,7 +286,7 @@ struct OrganizerDashboard: View {
             VStack(spacing: 0) {
                 Text("Select Winner")
                     .font(.custom("Cormorant Garamond", size: 24))
-                    .fontWeight(.regular)
+                    .fontWeight(.light)
                     .foregroundColor(ClipBetColors.textPrimary)
                     .padding(.top, 24)
                     .padding(.bottom, 8)
@@ -352,19 +327,8 @@ struct OrganizerDashboard: View {
             .background(ClipBetColors.bg)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                    Button { showResolveSheet = false } label: {
-                        Text("Cancel")
-                            .font(.custom("DM Mono", size: 12))
-                            .kerning(1.6)
-                            .foregroundColor(ClipBetColors.textPrimary)
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 8)
-                            .background(Color.white)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 2)
-                                    .stroke(ClipBetColors.textPrimary, lineWidth: 1.5)
-                            )
-                    }
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { showResolveSheet = false }
                 }
             }
         }
@@ -384,267 +348,37 @@ struct OrganizerDashboard: View {
     
     // MARK: - PDF Generation
     
-    // basically this generates a full printable poster as a pdf file.
-    // it draws the event image, title, description, outcomes, and a qr code
-    // all onto a standard US letter page using apple's pdf renderer.
     private func generatePDF() -> URL? {
         let pdfMetaData = [
             kCGPDFContextCreator: "ClipBet",
-            kCGPDFContextAuthor: "Organizer",
-            kCGPDFContextTitle: event.name
+            kCGPDFContextAuthor: "Organizer"
         ]
         let format = UIGraphicsPDFRendererFormat()
         format.documentInfo = pdfMetaData as [String: Any]
         
-        let pageWidth: CGFloat = 8.5 * 72.0 // US Letter
-        let pageHeight: CGFloat = 11.0 * 72.0
+        let pageWidth = 8.5 * 72.0 // US Letter
+        let pageHeight = 11.0 * 72.0
         let pageRect = CGRect(x: 0, y: 0, width: pageWidth, height: pageHeight)
-        let margin: CGFloat = 50
-        let contentWidth = pageWidth - margin * 2
         
         let renderer = UIGraphicsPDFRenderer(bounds: pageRect, format: format)
-        let tempURL = FileManager.default.temporaryDirectory
-            .appendingPathComponent("ClipBet-Poster-\(event.id.uuidString.prefix(6)).pdf")
+        let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent("ClipBet-QR-\(event.id.uuidString.prefix(6)).pdf")
         
         do {
             try renderer.writePDF(to: tempURL) { context in
                 context.beginPage()
-                var yOffset: CGFloat = margin
                 
-                // --- 1. Event Image (if available) ---
-                if let image = event.localImage ?? loadRemoteImage() {
-                    let imageHeight: CGFloat = 200
-                    let imageRect = CGRect(x: margin, y: yOffset, width: contentWidth, height: imageHeight)
-                    
-                // so we clip the image to a rounded rect first, then scale-to-fill
-                // basically: save the graphics state, clip, draw, then restore
-                let clipPath = UIBezierPath(roundedRect: imageRect, cornerRadius: 4)
-                    context.cgContext.saveGState()
-                    clipPath.addClip()
-                    
-                    // figure out aspect ratio so the image fills the box without stretching
-                    let imageAspect = image.size.width / image.size.height
-                    let rectAspect = contentWidth / imageHeight
-                    var drawRect = imageRect
-                    if imageAspect > rectAspect {
-                        let scaledWidth = imageHeight * imageAspect
-                        drawRect = CGRect(
-                            x: margin - (scaledWidth - contentWidth) / 2,
-                            y: yOffset,
-                            width: scaledWidth,
-                            height: imageHeight
-                        )
-                    } else {
-                        let scaledHeight = contentWidth / imageAspect
-                        drawRect = CGRect(
-                            x: margin,
-                            y: yOffset - (scaledHeight - imageHeight) / 2,
-                            width: contentWidth,
-                            height: scaledHeight
-                        )
-                    }
-                    image.draw(in: drawRect)
-                    context.cgContext.restoreGState()
-                    yOffset += imageHeight + 24
-                } else {
-                    yOffset += 20
-                }
-                
-                // --- 2. ClipBet Branding ---
-                let brandAttrs: [NSAttributedString.Key: Any] = [
-                    .font: UIFont.systemFont(ofSize: 10, weight: .medium),
-                    .foregroundColor: UIColor.gray,
-                    .kern: 4.0
+                let titleAttributes: [NSAttributedString.Key: Any] = [
+                    .font: UIFont.systemFont(ofSize: 36, weight: .bold)
                 ]
-                let brandString = "CLIPBET"
-                let brandSize = brandString.size(withAttributes: brandAttrs)
-                brandString.draw(
-                    at: CGPoint(x: (pageWidth - brandSize.width) / 2, y: yOffset),
-                    withAttributes: brandAttrs
-                )
-                yOffset += brandSize.height + 16
+                let titleString = "Scan to bet on:\n\(event.name)"
+                titleString.draw(in: CGRect(x: 50, y: 100, width: pageWidth - 100, height: 100), withAttributes: titleAttributes)
                 
-                // --- 3. Divider line ---
-                drawDivider(in: context.cgContext, y: yOffset, margin: margin, width: contentWidth)
-                yOffset += 16
-                
-                // --- 4. Event Name ---
-                let titleAttrs: [NSAttributedString.Key: Any] = [
-                    .font: UIFont.systemFont(ofSize: 28, weight: .bold),
-                    .foregroundColor: UIColor.black
-                ]
-                let titleParagraph = NSMutableParagraphStyle()
-                titleParagraph.alignment = .center
-                titleParagraph.lineSpacing = 4
-                let titleDrawAttrs: [NSAttributedString.Key: Any] = [
-                    .font: UIFont.systemFont(ofSize: 28, weight: .bold),
-                    .foregroundColor: UIColor.black,
-                    .paragraphStyle: titleParagraph
-                ]
-                let titleRect = CGRect(x: margin, y: yOffset, width: contentWidth, height: 120)
-                // we need to measure how tall the title actually is so we don't
-                // waste space or overlap the next section
-                let titleBounds = event.name.boundingRect(
-                    with: CGSize(width: contentWidth, height: .greatestFiniteMagnitude),
-                    options: [.usesLineFragmentOrigin, .usesFontLeading],
-                    attributes: titleDrawAttrs,
-                    context: nil
-                )
-                event.name.draw(in: titleRect, withAttributes: titleDrawAttrs)
-                yOffset += min(titleBounds.height, 120) + 12
-                
-                // --- 5. Description (if available) ---
-                if let desc = event.description, !desc.isEmpty {
-                    let descParagraph = NSMutableParagraphStyle()
-                    descParagraph.alignment = .center
-                    descParagraph.lineSpacing = 3
-                    let descAttrs: [NSAttributedString.Key: Any] = [
-                        .font: UIFont.systemFont(ofSize: 12, weight: .regular),
-                        .foregroundColor: UIColor.darkGray,
-                        .paragraphStyle: descParagraph
+                if let qrURL = qrURL {
+                    let urlAttributes: [NSAttributedString.Key: Any] = [
+                        .font: UIFont.systemFont(ofSize: 18, weight: .regular)
                     ]
-                    let descRect = CGRect(x: margin + 20, y: yOffset, width: contentWidth - 40, height: 80)
-                    let descBounds = desc.boundingRect(
-                        with: CGSize(width: contentWidth - 40, height: .greatestFiniteMagnitude),
-                        options: [.usesLineFragmentOrigin, .usesFontLeading],
-                        attributes: descAttrs,
-                        context: nil
-                    )
-                    desc.draw(in: descRect, withAttributes: descAttrs)
-                    yOffset += min(descBounds.height, 80) + 12
+                    "\(qrURL)".draw(in: CGRect(x: 50, y: 250, width: pageWidth - 100, height: 50), withAttributes: urlAttributes)
                 }
-                
-                // --- 6. Location & Time ---
-                let infoAttrs: [NSAttributedString.Key: Any] = [
-                    .font: UIFont.systemFont(ofSize: 11, weight: .regular),
-                    .foregroundColor: UIColor.gray,
-                    .kern: 1.0
-                ]
-                var infoString = ""
-                if !event.location.isEmpty { infoString += event.location }
-                if let timeStr = event.formattedEventTime {
-                    if !infoString.isEmpty { infoString += "  ·  " }
-                    infoString += timeStr
-                }
-                if !infoString.isEmpty {
-                    let infoSize = infoString.size(withAttributes: infoAttrs)
-                    infoString.draw(
-                        at: CGPoint(x: (pageWidth - infoSize.width) / 2, y: yOffset),
-                        withAttributes: infoAttrs
-                    )
-                    yOffset += infoSize.height + 16
-                }
-                
-                // --- 7. Divider ---
-                drawDivider(in: context.cgContext, y: yOffset, margin: margin, width: contentWidth)
-                yOffset += 16
-                
-                // --- 8. Outcomes ---
-                let outcomeNameAttrs: [NSAttributedString.Key: Any] = [
-                    .font: UIFont.systemFont(ofSize: 14, weight: .medium),
-                    .foregroundColor: UIColor.black
-                ]
-                let outcomePctAttrs: [NSAttributedString.Key: Any] = [
-                    .font: UIFont.systemFont(ofSize: 14, weight: .regular),
-                    .foregroundColor: UIColor.darkGray
-                ]
-                
-                for (index, outcome) in event.outcomes.enumerated() {
-                    let pct = event.percentage(for: outcome)
-                    let dotColor: UIColor = index == 0
-                        ? UIColor(red: 100/255, green: 170/255, blue: 140/255, alpha: 1)
-                        : UIColor(red: 200/255, green: 100/255, blue: 100/255, alpha: 1)
-                    
-                    // Dot
-                    let dotRect = CGRect(x: margin + 10, y: yOffset + 5, width: 8, height: 8)
-                    context.cgContext.setFillColor(dotColor.cgColor)
-                    context.cgContext.fillEllipse(in: dotRect)
-                    
-                    // Name
-                    outcome.name.draw(
-                        at: CGPoint(x: margin + 28, y: yOffset),
-                        withAttributes: outcomeNameAttrs
-                    )
-                    
-                    // Percentage
-                    let pctStr = String(format: "%.0f%%", pct)
-                    let pctSize = pctStr.size(withAttributes: outcomePctAttrs)
-                    pctStr.draw(
-                        at: CGPoint(x: margin + contentWidth - pctSize.width - 10, y: yOffset),
-                        withAttributes: outcomePctAttrs
-                    )
-                    
-                    yOffset += 24
-                }
-                
-                yOffset += 8
-                
-                // --- 9. Divider ---
-                drawDivider(in: context.cgContext, y: yOffset, margin: margin, width: contentWidth)
-                yOffset += 24
-                
-                // --- 10. QR Code ---
-                // we generate a qr code image using coreimage, then draw it
-                // centered on the page with a white box + border behind it
-                if let qrURLString = qrURL, let qrImage = generateQRCodeImage(from: qrURLString) {
-                    let qrSize: CGFloat = 180
-                    let qrX = (pageWidth - qrSize) / 2
-                    
-                    // White background behind QR
-                    let qrBg = CGRect(x: qrX - 12, y: yOffset - 12, width: qrSize + 24, height: qrSize + 24)
-                    context.cgContext.setFillColor(UIColor.white.cgColor)
-                    context.cgContext.fill(qrBg)
-                    context.cgContext.setStrokeColor(UIColor(white: 0.85, alpha: 1).cgColor)
-                    context.cgContext.setLineWidth(1)
-                    context.cgContext.stroke(qrBg)
-                    
-                    let qrRect = CGRect(x: qrX, y: yOffset, width: qrSize, height: qrSize)
-                    qrImage.draw(in: qrRect)
-                    yOffset += qrSize + 20
-                    
-                    // "SCAN TO PREDICT" label
-                    let scanAttrs: [NSAttributedString.Key: Any] = [
-                        .font: UIFont.systemFont(ofSize: 12, weight: .medium),
-                        .foregroundColor: UIColor.darkGray,
-                        .kern: 3.0
-                    ]
-                    let scanLabel = "SCAN TO PREDICT"
-                    let scanSize = scanLabel.size(withAttributes: scanAttrs)
-                    scanLabel.draw(
-                        at: CGPoint(x: (pageWidth - scanSize.width) / 2, y: yOffset),
-                        withAttributes: scanAttrs
-                    )
-                    yOffset += scanSize.height + 8
-                    
-                    // URL
-                    let urlAttrs: [NSAttributedString.Key: Any] = [
-                        .font: UIFont.systemFont(ofSize: 10, weight: .regular),
-                        .foregroundColor: UIColor.gray
-                    ]
-                    let urlSize = qrURLString.size(withAttributes: urlAttrs)
-                    qrURLString.draw(
-                        at: CGPoint(x: (pageWidth - urlSize.width) / 2, y: yOffset),
-                        withAttributes: urlAttrs
-                    )
-                    yOffset += urlSize.height + 24
-                }
-                
-                // --- 11. Footer divider ---
-                drawDivider(in: context.cgContext, y: yOffset, margin: margin, width: contentWidth)
-                yOffset += 12
-                
-                // --- 12. Footer ---
-                let footerAttrs: [NSAttributedString.Key: Any] = [
-                    .font: UIFont.systemFont(ofSize: 9, weight: .regular),
-                    .foregroundColor: UIColor.lightGray,
-                    .kern: 2.0
-                ]
-                let footerLabel = "CLIPBET · POWERED BY APP CLIPS"
-                let footerSize = footerLabel.size(withAttributes: footerAttrs)
-                footerLabel.draw(
-                    at: CGPoint(x: (pageWidth - footerSize.width) / 2, y: yOffset),
-                    withAttributes: footerAttrs
-                )
             }
             return tempURL
         } catch {
@@ -652,46 +386,6 @@ struct OrganizerDashboard: View {
             return nil
         }
     }
-    
-    // MARK: - PDF Helpers
-    
-    // just draws a thin horizontal line, used as a section divider in the pdf
-    private func drawDivider(in cgContext: CGContext, y: CGFloat, margin: CGFloat, width: CGFloat) {
-        cgContext.setStrokeColor(UIColor(white: 0.85, alpha: 1).cgColor)
-        cgContext.setLineWidth(0.5)
-        cgContext.move(to: CGPoint(x: margin, y: y))
-        cgContext.addLine(to: CGPoint(x: margin + width, y: y))
-        cgContext.strokePath()
-    }
-    
-    // uses coreimage to generate a qr code from a url string.
-    // the output is a tiny image so we scale it up to 180px
-    // before converting it to a UIImage for drawing in the pdf.
-    private func generateQRCodeImage(from string: String) -> UIImage? {
-        let ciContext = CIContext()
-        let filter = CIFilter.qrCodeGenerator()
-        filter.message = Data(string.utf8)
-        filter.correctionLevel = "M" // medium error correction
-        
-        guard let ciImage = filter.outputImage else { return nil }
-        // scale it up so it's not blurry in the pdf
-        let scale: CGFloat = 180 / ciImage.extent.width
-        let scaledImage = ciImage.transformed(by: CGAffineTransform(scaleX: scale, y: scale))
-        guard let cgImage = ciContext.createCGImage(scaledImage, from: scaledImage.extent) else { return nil }
-        return UIImage(cgImage: cgImage)
-    }
-    
-    // tries to download the event image from a url if there's no local image.
-    // this is a synchronous call so it blocks briefly, but it's fine
-    // since we only call this during pdf generation which is already off-screen.
-    private func loadRemoteImage() -> UIImage? {
-        guard let urlStr = event.imageURL, !urlStr.isEmpty,
-              let url = URL(string: urlStr),
-              let data = try? Data(contentsOf: url) else { return nil }
-        return UIImage(data: data)
-    }
-    
-    // tells the backend which outcome won. once resolved, winners get paid out.
     private func resolveEvent(winningOptionId: String) {
         isProcessing = true
         ClipBetAPI.shared.resolveEvent(
@@ -707,7 +401,6 @@ struct OrganizerDashboard: View {
         }
     }
 
-    // cancels the event entirely, everyone gets refunded
     private func cancelEvent() {
         isProcessing = true
         ClipBetAPI.shared.cancelEvent(
@@ -723,8 +416,6 @@ struct OrganizerDashboard: View {
 
     // MARK: - Polling
 
-    // polls the backend every 10 seconds to keep the dashboard data fresh.
-    // we skip this if running with mock data since there's nothing to poll.
     private func startPolling() {
         guard !ClipBetAPIConfig.useMockData else { return }
         refreshTimer = Timer.scheduledTimer(withTimeInterval: 10, repeats: true) { _ in

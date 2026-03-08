@@ -49,7 +49,6 @@ struct ClipBetExperience: ClipExperience {
         case success
         case createEvent
         case dashboard
-        case results
     }
 
     @State private var currentScreen: Screen = .loading
@@ -72,6 +71,7 @@ struct ClipBetExperience: ClipExperience {
     @State private var notificationOptInStatus: Bool? = nil
     @State private var newBettorsAdded = 0
     @State private var newAmountAdded = 0.0
+    // MARK: - Mock Notification State
     @State private var mockNotifTitle: String? = nil
     @State private var mockNotifBody: String? = nil
 
@@ -105,9 +105,6 @@ struct ClipBetExperience: ClipExperience {
                         self.createdEventQRURL = qrURL
                         self.organizerId = orgId
                         withAnimation { currentScreen = .dashboard }
-                    },
-                    onCancel: {
-                        withAnimation { currentScreen = .landing }
                     }
                 )
                 .transition(.move(edge: .trailing).combined(with: .opacity))
@@ -115,61 +112,47 @@ struct ClipBetExperience: ClipExperience {
                 OrganizerDashboard(
                     event: createdEvent ?? event,
                     qrURL: createdEventQRURL,
-                    organizerId: organizerId,
-                    onBack: {
-                        withAnimation { currentScreen = .landing }
-                    }
+                    organizerId: organizerId
                 )
                 .transition(.move(edge: .trailing).combined(with: .opacity))
-            case .results:
-                resultsView
-                    .transition(.opacity)
             }
             
-            // this is the in-app notification banner that slides down from the top.
-            // if the user taps it and it's the "event ended" one, we go straight
-            // to the results page. otherwise it just dismisses itself.
+            // In-app mock notification banner
             if let title = mockNotifTitle, let bodyStr = mockNotifBody {
-                Button {
-                    // tapping the banner takes you to results if the event ended
-                    if title == "Event Ended" {
-                        withAnimation { currentScreen = .results }
+                VStack {
+                    HStack(spacing: 12) {
+                        Image(systemName: "app.badge")
+                            .font(.system(size: 24))
+                            .foregroundColor(ClipBetColors.textPrimary)
+                            .padding(.top, 4)
+                        
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(title)
+                                .font(.system(size: 15, weight: .bold))
+                                .foregroundColor(ClipBetColors.textPrimary)
+                            Text(bodyStr)
+                                .font(.system(size: 13, weight: .regular))
+                                .foregroundColor(ClipBetColors.textPrimary.opacity(0.8))
+                        }
+                        Spacer()
                     }
+                    .padding(16)
+                    .background(Color.white.opacity(0.95))
+                    .cornerRadius(16)
+                    .shadow(color: Color.black.opacity(0.1), radius: 10, x: 0, y: 4)
+                    .padding(.horizontal, 16)
+                    .padding(.top, 16)
+                    
+                    Spacer()
+                }
+                .transition(.move(edge: .top).combined(with: .opacity))
+                .zIndex(100) // Ensure it appears above all screens
+                .onTapGesture {
                     withAnimation(.easeOut) {
                         mockNotifTitle = nil
                         mockNotifBody = nil
                     }
-                } label: {
-                    VStack {
-                        HStack(spacing: 12) {
-                            Image(systemName: "app.badge")
-                                .font(.system(size: 24))
-                                .foregroundColor(ClipBetColors.textPrimary)
-                                .padding(.top, 4)
-                            
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(title)
-                                    .font(.system(size: 15, weight: .bold))
-                                    .foregroundColor(ClipBetColors.textPrimary)
-                                Text(bodyStr)
-                                    .font(.system(size: 13, weight: .regular))
-                                    .foregroundColor(ClipBetColors.textPrimary.opacity(0.8))
-                            }
-                            Spacer()
-                        }
-                        .padding(16)
-                        .background(Color.white.opacity(0.95))
-                        .cornerRadius(16)
-                        .shadow(color: Color.black.opacity(0.1), radius: 10, x: 0, y: 4)
-                        .padding(.horizontal, 16)
-                        .padding(.top, 16)
-                        
-                        Spacer()
-                    }
                 }
-                .buttonStyle(.plain)
-                .transition(.move(edge: .top).combined(with: .opacity))
-                .zIndex(100)
             }
         }
         .animation(.easeInOut(duration: 0.3), value: currentScreen)
@@ -187,8 +170,27 @@ struct ClipBetExperience: ClipExperience {
 
     // MARK: - Live Data Polling
     private func startLiveDataPolling() {
-        // Disabled per user request so prices/pools do not randomly fluctuate
+        guard ClipBetAPIConfig.useMockData else { return }
+        
         liveDataTimer?.invalidate()
+        liveDataTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { _ in
+            DispatchQueue.main.async {
+                withAnimation {
+                    // Poll for new live bets
+                    self.newBettorsAdded += 1
+                    self.newAmountAdded += Double(Int.random(in: 5...25))
+                    
+                    // Update active event state
+                    if var currentEvent = ClipBetMockData.events.first {
+                        let randomIdx = Int.random(in: 0..<currentEvent.outcomes.count)
+                        currentEvent.outcomes[randomIdx].totalAmount += Double(Int.random(in: 5...25))
+                        currentEvent.outcomes[randomIdx].betCount += 1
+                        ClipBetMockData.primaryEvent = currentEvent
+                        self.event = currentEvent
+                    }
+                }
+            }
+        }
     }
 
     // MARK: - Load Event
@@ -225,7 +227,7 @@ struct ClipBetExperience: ClipExperience {
                 VStack(spacing: 16) {
                     Text("ClipBet")
                         .font(.custom("Cormorant Garamond", size: 32))
-                        .fontWeight(.regular)
+                        .fontWeight(.light)
                         .foregroundColor(ClipBetColors.textPrimary)
                         .opacity(appeared ? 1 : 0)
                         .offset(y: appeared ? 0 : 8)
@@ -272,7 +274,7 @@ struct ClipBetExperience: ClipExperience {
                 VStack(spacing: 12) {
                     Text(event.name)
                         .font(.custom("Cormorant Garamond", size: 28))
-                        .fontWeight(.regular)
+                        .fontWeight(.light)
                         .foregroundColor(ClipBetColors.textPrimary)
                         .multilineTextAlignment(.center)
                         .lineSpacing(4)
@@ -382,7 +384,7 @@ struct ClipBetExperience: ClipExperience {
                 VStack(spacing: 16) {
                     Text("ClipBet")
                         .font(.custom("Cormorant Garamond", size: 32))
-                        .fontWeight(.regular)
+                        .fontWeight(.light)
                         .foregroundColor(ClipBetColors.textPrimary)
 
                     StatusIndicator(status: event.status)
@@ -400,7 +402,7 @@ struct ClipBetExperience: ClipExperience {
 
                     Text("This event has ended")
                         .font(.custom("Cormorant Garamond", size: 26))
-                        .fontWeight(.regular)
+                        .fontWeight(.light)
                         .foregroundColor(ClipBetColors.textPrimary)
 
                     Text(event.name)
@@ -408,21 +410,6 @@ struct ClipBetExperience: ClipExperience {
                         .foregroundColor(ClipBetColors.textSecondary)
                         .multilineTextAlignment(.center)
                         .padding(.horizontal, 24)
-
-                    // Win display
-                    if let selected = selectedOutcome, event.resolvedOutcomeId == selected.id {
-                        let est = event.estimatedReturn(betAmount: betAmount, for: selected)
-                        VStack(spacing: 8) {
-                            Text("YOUR BET WON")
-                                .font(.custom("DM Mono", size: 14))
-                                .kerning(1.2)
-                                .foregroundColor(ClipBetColors.yes)
-                            Text("Total Win: " + String(format: "$%.2f", est))
-                                .font(.custom("Cormorant Garamond", size: 28))
-                                .foregroundColor(ClipBetColors.textPrimary)
-                        }
-                        .padding(.top, 16)
-                    }
                 }
                 .padding(.vertical, 32)
 
@@ -479,138 +466,6 @@ struct ClipBetExperience: ClipExperience {
         .scrollIndicators(.hidden)
     }
 
-    // MARK: - Results View
-    // this is the screen users see after an event ends.
-    // it shows whether they won or lost, their total earnings,
-    // the final pool stats, and a breakdown of each outcome.
-    private var resultsView: some View {
-        ScrollView {
-            VStack(spacing: 0) {
-
-                // Brand
-                VStack(spacing: 16) {
-                    Text("ClipBet")
-                        .font(.custom("Cormorant Garamond", size: 32))
-                        .fontWeight(.regular)
-                        .foregroundColor(ClipBetColors.textPrimary)
-
-                    StatusIndicator(status: event.status)
-                }
-                .padding(.top, 24)
-                .padding(.bottom, 20)
-
-                ClipBetDivider()
-
-                // Event ended message and Earnings
-                VStack(spacing: 16) {
-                    Image(systemName: "checkmark.seal.fill")
-                        .font(.system(size: 32))
-                        .foregroundColor(ClipBetColors.yes)
-
-                    Text("Event Results")
-                        .font(.custom("Cormorant Garamond", size: 26))
-                        .fontWeight(.regular)
-                        .foregroundColor(ClipBetColors.textPrimary)
-
-                    Text(event.name)
-                        .font(.custom("DM Mono", size: 13))
-                        .foregroundColor(ClipBetColors.textSecondary)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal, 24)
-
-                    // check if the user picked the winning outcome, and
-                    // calculate how much they earned based on the pool split
-                    if let selected = selectedOutcome {
-                        let isWinner = event.resolvedOutcomeId == selected.id
-                        // if they lost, earnings are just $0
-                        let est = isWinner ? event.estimatedReturn(betAmount: betAmount, for: selected) : 0
-
-                        VStack(spacing: 8) {
-                            Text(isWinner ? "YOU WON!" : "NOT THIS TIME")
-                                .font(.custom("DM Mono", size: 14))
-                                .kerning(1.2)
-                                .foregroundColor(isWinner ? ClipBetColors.yes : ClipBetColors.no)
-                                
-                            Text("Total Earnings")
-                                .font(.custom("DM Mono", size: 11))
-                                .kerning(1.6)
-                                .foregroundColor(ClipBetColors.textSecondary)
-                                .padding(.top, 8)
-                                
-                            Text(String(format: "$%.2f", est))
-                                .font(.custom("Cormorant Garamond", size: 48))
-                                .fontWeight(.regular)
-                                .foregroundColor(ClipBetColors.textPrimary)
-                        }
-                        .padding(.top, 16)
-                    }
-                }
-                .padding(.vertical, 32)
-                .frame(maxWidth: .infinity)
-                .background(ClipBetColors.yesFill.opacity(0.3))
-
-                ClipBetDivider()
-
-                // Final results
-                HStack(spacing: 0) {
-                    StatColumn(value: event.formattedPool, label: "FINAL POOL")
-                    ClipBetVerticalDivider()
-                    StatColumn(value: "\(event.totalBettors)", label: "PARTICIPANTS")
-                }
-                .padding(.vertical, 20)
-
-                ClipBetDivider()
-
-                // Outcome results
-                VStack(spacing: 0) {
-                    ForEach(Array(event.outcomes.enumerated()), id: \.element.id) { index, outcome in
-                        HStack {
-                            OutcomeRow(
-                                outcome: outcome,
-                                percentage: event.percentage(for: outcome),
-                                isFirst: index == 0
-                            )
-                            Spacer()
-                            if event.resolvedOutcomeId == outcome.id {
-                                ClipBetTag(text: "WINNER", color: ClipBetColors.yes)
-                            } else if selectedOutcome?.id == outcome.id {
-                                ClipBetTag(text: "YOUR PICK", color: ClipBetColors.textSecondary)
-                            }
-                        }
-                        if index < event.outcomes.count - 1 {
-                            ClipBetDivider()
-                        }
-                    }
-                }
-                .padding(.horizontal, 24)
-                .padding(.vertical, 16)
-
-                ClipBetDivider()
-
-                // Receipt
-                VStack(spacing: 0) {
-                    MonoLabel(text: "YOUR BET DETAILS")
-                        .padding(.top, 24)
-                        .padding(.bottom, 16)
-                        
-                    ReceiptRow(label: "YOUR PICK", value: selectedOutcome?.name ?? "")
-                    ReceiptRow(label: "AMOUNT", value: String(format: "$%.0f", betAmount))
-                }
-                .padding(.horizontal, 24)
-
-                // CTA
-                VStack(spacing: 12) {
-                    ClipBetSecondaryButton(title: "BACK TO EVENT") {
-                        withAnimation { currentScreen = .expired }
-                    }
-                }
-                .padding(.horizontal, 24)
-                .padding(.vertical, 32)
-            }
-        }
-        .scrollIndicators(.hidden)
-    }
-
     // MARK: - Place Bet View
 
     private var placeBetView: some View {
@@ -629,7 +484,7 @@ struct ClipBetExperience: ClipExperience {
 
                 Text("Place Your Bet")
                     .font(.custom("Cormorant Garamond", size: 28))
-                    .fontWeight(.regular)
+                    .fontWeight(.light)
                     .foregroundColor(ClipBetColors.textPrimary)
                     .padding(.top, 20)
                     .padding(.bottom, 8)
@@ -702,7 +557,7 @@ struct ClipBetExperience: ClipExperience {
 
                                 Text(String(format: "%.0f%%", event.percentage(for: outcome)))
                                     .font(.custom("Cormorant Garamond", size: 22))
-                                    .fontWeight(.regular)
+                                    .fontWeight(.light)
                                     .foregroundColor(isSelected
                                                      ? (isYes ? ClipBetColors.yes : ClipBetColors.no)
                                                      : ClipBetColors.textFaint)
@@ -740,22 +595,18 @@ struct ClipBetExperience: ClipExperience {
 
                         Button {
                             showCustomAmount = true
-                            if betAmount > 0 {
-                                customAmount = String(Int(betAmount))
-                            } else {
-                                customAmount = ""
-                            }
+                            betAmount = 0
                         } label: {
                             Text("CUSTOM")
                                 .font(.custom("DM Mono", size: 12))
                                 .kerning(1)
-                                .foregroundColor(showCustomAmount ? ClipBetColors.bg : ClipBetColors.textPrimary)
+                                .foregroundColor(showCustomAmount ? ClipBetColors.bg : ClipBetColors.textSecondary)
                                 .padding(.horizontal, 16)
                                 .padding(.vertical, 12)
-                                .background(showCustomAmount ? ClipBetColors.dark : Color.white)
+                                .background(showCustomAmount ? ClipBetColors.dark : Color.clear)
                                 .overlay(
                                     RoundedRectangle(cornerRadius: 2)
-                                        .stroke(showCustomAmount ? Color.clear : ClipBetColors.textPrimary, lineWidth: 1.5)
+                                        .stroke(ClipBetColors.divider, lineWidth: 1)
                                 )
                                 .clipShape(RoundedRectangle(cornerRadius: 2))
                         }
@@ -766,11 +617,11 @@ struct ClipBetExperience: ClipExperience {
                         HStack {
                             Text("$")
                                 .font(.custom("Cormorant Garamond", size: 24))
-                                .fontWeight(.regular)
+                                .fontWeight(.light)
                                 .foregroundColor(ClipBetColors.textPrimary)
                             TextField("0", text: $customAmount)
                                 .font(.custom("Cormorant Garamond", size: 24))
-                                .fontWeight(.regular)
+                                .fontWeight(.light)
                                 .foregroundColor(ClipBetColors.textPrimary)
                                 .keyboardType(.numberPad)
                                 .onChange(of: customAmount) { _, newValue in
@@ -795,7 +646,7 @@ struct ClipBetExperience: ClipExperience {
                         MonoLabel(text: "ESTIMATED RETURN")
                         Text(String(format: "$%.2f", est))
                             .font(.custom("Cormorant Garamond", size: 36))
-                            .fontWeight(.regular)
+                            .fontWeight(.light)
                             .foregroundColor(ClipBetColors.yes)
                     }
                     .padding(.vertical, 20)
@@ -850,7 +701,7 @@ struct ClipBetExperience: ClipExperience {
 
                 Text("Confirm Bet")
                     .font(.custom("Cormorant Garamond", size: 28))
-                    .fontWeight(.regular)
+                    .fontWeight(.light)
                     .foregroundColor(ClipBetColors.bg)
                     .padding(.top, 16)
                     .padding(.bottom, 24)
@@ -906,7 +757,7 @@ struct ClipBetExperience: ClipExperience {
                 VStack(spacing: 16) {
                     Text("You're In")
                         .font(.custom("Cormorant Garamond", size: 36))
-                        .fontWeight(.regular)
+                        .fontWeight(.light)
                         .foregroundColor(ClipBetColors.textPrimary)
                         .padding(.top, 40)
 
@@ -966,7 +817,7 @@ struct ClipBetExperience: ClipExperience {
 
                                 Text(String(format: "%.0f%%", pct))
                                     .font(.custom("Cormorant Garamond", size: 24))
-                                    .fontWeight(.regular)
+                                    .fontWeight(.light)
                                     .foregroundColor(isYes ? ClipBetColors.yes : ClipBetColors.no)
                             }
 
@@ -1007,12 +858,12 @@ struct ClipBetExperience: ClipExperience {
                                 Text("NOT NOW")
                                     .font(.custom("DM Mono", size: 12))
                                     .kerning(1.6)
-                                    .foregroundColor(ClipBetColors.textPrimary)
+                                    .foregroundColor(ClipBetColors.textSecondary)
                                     .padding(.horizontal, 20)
                                     .padding(.vertical, 14)
                                     .overlay(
                                         RoundedRectangle(cornerRadius: 2)
-                                            .stroke(ClipBetColors.textPrimary, lineWidth: 1.5)
+                                            .stroke(ClipBetColors.divider, lineWidth: 1)
                                     )
                             }
                             
@@ -1049,10 +900,6 @@ struct ClipBetExperience: ClipExperience {
                                     .padding(.vertical, 10)
                                     .background(ClipBetColors.surface)
                                     .clipShape(RoundedRectangle(cornerRadius: 2))
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 2)
-                                            .stroke(ClipBetColors.textPrimary, lineWidth: 1)
-                                    )
                             }
                             Button { simulateNotification(type: 2) } label: {
                                 Text("SIMULATE: ENDED")
@@ -1062,10 +909,6 @@ struct ClipBetExperience: ClipExperience {
                                     .padding(.vertical, 10)
                                     .background(ClipBetColors.surface)
                                     .clipShape(RoundedRectangle(cornerRadius: 2))
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 2)
-                                            .stroke(ClipBetColors.textPrimary, lineWidth: 1)
-                                    )
                             }
                         }
                     }
@@ -1091,12 +934,20 @@ struct ClipBetExperience: ClipExperience {
                 }
                 .padding(.bottom, 24)
                 
-                // View Organizer Dashboard demo feature removed per requirements
-                
-                ClipBetSecondaryButton(title: "BACK TO EVENT") {
-                    withAnimation { currentScreen = .landing }
+                // View Organizer Dashboard demo feature
+                Button {
+                    // For demo purposes, map mock data to organizer state if missing
+                    if self.createdEvent == nil {
+                        self.createdEvent = self.event
+                        self.createdEventQRURL = "clipbet.io/event/\(self.event.id.uuidString.prefix(8).lowercased())"
+                        self.organizerId = self.event.organizerId.uuidString
+                    }
+                    withAnimation { currentScreen = .dashboard }
+                } label: {
+                    Text("Switch to Organizer View (Demo)")
+                        .font(.custom("DM Mono", size: 11))
+                        .foregroundColor(ClipBetColors.textSecondary)
                 }
-                .padding(.horizontal, 24)
                 .padding(.bottom, 40)
             }
         }
@@ -1105,10 +956,8 @@ struct ClipBetExperience: ClipExperience {
 
     // MARK: - Notifications
     
-    // we just set opted-in right away for a smoother ux,
-    // then actually request permission in the background.
-    // on simulators it might get blocked, so we don't overwrite true → false.
     private func requestNotificationPermission() {
+        // Assume opt-in immediately for UX
         withAnimation { self.notificationOptInStatus = true }
         
         UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, _ in
@@ -1121,11 +970,6 @@ struct ClipBetExperience: ClipExperience {
         }
     }
     
-    // simulates what happens when a notification comes in.
-    // type 1 = bets closed, type 2 = event ended.
-    // for the "event ended" one, we also set a 3-second timer
-    // that auto-redirects to the results page if the user
-    // doesn't tap the banner themselves.
     private func simulateNotification(type: Int) {
         withAnimation(.spring()) {
             if type == 1 {
@@ -1133,36 +977,15 @@ struct ClipBetExperience: ClipExperience {
                 self.mockNotifBody = "100 people are taking part. Event is now live!"
             } else {
                 self.mockNotifTitle = "Event Ended"
-                self.mockNotifBody = "Tap to view results and claim your winnings."
-                self.event.status = .resolved
-                
-                // for the demo, we just make the user's pick the winner
-                let targetOutcomeId = self.selectedOutcome?.id ?? self.event.outcomes.first?.id
-                self.event.resolvedOutcomeId = targetOutcomeId
-
-                // if user doesn't tap the banner, auto-redirect after 3 seconds
-                DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
-                    if self.currentScreen != .results && self.mockNotifTitle == "Event Ended" {
-                        withAnimation { self.currentScreen = .results }
-                        withAnimation(.easeOut) {
-                            self.mockNotifTitle = nil
-                            self.mockNotifBody = nil
-                        }
-                    }
-                }
+                self.mockNotifBody = "Enter the app to view results and claim your winnings."
             }
         }
         
-        let currentTitle = self.mockNotifTitle
-        
-        // also auto-dismiss the banner after 3.5s no matter what
-        // (slightly longer than the redirect timer so it doesn't flicker)
-        DispatchQueue.main.asyncAfter(deadline: .now() + 3.5) {
+        // Auto-dismiss after 4 seconds
+        DispatchQueue.main.asyncAfter(deadline: .now() + 4.0) {
             withAnimation(.easeOut) {
-                if self.mockNotifTitle == currentTitle {
-                    self.mockNotifTitle = nil
-                    self.mockNotifBody = nil
-                }
+                self.mockNotifTitle = nil
+                self.mockNotifBody = nil
             }
         }
     }
