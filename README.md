@@ -372,6 +372,30 @@ docs/
 
 The question is NOT "can you build an iOS app?" The question is: **"what experience fits the shape of an App Clip that nobody has thought of?"**
 
+## Shopify Alternative Local Backend
+
+If you are working on `ShopifyAlternativeRedirectExperience`, a local backend is included:
+
+```bash
+bash scripts/start_shopify_backend.sh
+```
+
+- Endpoint: `http://127.0.0.1:8899/discover-shopify-alternatives`
+- Health check: `http://127.0.0.1:8899/health`
+- Default mode is `auto`:
+  - uses Gemini (if `GEMINI_API_KEY` is set),
+  - otherwise does live Shopify discovery (search + verified Shopify catalog),
+  - falls back to deterministic mock data only if discovery cannot return results.
+- The iOS client also includes an emergency demo fallback, so if the backend is offline you still see product cards instead of a hard error.
+
+When you are ready to enable Gemini:
+
+1. Copy `.shopify_backend.env.example` to `.shopify_backend.env`
+2. Set `GEMINI_API_KEY` (and optionally `GEMINI_MODEL`)
+3. Keep `SHOPIFY_BACKEND_MODE=auto` (recommended)
+
+The Xcode run scheme auto-starts this backend before launch.
+
 ## Supporting Resources
 
 - [Apple App Clips Developer Documentation](https://developer.apple.com/documentation/appclip)

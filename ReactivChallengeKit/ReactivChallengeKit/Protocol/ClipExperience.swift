@@ -166,6 +166,9 @@ protocol ClipExperience: View {
     /// How would this clip be invoked in the real world?
     static var invocationSource: InvocationSource { get }
 
+    /// Optional custom sample URL shown on the landing invoke card.
+    static var sampleInvocationURL: String? { get }
+
     /// Initialize with the parsed invocation context.
     init(context: ClipContext)
 }
@@ -174,4 +177,5 @@ extension ClipExperience {
     static var teamName: String { "Reactiv" }
     static var touchpoint: JourneyTouchpoint { .utility }
     static var invocationSource: InvocationSource { .qrCode }
+    static var sampleInvocationURL: String? { nil }
 }

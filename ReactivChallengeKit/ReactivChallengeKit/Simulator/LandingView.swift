@@ -178,7 +178,7 @@ struct LandingView: View {
             VStack(spacing: 12) {
                 ForEach(clips.indices, id: \.self) { i in
                     let exp = clips[i]
-                    let sampleURL = ClipRouter.sampleURL(for: exp.urlPattern)
+                    let sampleURL = exp.sampleInvocationURL ?? ClipRouter.sampleURL(for: exp.urlPattern)
                     InvocationCard(
                         experience: exp,
                         sampleURL: sampleURL
