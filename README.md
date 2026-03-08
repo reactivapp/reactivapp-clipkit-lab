@@ -1,5 +1,7 @@
 # Reactiv ClipKit Lab
 
+Check out our base/backend code here: https://github.com/Karan-Gupta07/RepairBOT
+
 [![Build](https://github.com/reactivapp/reactivapp-clipkit-lab/actions/workflows/test.yml/badge.svg)](https://github.com/reactivapp/reactivapp-clipkit-lab/actions/workflows/test.yml)
 
 An App Clip simulator for Hack Canada. Build creative App Clip experiences without needing entitlements, Associated Domains, or an Apple Developer account.
