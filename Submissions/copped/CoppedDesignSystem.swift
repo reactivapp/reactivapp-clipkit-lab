@@ -33,7 +33,7 @@ enum CoppedTheme {
 
 enum CoppedPalette {
     // Primary surfaces
-    static let ink = Color(red: 0.06, green: 0.04, blue: 0.09)
+    static let ink = Color(red: 0.07, green: 0.07, blue: 0.07)
 
     // Accent kept from ClankerComponents theme — violet #7C3AED
     static var accent: Color { UniversalColor.accent.color }
@@ -115,20 +115,8 @@ struct CoppedStepPill: View {
             .foregroundStyle(isActive ? .white : .white.opacity(0.5))
             .padding(.horizontal, 10)
             .padding(.vertical, 5)
-            .liquidGlass(cornerRadius: 20, useCapsule: true,
-                         accentColor: isActive ? CoppedPalette.accent : nil)
+            .liquidGlass(cornerRadius: 20, useCapsule: true)
             .animation(.easeInOut(duration: 0.25), value: isActive)
-    }
-}
-
-// MARK: - Brand Gradients
-
-extension CoppedPalette {
-    static var primaryGradient: LinearGradient {
-        LinearGradient(colors: [accent, accent], startPoint: .leading, endPoint: .trailing)
-    }
-    static var accentGradient: LinearGradient {
-        LinearGradient(colors: [accent.opacity(0.7), accent], startPoint: .topLeading, endPoint: .bottomTrailing)
     }
 }
 

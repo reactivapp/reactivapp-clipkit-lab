@@ -225,7 +225,7 @@ struct CoppedVideoRecorder: View {
                         startSimulatorRecording()
                     }
                 },
-                accentColor: .white
+                accentColor: CoppedPalette.accent
             )
 
             recorderHint(
@@ -279,7 +279,7 @@ struct CoppedVideoRecorder: View {
                 RoundedRectangle(cornerRadius: 14)
                     .stroke(Color.white.opacity(0.2), lineWidth: 0.5)
             )
-            .shadow(color: (isRecording ? Color.red : accentColor).opacity(0.32), radius: 12, y: 4)
+            .shadow(color: Color.black.opacity(0.3), radius: 8, y: 4)
             .animation(.easeInOut(duration: 0.2), value: isRecording)
         }
         .buttonStyle(PlainButtonStyle())

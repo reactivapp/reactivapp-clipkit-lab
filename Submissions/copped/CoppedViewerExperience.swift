@@ -21,6 +21,7 @@ struct CoppedViewerExperience: ClipExperience {
     @State private var errorMessage: String?
     @State private var copiedReceiptURL = false
     @State private var pulseCTA = false
+    @State private var selectedTab = 0
 
     private let deviceID = "copped-device-id"
 
@@ -172,29 +173,58 @@ struct CoppedViewerExperience: ClipExperience {
 
     // MARK: - Bottom Overlay
 
+    private var tabBarItems: [TabBarItem] {
+        [
+            TabBarItem(id: 0, icon: "play.rectangle.fill", label: "Browse"),
+            TabBarItem(id: 1, icon: "plus.circle.fill", label: "Create"),
+            TabBarItem(id: 2, icon: "creditcard.fill", label: "Wallet")
+        ]
+    }
+
     @ViewBuilder
     private var bottomOverlay: some View {
-        if checkoutOutcome != nil || (!isLoading && !clips.isEmpty) {
-            VStack(spacing: 8) {
-                if let outcome = checkoutOutcome {
-                    receiptPanel(outcome: outcome)
-                }
+        VStack(spacing: 0) {
+            if checkoutOutcome != nil || (!isLoading && !clips.isEmpty) {
+                VStack(spacing: 8) {
+                    if let outcome = checkoutOutcome {
+                        receiptPanel(outcome: outcome)
+                    }
 
-                if !isLoading && !clips.isEmpty {
-                    buyBar
+                    if !isLoading && !clips.isEmpty {
+                        buyBar
+                    }
                 }
+                .padding(.horizontal, 12)
+                .padding(.top, 8)
+                .padding(.bottom, 4)
             }
-            .padding(.horizontal, 12)
-            .padding(.top, 8)
-            .padding(.bottom, 6)
-            .background(
-                LinearGradient(
-                    colors: [Color.clear, Color.black.opacity(0.5)],
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
+
+            FloatingTabBar(
+                items: tabBarItems,
+                selection: $selectedTab,
+                accentColor: .white,
+                bottomPadding: 8,
+                useLiquidGlass: true,
+                onSelectionChanged: { tab in
+                    if tab == 1 {
+                        // + Create: deep-link to creator
+                        if let outcome = checkoutOutcome {
+                            let url = URL(string: "https://clip.copped.app/c/\(outcome.receiptID)")!
+                            Task { await CoppedURLLauncher.open(url) }
+                        }
+                        // Reset to browse tab
+                        selectedTab = 0
+                    }
+                }
             )
         }
+        .background(
+            LinearGradient(
+                colors: [Color.clear, Color.black.opacity(0.6)],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+        )
     }
 
     private var buyBar: some View {
