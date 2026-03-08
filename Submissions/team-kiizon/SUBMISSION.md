@@ -58,7 +58,7 @@ The waitlist join is the sole purpose of the Clip interaction as it happens in u
 
 1. Alert user that their table reservation is ready.
 2. After ~2 hours, capture sentiment and issues, offering discount code for completion.
-3. After ~6 hours, convert diner to repeat takeout customer by offering limited time promotions.
+3. After ~6 hours, convert diner to repeat takeout customer by offering limited-time promotions.
 
 
 The restaurant sends these notifications without the guest ever granting explicit permission — that is the core Reactiv Clips value proposition.
@@ -85,7 +85,7 @@ Both momsgoldendumplings.com/reserve/feedback and momsgoldendumplings.com/reserv
 
 **Channel:** In-person dining -> owned takeout re-engagement (bypasses third-party platforms)
 
-**Conversion estimate:** If 30% of guests scan the QR code and 20% of those respond to the evening takeout notification, a restaurant doing 100 covers/night captures ~6 incremental direct takeout orders per day - at zero commission, compared to 20-30% commision fees on delivery platforms.
+**Conversion estimate:** If 30% of guests scan the QR code and 20% of those respond to the evening takeout notification, a restaurant doing 100 covers/night captures ~6 incremental direct takeout orders per day - at zero commission, compared to 20-30% commission fees on delivery platforms.
 
 **Why this touchpoint:** The moment a guest joins a waitlist is the highest-intent, lowest-friction moment to capture a notification window. The guest is already present, already engaged, and already waiting, the ask (party size + one tap) is trivially small. No other touchpoint offers this combination of physical presence, clear task, and high trust.
 
