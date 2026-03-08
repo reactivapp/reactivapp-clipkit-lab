@@ -2754,6 +2754,42 @@ enum CoppedRemoteBackend {
             }
     }
 
+    static func performCheckout(
+        productId: String,
+        clipId: String?,
+        apiBaseURL: URL,
+        deviceID: String
+    ) async throws -> CoppedCheckoutOutcome {
+        var requestBody: [String: Any] = [
+            "product_id": productId
+        ]
+        if let clipId, !clipId.isEmpty {
+            requestBody["clip_id"] = clipId
+        }
+
+        let response = try await requestJSON(
+            apiBaseURL: apiBaseURL,
+            paths: ["/checkout/dev"],
+            method: "POST",
+            deviceID: deviceID,
+            body: requestBody
+        )
+
+        let payload = payloadDict(from: response)
+        guard let orderID = stringValue(for: ["order_id", "orderId"], in: payload),
+              let receiptID = stringValue(for: ["receipt_id", "receiptId"], in: payload) else {
+            throw CoppedRemoteBackendError.invalidResponse("Checkout response missing order_id or receipt_id.")
+        }
+
+        let conversion = dictValue(for: ["conversion"], in: payload).flatMap(parseConversionResponse(from:))
+
+        return CoppedCheckoutOutcome(
+            orderID: orderID,
+            receiptID: receiptID,
+            conversion: conversion
+        )
+    }
+
     // MARK: - Networking
 
     private static func requestJSON(
@@ -2855,6 +2891,57 @@ enum CoppedRemoteBackend {
                 createdAt: dateValue(for: ["created_at", "createdAt"], in: item) ?? Date()
             )
         }
+    }
+
+    private static func parseConversionResponse(from raw: [String: Any]) -> CoppedConversionResponse {
+        let reward = dictValue(for: ["reward"], in: raw) ?? [:]
+        let balances = dictValue(for: ["balances", "totals"], in: raw) ?? [:]
+        let push = dictValue(for: ["push"], in: raw) ?? [:]
+
+        let creditedCents = intValue(
+            for: ["credited_cents", "creditedCents", "earnings_added", "reward_cents", "rewardCents"],
+            in: raw,
+            fallback: reward
+        ) ?? 0
+
+        let availableBalanceCents = intValue(
+            for: ["available_balance_cents", "availableBalanceCents", "available_cents", "balance_cents", "balanceCents"],
+            in: raw,
+            fallback: balances
+        ) ?? 0
+
+        let pushSent = boolValue(for: ["push_sent", "pushSent", "sent"], in: raw)
+            ?? boolValue(for: ["push_sent", "pushSent", "sent"], in: push)
+            ?? false
+
+        let withinPushWindow = boolValue(for: ["within_push_window", "withinPushWindow", "within_window", "withinWindow"], in: raw)
+            ?? boolValue(for: ["within_push_window", "withinPushWindow", "within_window", "withinWindow"], in: push)
+            ?? false
+
+        let success = boolValue(for: ["success", "attributed", "reward_credited", "rewardCredited"], in: raw)
+            ?? (creditedCents > 0)
+
+        let creditedDisplay = stringValue(
+            for: ["credited_display", "creditedDisplay", "display"],
+            in: raw,
+            fallback: reward
+        ) ?? creditedCents.clipStakesCurrencyDisplay
+
+        let availableBalanceDisplay = stringValue(
+            for: ["available_balance_display", "availableBalanceDisplay", "available_display", "availableDisplay", "balance_display", "balanceDisplay"],
+            in: raw,
+            fallback: balances
+        ) ?? availableBalanceCents.clipStakesCurrencyDisplay
+
+        return CoppedConversionResponse(
+            success: success,
+            creditedCents: creditedCents,
+            creditedDisplay: creditedDisplay,
+            availableBalanceCents: availableBalanceCents,
+            availableBalanceDisplay: availableBalanceDisplay,
+            pushSent: pushSent,
+            withinPushWindow: withinPushWindow
+        )
     }
 
     private static func parseClip(
@@ -8048,7 +8135,12 @@ final class CoppedCameraController: NSObject, ObservableObject {
                 return
             }
 
-            configureSessionIfNeeded(includeAudio: false)
+            let microphoneGranted = await requestAudioAccessIfNeeded()
+            if !microphoneGranted {
+                errorMessage = "Microphone permission is off. Videos will record without audio."
+            }
+
+            configureSessionIfNeeded(includeAudio: microphoneGranted)
             startSession()
         }
 #endif
@@ -8111,6 +8203,20 @@ final class CoppedCameraController: NSObject, ObservableObject {
         }
     }
 
+    private func requestAudioAccessIfNeeded() async -> Bool {
+        let status = AVCaptureDevice.authorizationStatus(for: .audio)
+        switch status {
+        case .authorized:
+            return true
+        case .denied, .restricted:
+            return false
+        case .notDetermined:
+            return await requestAccess(for: .audio)
+        @unknown default:
+            return false
+        }
+    }
+
     private func requestAccess(for mediaType: AVMediaType) async -> Bool {
         await withCheckedContinuation { continuation in
             AVCaptureDevice.requestAccess(for: mediaType) { granted in
@@ -8126,7 +8232,7 @@ final class CoppedCameraController: NSObject, ObservableObject {
 
         session.beginConfiguration()
         session.sessionPreset = .high
-        session.automaticallyConfiguresApplicationAudioSession = false
+        session.automaticallyConfiguresApplicationAudioSession = true
 
         defer {
             session.commitConfiguration()
@@ -8143,11 +8249,14 @@ final class CoppedCameraController: NSObject, ObservableObject {
 
         session.addInput(videoInput)
 
-        if includeAudio,
-           let audioDevice = AVCaptureDevice.default(for: .audio),
-           let audioInput = try? AVCaptureDeviceInput(device: audioDevice),
-           session.canAddInput(audioInput) {
-            session.addInput(audioInput)
+        if includeAudio {
+            if let audioDevice = AVCaptureDevice.default(for: .audio),
+               let audioInput = try? AVCaptureDeviceInput(device: audioDevice),
+               session.canAddInput(audioInput) {
+                session.addInput(audioInput)
+            } else if errorMessage == nil {
+                errorMessage = "Microphone is unavailable. Videos may record without audio."
+            }
         }
 
         if session.canAddOutput(movieOutput) {
@@ -8438,8 +8547,6 @@ struct CoppedViewerExperience: ClipExperience {
     @State private var checkoutOutcome: CoppedCheckoutOutcome?
     @State private var errorMessage: String?
     @State private var copiedReceiptURL = false
-    @State private var pulseCTA = false
-    @State private var selectedTab = 0
 
     private let deviceID = "copped-device-id"
 
@@ -8502,9 +8609,6 @@ struct CoppedViewerExperience: ClipExperience {
         }
         .onAppear {
             CoppedTheme.bootstrap()
-            withAnimation(.easeInOut(duration: 1.35).repeatForever(autoreverses: true)) {
-                pulseCTA = true
-            }
         }
         .task(id: productID + "|" + (storeDomainOverride ?? "") + "|" + (preferredClipID ?? "")) {
             await loadClips()
@@ -8591,14 +8695,6 @@ struct CoppedViewerExperience: ClipExperience {
 
     // MARK: - Bottom Overlay
 
-    private var tabBarItems: [TabBarItem] {
-        [
-            TabBarItem(id: 0, icon: "play.rectangle.fill", label: "Browse"),
-            TabBarItem(id: 1, icon: "plus.circle.fill", label: "Create"),
-            TabBarItem(id: 2, icon: "creditcard.fill", label: "Wallet")
-        ]
-    }
-
     @ViewBuilder
     private var bottomOverlay: some View {
         VStack(spacing: 0) {
@@ -8616,45 +8712,6 @@ struct CoppedViewerExperience: ClipExperience {
                 .padding(.top, 8)
                 .padding(.bottom, 4)
             }
-
-            // FAB create button
-            Button {
-                if let outcome = checkoutOutcome {
-                    let url = URL(string: "https://clip.copped.app/c/\(outcome.receiptID)")!
-                    Task { await CoppedURLLauncher.open(url) }
-                }
-            } label: {
-                Image(systemName: "plus")
-                    .font(.system(size: 24, weight: .bold))
-                    .foregroundStyle(.white)
-                    .frame(width: 56, height: 56)
-                    .background(
-                        Circle()
-                            .fill(CoppedPalette.accent)
-                            .shadow(color: CoppedPalette.accent.opacity(0.4), radius: 12, y: 4)
-                    )
-            }
-            .buttonStyle(PlainButtonStyle())
-            .padding(.vertical, 4)
-
-            FloatingTabBar(
-                items: tabBarItems,
-                selection: $selectedTab,
-                inactiveColor: .primary.opacity(0.45),
-                bottomPadding: 8,
-                useLiquidGlass: true,
-                onSelectionChanged: { tab in
-                    if tab == 1 {
-                        // + Create: deep-link to creator
-                        if let outcome = checkoutOutcome {
-                            let url = URL(string: "https://clip.copped.app/c/\(outcome.receiptID)")!
-                            Task { await CoppedURLLauncher.open(url) }
-                        }
-                        // Reset to browse tab
-                        selectedTab = 0
-                    }
-                }
-            )
         }
         .background(
             LinearGradient(
@@ -8787,7 +8844,8 @@ struct CoppedViewerExperience: ClipExperience {
                 .foregroundStyle(.white)
                 .shadow(color: .black.opacity(0.5), radius: 6)
                 .lineLimit(2)
-                .frame(maxWidth: .infinity, alignment: .leading)
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: .infinity, alignment: .center)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 8)
                 .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 10))
@@ -8842,7 +8900,7 @@ struct CoppedViewerExperience: ClipExperience {
                 Spacer()
             }
 
-            Text("Your receipt is ready. Open creator flow to record and claim reward.")
+            Text("Demo receipt is ready. Open creator flow to record and claim reward.")
                 .font(.custom(Manrope.medium, size: 11))
                 .foregroundStyle(.white.opacity(0.65))
 
@@ -8936,7 +8994,7 @@ struct CoppedViewerExperience: ClipExperience {
         defer { checkoutInFlight = false }
 
         do {
-            let outcome = try await CoppedMockBackend.shared.performViewerCheckout(
+            let outcome = try await performCheckoutViaProvider(
                 productId: productID,
                 clipId: currentClip.id
             )
@@ -8953,6 +9011,34 @@ struct CoppedViewerExperience: ClipExperience {
                 errorMessage = error.localizedDescription
                 showCheckout = false
             }
+        }
+    }
+
+    private func performCheckoutViaProvider(
+        productId: String,
+        clipId: String?
+    ) async throws -> CoppedCheckoutOutcome {
+        do {
+            return try await CoppedRemoteBackend.performCheckout(
+                productId: productId,
+                clipId: clipId,
+                apiBaseURL: apiBaseURL,
+                deviceID: deviceID
+            )
+        } catch let error as CoppedRemoteBackendError where error.isConnectivityIssue {
+            guard allowMockFallback else { throw error }
+            return try await CoppedMockBackend.shared.performViewerCheckout(
+                productId: productId,
+                clipId: clipId
+            )
+        } catch let error as CoppedRemoteBackendError {
+            if allowMockFallback, case .requestFailed(let statusCode, _) = error, statusCode == 404 {
+                return try await CoppedMockBackend.shared.performViewerCheckout(
+                    productId: productId,
+                    clipId: clipId
+                )
+            }
+            throw error
         }
     }
 }
@@ -8980,7 +9066,7 @@ private struct CoppedViewerCheckoutSheet: View {
                             .font(.custom(Manrope.extraBold, size: 20))
                             .foregroundStyle(.white)
 
-                        Text("Secure one-tap checkout")
+                        Text("Simulated checkout for this demo build")
                             .font(.custom(Manrope.medium, size: 12))
                             .foregroundStyle(.white.opacity(0.45))
                             .multilineTextAlignment(.center)
@@ -9003,7 +9089,7 @@ private struct CoppedViewerCheckoutSheet: View {
                             ProgressView()
                                 .tint(.white)
                                 .scaleEffect(0.8)
-                            Text("Processing Apple Pay...")
+                            Text("Processing simulated checkout...")
                                 .font(.custom(Manrope.medium, size: 12))
                                 .foregroundStyle(.white.opacity(0.6))
                         }

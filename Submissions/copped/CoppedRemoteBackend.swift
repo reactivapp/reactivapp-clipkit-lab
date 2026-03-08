@@ -332,6 +332,42 @@ enum CoppedRemoteBackend {
             }
     }
 
+    static func performCheckout(
+        productId: String,
+        clipId: String?,
+        apiBaseURL: URL,
+        deviceID: String
+    ) async throws -> CoppedCheckoutOutcome {
+        var requestBody: [String: Any] = [
+            "product_id": productId
+        ]
+        if let clipId, !clipId.isEmpty {
+            requestBody["clip_id"] = clipId
+        }
+
+        let response = try await requestJSON(
+            apiBaseURL: apiBaseURL,
+            paths: ["/checkout/dev"],
+            method: "POST",
+            deviceID: deviceID,
+            body: requestBody
+        )
+
+        let payload = payloadDict(from: response)
+        guard let orderID = stringValue(for: ["order_id", "orderId"], in: payload),
+              let receiptID = stringValue(for: ["receipt_id", "receiptId"], in: payload) else {
+            throw CoppedRemoteBackendError.invalidResponse("Checkout response missing order_id or receipt_id.")
+        }
+
+        let conversion = dictValue(for: ["conversion"], in: payload).flatMap(parseConversionResponse(from:))
+
+        return CoppedCheckoutOutcome(
+            orderID: orderID,
+            receiptID: receiptID,
+            conversion: conversion
+        )
+    }
+
     // MARK: - Networking
 
     private static func requestJSON(
@@ -433,6 +469,57 @@ enum CoppedRemoteBackend {
                 createdAt: dateValue(for: ["created_at", "createdAt"], in: item) ?? Date()
             )
         }
+    }
+
+    private static func parseConversionResponse(from raw: [String: Any]) -> CoppedConversionResponse {
+        let reward = dictValue(for: ["reward"], in: raw) ?? [:]
+        let balances = dictValue(for: ["balances", "totals"], in: raw) ?? [:]
+        let push = dictValue(for: ["push"], in: raw) ?? [:]
+
+        let creditedCents = intValue(
+            for: ["credited_cents", "creditedCents", "earnings_added", "reward_cents", "rewardCents"],
+            in: raw,
+            fallback: reward
+        ) ?? 0
+
+        let availableBalanceCents = intValue(
+            for: ["available_balance_cents", "availableBalanceCents", "available_cents", "balance_cents", "balanceCents"],
+            in: raw,
+            fallback: balances
+        ) ?? 0
+
+        let pushSent = boolValue(for: ["push_sent", "pushSent", "sent"], in: raw)
+            ?? boolValue(for: ["push_sent", "pushSent", "sent"], in: push)
+            ?? false
+
+        let withinPushWindow = boolValue(for: ["within_push_window", "withinPushWindow", "within_window", "withinWindow"], in: raw)
+            ?? boolValue(for: ["within_push_window", "withinPushWindow", "within_window", "withinWindow"], in: push)
+            ?? false
+
+        let success = boolValue(for: ["success", "attributed", "reward_credited", "rewardCredited"], in: raw)
+            ?? (creditedCents > 0)
+
+        let creditedDisplay = stringValue(
+            for: ["credited_display", "creditedDisplay", "display"],
+            in: raw,
+            fallback: reward
+        ) ?? creditedCents.clipStakesCurrencyDisplay
+
+        let availableBalanceDisplay = stringValue(
+            for: ["available_balance_display", "availableBalanceDisplay", "available_display", "availableDisplay", "balance_display", "balanceDisplay"],
+            in: raw,
+            fallback: balances
+        ) ?? availableBalanceCents.clipStakesCurrencyDisplay
+
+        return CoppedConversionResponse(
+            success: success,
+            creditedCents: creditedCents,
+            creditedDisplay: creditedDisplay,
+            availableBalanceCents: availableBalanceCents,
+            availableBalanceDisplay: availableBalanceDisplay,
+            pushSent: pushSent,
+            withinPushWindow: withinPushWindow
+        )
     }
 
     private static func parseClip(

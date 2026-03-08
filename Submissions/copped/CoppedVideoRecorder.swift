@@ -382,7 +382,12 @@ final class CoppedCameraController: NSObject, ObservableObject {
                 return
             }
 
-            configureSessionIfNeeded(includeAudio: false)
+            let microphoneGranted = await requestAudioAccessIfNeeded()
+            if !microphoneGranted {
+                errorMessage = "Microphone permission is off. Videos will record without audio."
+            }
+
+            configureSessionIfNeeded(includeAudio: microphoneGranted)
             startSession()
         }
 #endif
@@ -445,6 +450,20 @@ final class CoppedCameraController: NSObject, ObservableObject {
         }
     }
 
+    private func requestAudioAccessIfNeeded() async -> Bool {
+        let status = AVCaptureDevice.authorizationStatus(for: .audio)
+        switch status {
+        case .authorized:
+            return true
+        case .denied, .restricted:
+            return false
+        case .notDetermined:
+            return await requestAccess(for: .audio)
+        @unknown default:
+            return false
+        }
+    }
+
     private func requestAccess(for mediaType: AVMediaType) async -> Bool {
         await withCheckedContinuation { continuation in
             AVCaptureDevice.requestAccess(for: mediaType) { granted in
@@ -460,7 +479,7 @@ final class CoppedCameraController: NSObject, ObservableObject {
 
         session.beginConfiguration()
         session.sessionPreset = .high
-        session.automaticallyConfiguresApplicationAudioSession = false
+        session.automaticallyConfiguresApplicationAudioSession = true
 
         defer {
             session.commitConfiguration()
@@ -477,11 +496,14 @@ final class CoppedCameraController: NSObject, ObservableObject {
 
         session.addInput(videoInput)
 
-        if includeAudio,
-           let audioDevice = AVCaptureDevice.default(for: .audio),
-           let audioInput = try? AVCaptureDeviceInput(device: audioDevice),
-           session.canAddInput(audioInput) {
-            session.addInput(audioInput)
+        if includeAudio {
+            if let audioDevice = AVCaptureDevice.default(for: .audio),
+               let audioInput = try? AVCaptureDeviceInput(device: audioDevice),
+               session.canAddInput(audioInput) {
+                session.addInput(audioInput)
+            } else if errorMessage == nil {
+                errorMessage = "Microphone is unavailable. Videos may record without audio."
+            }
         }
 
         if session.canAddOutput(movieOutput) {
