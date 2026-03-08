@@ -15,8 +15,8 @@ enum ClipBetColors {
     static let surface      = Color(white: 0.94)
     static let divider      = Color(white: 0.90)
     static let textPrimary  = Color.black
-    static let textSecondary = Color(white: 0.45)
-    static let textFaint    = Color(white: 0.65)
+    static let textSecondary = Color(white: 0.35)
+    static let textFaint    = Color(white: 0.50)
 
     static let yes          = Color(red: 100/255, green: 170/255, blue: 140/255)
     static let yesFill      = Color(red: 220/255, green: 240/255, blue: 230/255)

@@ -369,7 +369,7 @@ struct CreateEventFlow: View {
                             } label: {
                                 Text("$\(Int(amount))")
                                     .font(.custom("DM Mono", size: 13))
-                                    .foregroundColor(minimumBet == amount ? ClipBetColors.surface : ClipBetColors.textSecondary)
+                                    .foregroundColor(minimumBet == amount ? ClipBetColors.bg : ClipBetColors.textPrimary)
                                     .padding(.horizontal, 16)
                                     .padding(.vertical, 10)
                                     .background(minimumBet == amount ? ClipBetColors.dark : Color.white)

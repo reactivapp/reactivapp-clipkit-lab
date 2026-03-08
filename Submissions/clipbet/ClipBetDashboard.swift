@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import CoreImage.CIFilterBuiltins
 
 struct OrganizerDashboard: View {
 
@@ -279,7 +280,7 @@ struct OrganizerDashboard: View {
                                     .font(.custom("DM Mono", size: 12))
                                     .kerning(1.2)
                             }
-                            .foregroundColor(ClipBetColors.textSecondary)
+                            .foregroundColor(ClipBetColors.textPrimary)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 12)
                             .background(Color.white)
@@ -386,40 +387,292 @@ struct OrganizerDashboard: View {
     private func generatePDF() -> URL? {
         let pdfMetaData = [
             kCGPDFContextCreator: "ClipBet",
-            kCGPDFContextAuthor: "Organizer"
+            kCGPDFContextAuthor: "Organizer",
+            kCGPDFContextTitle: event.name
         ]
         let format = UIGraphicsPDFRendererFormat()
         format.documentInfo = pdfMetaData as [String: Any]
         
-        let pageWidth = 8.5 * 72.0 // US Letter
-        let pageHeight = 11.0 * 72.0
+        let pageWidth: CGFloat = 8.5 * 72.0 // US Letter
+        let pageHeight: CGFloat = 11.0 * 72.0
         let pageRect = CGRect(x: 0, y: 0, width: pageWidth, height: pageHeight)
+        let margin: CGFloat = 50
+        let contentWidth = pageWidth - margin * 2
         
         let renderer = UIGraphicsPDFRenderer(bounds: pageRect, format: format)
-        let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent("ClipBet-QR-\(event.id.uuidString.prefix(6)).pdf")
+        let tempURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("ClipBet-Poster-\(event.id.uuidString.prefix(6)).pdf")
         
         do {
             try renderer.writePDF(to: tempURL) { context in
                 context.beginPage()
+                var yOffset: CGFloat = margin
                 
-                let titleAttributes: [NSAttributedString.Key: Any] = [
-                    .font: UIFont.systemFont(ofSize: 36, weight: .bold)
-                ]
-                let titleString = "Scan to bet on:\n\(event.name)"
-                titleString.draw(in: CGRect(x: 50, y: 100, width: pageWidth - 100, height: 100), withAttributes: titleAttributes)
-                
-                if let qrURL = qrURL {
-                    let urlAttributes: [NSAttributedString.Key: Any] = [
-                        .font: UIFont.systemFont(ofSize: 18, weight: .regular)
-                    ]
-                    "\(qrURL)".draw(in: CGRect(x: 50, y: 250, width: pageWidth - 100, height: 50), withAttributes: urlAttributes)
+                // --- 1. Event Image (if available) ---
+                if let image = event.localImage ?? loadRemoteImage() {
+                    let imageHeight: CGFloat = 200
+                    let imageRect = CGRect(x: margin, y: yOffset, width: contentWidth, height: imageHeight)
+                    
+                    // Draw rounded clip
+                    let clipPath = UIBezierPath(roundedRect: imageRect, cornerRadius: 4)
+                    context.cgContext.saveGState()
+                    clipPath.addClip()
+                    
+                    // Scale to fill
+                    let imageAspect = image.size.width / image.size.height
+                    let rectAspect = contentWidth / imageHeight
+                    var drawRect = imageRect
+                    if imageAspect > rectAspect {
+                        let scaledWidth = imageHeight * imageAspect
+                        drawRect = CGRect(
+                            x: margin - (scaledWidth - contentWidth) / 2,
+                            y: yOffset,
+                            width: scaledWidth,
+                            height: imageHeight
+                        )
+                    } else {
+                        let scaledHeight = contentWidth / imageAspect
+                        drawRect = CGRect(
+                            x: margin,
+                            y: yOffset - (scaledHeight - imageHeight) / 2,
+                            width: contentWidth,
+                            height: scaledHeight
+                        )
+                    }
+                    image.draw(in: drawRect)
+                    context.cgContext.restoreGState()
+                    yOffset += imageHeight + 24
+                } else {
+                    yOffset += 20
                 }
+                
+                // --- 2. ClipBet Branding ---
+                let brandAttrs: [NSAttributedString.Key: Any] = [
+                    .font: UIFont.systemFont(ofSize: 10, weight: .medium),
+                    .foregroundColor: UIColor.gray,
+                    .kern: 4.0
+                ]
+                let brandString = "CLIPBET"
+                let brandSize = brandString.size(withAttributes: brandAttrs)
+                brandString.draw(
+                    at: CGPoint(x: (pageWidth - brandSize.width) / 2, y: yOffset),
+                    withAttributes: brandAttrs
+                )
+                yOffset += brandSize.height + 16
+                
+                // --- 3. Divider line ---
+                drawDivider(in: context.cgContext, y: yOffset, margin: margin, width: contentWidth)
+                yOffset += 16
+                
+                // --- 4. Event Name ---
+                let titleAttrs: [NSAttributedString.Key: Any] = [
+                    .font: UIFont.systemFont(ofSize: 28, weight: .bold),
+                    .foregroundColor: UIColor.black
+                ]
+                let titleParagraph = NSMutableParagraphStyle()
+                titleParagraph.alignment = .center
+                titleParagraph.lineSpacing = 4
+                let titleDrawAttrs: [NSAttributedString.Key: Any] = [
+                    .font: UIFont.systemFont(ofSize: 28, weight: .bold),
+                    .foregroundColor: UIColor.black,
+                    .paragraphStyle: titleParagraph
+                ]
+                let titleRect = CGRect(x: margin, y: yOffset, width: contentWidth, height: 120)
+                let titleBounds = event.name.boundingRect(
+                    with: CGSize(width: contentWidth, height: .greatestFiniteMagnitude),
+                    options: [.usesLineFragmentOrigin, .usesFontLeading],
+                    attributes: titleDrawAttrs,
+                    context: nil
+                )
+                event.name.draw(in: titleRect, withAttributes: titleDrawAttrs)
+                yOffset += min(titleBounds.height, 120) + 12
+                
+                // --- 5. Description (if available) ---
+                if let desc = event.description, !desc.isEmpty {
+                    let descParagraph = NSMutableParagraphStyle()
+                    descParagraph.alignment = .center
+                    descParagraph.lineSpacing = 3
+                    let descAttrs: [NSAttributedString.Key: Any] = [
+                        .font: UIFont.systemFont(ofSize: 12, weight: .regular),
+                        .foregroundColor: UIColor.darkGray,
+                        .paragraphStyle: descParagraph
+                    ]
+                    let descRect = CGRect(x: margin + 20, y: yOffset, width: contentWidth - 40, height: 80)
+                    let descBounds = desc.boundingRect(
+                        with: CGSize(width: contentWidth - 40, height: .greatestFiniteMagnitude),
+                        options: [.usesLineFragmentOrigin, .usesFontLeading],
+                        attributes: descAttrs,
+                        context: nil
+                    )
+                    desc.draw(in: descRect, withAttributes: descAttrs)
+                    yOffset += min(descBounds.height, 80) + 12
+                }
+                
+                // --- 6. Location & Time ---
+                let infoAttrs: [NSAttributedString.Key: Any] = [
+                    .font: UIFont.systemFont(ofSize: 11, weight: .regular),
+                    .foregroundColor: UIColor.gray,
+                    .kern: 1.0
+                ]
+                var infoString = ""
+                if !event.location.isEmpty { infoString += event.location }
+                if let timeStr = event.formattedEventTime {
+                    if !infoString.isEmpty { infoString += "  ·  " }
+                    infoString += timeStr
+                }
+                if !infoString.isEmpty {
+                    let infoSize = infoString.size(withAttributes: infoAttrs)
+                    infoString.draw(
+                        at: CGPoint(x: (pageWidth - infoSize.width) / 2, y: yOffset),
+                        withAttributes: infoAttrs
+                    )
+                    yOffset += infoSize.height + 16
+                }
+                
+                // --- 7. Divider ---
+                drawDivider(in: context.cgContext, y: yOffset, margin: margin, width: contentWidth)
+                yOffset += 16
+                
+                // --- 8. Outcomes ---
+                let outcomeNameAttrs: [NSAttributedString.Key: Any] = [
+                    .font: UIFont.systemFont(ofSize: 14, weight: .medium),
+                    .foregroundColor: UIColor.black
+                ]
+                let outcomePctAttrs: [NSAttributedString.Key: Any] = [
+                    .font: UIFont.systemFont(ofSize: 14, weight: .regular),
+                    .foregroundColor: UIColor.darkGray
+                ]
+                
+                for (index, outcome) in event.outcomes.enumerated() {
+                    let pct = event.percentage(for: outcome)
+                    let dotColor: UIColor = index == 0
+                        ? UIColor(red: 100/255, green: 170/255, blue: 140/255, alpha: 1)
+                        : UIColor(red: 200/255, green: 100/255, blue: 100/255, alpha: 1)
+                    
+                    // Dot
+                    let dotRect = CGRect(x: margin + 10, y: yOffset + 5, width: 8, height: 8)
+                    context.cgContext.setFillColor(dotColor.cgColor)
+                    context.cgContext.fillEllipse(in: dotRect)
+                    
+                    // Name
+                    outcome.name.draw(
+                        at: CGPoint(x: margin + 28, y: yOffset),
+                        withAttributes: outcomeNameAttrs
+                    )
+                    
+                    // Percentage
+                    let pctStr = String(format: "%.0f%%", pct)
+                    let pctSize = pctStr.size(withAttributes: outcomePctAttrs)
+                    pctStr.draw(
+                        at: CGPoint(x: margin + contentWidth - pctSize.width - 10, y: yOffset),
+                        withAttributes: outcomePctAttrs
+                    )
+                    
+                    yOffset += 24
+                }
+                
+                yOffset += 8
+                
+                // --- 9. Divider ---
+                drawDivider(in: context.cgContext, y: yOffset, margin: margin, width: contentWidth)
+                yOffset += 24
+                
+                // --- 10. QR Code ---
+                if let qrURLString = qrURL, let qrImage = generateQRCodeImage(from: qrURLString) {
+                    let qrSize: CGFloat = 180
+                    let qrX = (pageWidth - qrSize) / 2
+                    
+                    // White background behind QR
+                    let qrBg = CGRect(x: qrX - 12, y: yOffset - 12, width: qrSize + 24, height: qrSize + 24)
+                    context.cgContext.setFillColor(UIColor.white.cgColor)
+                    context.cgContext.fill(qrBg)
+                    context.cgContext.setStrokeColor(UIColor(white: 0.85, alpha: 1).cgColor)
+                    context.cgContext.setLineWidth(1)
+                    context.cgContext.stroke(qrBg)
+                    
+                    let qrRect = CGRect(x: qrX, y: yOffset, width: qrSize, height: qrSize)
+                    qrImage.draw(in: qrRect)
+                    yOffset += qrSize + 20
+                    
+                    // "SCAN TO PREDICT" label
+                    let scanAttrs: [NSAttributedString.Key: Any] = [
+                        .font: UIFont.systemFont(ofSize: 12, weight: .medium),
+                        .foregroundColor: UIColor.darkGray,
+                        .kern: 3.0
+                    ]
+                    let scanLabel = "SCAN TO PREDICT"
+                    let scanSize = scanLabel.size(withAttributes: scanAttrs)
+                    scanLabel.draw(
+                        at: CGPoint(x: (pageWidth - scanSize.width) / 2, y: yOffset),
+                        withAttributes: scanAttrs
+                    )
+                    yOffset += scanSize.height + 8
+                    
+                    // URL
+                    let urlAttrs: [NSAttributedString.Key: Any] = [
+                        .font: UIFont.systemFont(ofSize: 10, weight: .regular),
+                        .foregroundColor: UIColor.gray
+                    ]
+                    let urlSize = qrURLString.size(withAttributes: urlAttrs)
+                    qrURLString.draw(
+                        at: CGPoint(x: (pageWidth - urlSize.width) / 2, y: yOffset),
+                        withAttributes: urlAttrs
+                    )
+                    yOffset += urlSize.height + 24
+                }
+                
+                // --- 11. Footer divider ---
+                drawDivider(in: context.cgContext, y: yOffset, margin: margin, width: contentWidth)
+                yOffset += 12
+                
+                // --- 12. Footer ---
+                let footerAttrs: [NSAttributedString.Key: Any] = [
+                    .font: UIFont.systemFont(ofSize: 9, weight: .regular),
+                    .foregroundColor: UIColor.lightGray,
+                    .kern: 2.0
+                ]
+                let footerLabel = "CLIPBET · POWERED BY APP CLIPS"
+                let footerSize = footerLabel.size(withAttributes: footerAttrs)
+                footerLabel.draw(
+                    at: CGPoint(x: (pageWidth - footerSize.width) / 2, y: yOffset),
+                    withAttributes: footerAttrs
+                )
             }
             return tempURL
         } catch {
             print("Could not create PDF: \(error)")
             return nil
         }
+    }
+    
+    // MARK: - PDF Helpers
+    
+    private func drawDivider(in cgContext: CGContext, y: CGFloat, margin: CGFloat, width: CGFloat) {
+        cgContext.setStrokeColor(UIColor(white: 0.85, alpha: 1).cgColor)
+        cgContext.setLineWidth(0.5)
+        cgContext.move(to: CGPoint(x: margin, y: y))
+        cgContext.addLine(to: CGPoint(x: margin + width, y: y))
+        cgContext.strokePath()
+    }
+    
+    private func generateQRCodeImage(from string: String) -> UIImage? {
+        let ciContext = CIContext()
+        let filter = CIFilter.qrCodeGenerator()
+        filter.message = Data(string.utf8)
+        filter.correctionLevel = "M"
+        
+        guard let ciImage = filter.outputImage else { return nil }
+        let scale: CGFloat = 180 / ciImage.extent.width
+        let scaledImage = ciImage.transformed(by: CGAffineTransform(scaleX: scale, y: scale))
+        guard let cgImage = ciContext.createCGImage(scaledImage, from: scaledImage.extent) else { return nil }
+        return UIImage(cgImage: cgImage)
+    }
+    
+    private func loadRemoteImage() -> UIImage? {
+        guard let urlStr = event.imageURL, !urlStr.isEmpty,
+              let url = URL(string: urlStr),
+              let data = try? Data(contentsOf: url) else { return nil }
+        return UIImage(data: data)
     }
     private func resolveEvent(winningOptionId: String) {
         isProcessing = true
