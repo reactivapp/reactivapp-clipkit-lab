@@ -7,12 +7,20 @@
 import SwiftUI
 import UIKit
 
+extension Notification.Name {
+    static let clipRouterInvokeURL = Notification.Name("clip_router_invoke_url")
+}
+
 @Observable
 final class ClipRouter {
 
     static let builtInExperiences: [any ClipExperience.Type] = [
         VenueMerchExperience.self,
         TrailCheckInExperience.self,
+    ]
+    // Legacy host aliases kept for backward-compatible invocation URLs.
+    private static let hostAliases: [String: String] = [
+        "clipstakes.skilled5041.workers.dev": "clip.copped.app"
     ]
 
     static var allExperiences: [any ClipExperience.Type] {
@@ -93,11 +101,10 @@ final class ClipRouter {
 
         let patternSegments = Array(patternParts.dropFirst())
 
-        guard var host = url.host?.lowercased() else { return nil }
-        if host.hasPrefix("www.") {
-            host = String(host.dropFirst(4))
-        }
-        guard host == patternHost.lowercased() else { return nil }
+        guard let rawHost = url.host else { return nil }
+        let host = normalizedHost(rawHost)
+        let normalizedPatternHost = normalizedHost(String(patternHost))
+        guard host == normalizedPatternHost else { return nil }
 
         let urlSegments = url.pathComponents.filter { !$0.isEmpty && $0 != "/" }
 
@@ -115,6 +122,14 @@ final class ClipRouter {
         }
 
         return params
+    }
+
+    private func normalizedHost(_ host: String) -> String {
+        var value = host.lowercased()
+        if value.hasPrefix("www.") {
+            value = String(value.dropFirst(4))
+        }
+        return Self.hostAliases[value] ?? value
     }
 }
 
