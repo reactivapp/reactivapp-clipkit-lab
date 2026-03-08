@@ -108,18 +108,45 @@ const CAUSE_BASELINE = {
     dailyGoal: 1000,
     donorsToday: 94,
     costPerMeal: 2.5,
+    dailyMealsByDay: {
+      Sun: 849,
+      Mon: 912,
+      Tue: 978,
+      Wed: 1034,
+      Thu: 964,
+      Fri: 1018,
+      Sat: 887,
+    },
   },
   'toronto-daily-bread': {
     mealsToday: 1204,
     dailyGoal: 1500,
     donorsToday: 217,
     costPerMeal: 2.0,
+    dailyMealsByDay: {
+      Sun: 1204,
+      Mon: 1275,
+      Tue: 1388,
+      Wed: 1492,
+      Thu: 1420,
+      Fri: 1510,
+      Sat: 1330,
+    },
   },
   'vancouver-food-bank': {
     mealsToday: 673,
     dailyGoal: 900,
     donorsToday: 156,
     costPerMeal: 3.0,
+    dailyMealsByDay: {
+      Sun: 673,
+      Mon: 744,
+      Tue: 831,
+      Wed: 918,
+      Thu: 864,
+      Fri: 902,
+      Sat: 790,
+    },
   },
 };
 
@@ -147,17 +174,22 @@ function aggregate(entries, causeId) {
   const now = new Date();
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const weekStart = new Date(todayStart.getTime() - 6 * 86400000);
+  const todayLabel = DAY_LABELS[todayStart.getDay()];
+  const baselineMealsToday = baseline.dailyMealsByDay?.[todayLabel] ?? baseline.mealsToday;
 
   const todayEntries = causeDonations.filter((d) => new Date(d.timestamp) >= todayStart);
   const weekEntries = causeDonations.filter((d) => new Date(d.timestamp) >= weekStart);
 
   const todayMealsFromFeed = todayEntries.reduce((s, d) => s + d.meals, 0);
   const todayDollarsFromFeed = todayEntries.reduce((s, d) => s + d.amount, 0);
-  const baselineDollars = Math.round(baseline.mealsToday * baseline.costPerMeal);
+  const baselineDollars = Math.round(baselineMealsToday * baseline.costPerMeal);
+  const baselineDonorsToday = baseline.mealsToday > 0
+    ? Math.round((baseline.donorsToday * baselineMealsToday) / baseline.mealsToday)
+    : baseline.donorsToday;
 
-  const mealsToday = baseline.mealsToday + todayMealsFromFeed;
+  const mealsToday = baselineMealsToday + todayMealsFromFeed;
   const dollarsToday = baselineDollars + todayDollarsFromFeed;
-  const donationsToday = baseline.donorsToday + todayEntries.length;
+  const donationsToday = baselineDonorsToday + todayEntries.length;
   const avgDonation = donationsToday > 0 ? +(dollarsToday / donationsToday).toFixed(2) : 0;
 
   const weeklyMeals = mealsToday;
@@ -187,16 +219,13 @@ function aggregate(entries, causeId) {
   const trendMap = {};
   for (let i = 6; i >= 0; i--) {
     const d = new Date(todayStart.getTime() - i * 86400000);
-    trendMap[DAY_LABELS[d.getDay()]] = 0;
+    const dayLabel = DAY_LABELS[d.getDay()];
+    trendMap[dayLabel] = baseline.dailyMealsByDay?.[dayLabel] ?? 0;
   }
   weekEntries.forEach((d) => {
     const label = DAY_LABELS[new Date(d.timestamp).getDay()];
     if (label in trendMap) trendMap[label] += d.meals;
   });
-  const todayLabel = DAY_LABELS[todayStart.getDay()];
-  if (todayLabel in trendMap) {
-    trendMap[todayLabel] += baseline.mealsToday;
-  }
   const weeklyTrend = Object.entries(trendMap).map(([day, meals]) => ({ day, meals }));
 
   return { stats, weeklyGoal, feed, bins, weeklyTrend };
