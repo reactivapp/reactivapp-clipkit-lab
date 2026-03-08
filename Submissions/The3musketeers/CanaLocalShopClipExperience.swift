@@ -45,6 +45,7 @@ struct CanaLocalShopClipExperience: ClipExperience {
     @State private var secondsRemaining = 20
     @State private var stockFailed = false
     @State private var timer: Timer?
+    @State private var orderCode = ""
 
     var body: some View {
         ZStack {
@@ -166,6 +167,7 @@ struct CanaLocalShopClipExperience: ClipExperience {
                 }
 
                 ClipActionButton(title: "Pay Now", icon: "checkmark.circle.fill") {
+                    orderCode = randomCode()
                     withAnimation(.spring(duration: 0.35)) {
                         checkoutStep = .success
                     }
@@ -182,7 +184,7 @@ struct CanaLocalShopClipExperience: ClipExperience {
         VStack(spacing: 20) {
             Spacer()
             ClipSuccessOverlay(
-                message: "Order# \(randomCode())\nPlease pick up your items at the store with this number"
+                message: "Order# \(orderCode)\nPlease pick up your items at the store with this number"
             )
             Spacer()
         }
@@ -199,7 +201,11 @@ struct CanaLocalShopClipExperience: ClipExperience {
     }
     
     func startStockTimer() {
-        secondsRemaining = 120
+        timer?.invalidate()
+        timer = nil
+        stockFailed = false
+        stockStatus = "Waiting for store verification..."
+        secondsRemaining = 10
 
         timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { t in
             secondsRemaining -= 1

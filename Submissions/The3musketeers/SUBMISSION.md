@@ -49,9 +49,8 @@ their phone without downloading an app. This helps small businesses turn casual 
 **End-to-end user experience** (step by step):
 1. user scans QR code to access the app clip
 2. user selects their desired product for purchasing
-3. app clip communicates with main web app to check inventory
-4. user pay using apple pay and receives an order ID
-5. user arrives at store with the order ID to pick up what they bought
+3. user pay using Apple Pay and receives an order ID
+4. user arrives at store with the order ID to pick up what they bought
 
 **How does the 8-hour notification window factor into your strategy?**
 

@@ -14,6 +14,7 @@ struct ProductCard: View {
     
     @State private var amount = 1
     @State private var added = false
+    @State private var selectedSize = ""
 
     var body: some View {
         VStack(spacing: 10) {
@@ -34,8 +35,19 @@ struct ProductCard: View {
             
             HStack {
                 
+                if let sizes = product.sizes {
+                        Picker("Size", selection: $selectedSize) {
+                            ForEach(sizes, id: \.self) { size in
+                                Text(size).tag(size)
+                            }
+                        }
+                        .pickerStyle(.menu)
+                    }
+                
                 Stepper("Quantity: \(amount)", value: $amount, in: 1...10)
                         .padding()
+                
+                
                 
                 Button {
                     added = true
