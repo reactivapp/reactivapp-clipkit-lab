@@ -219,10 +219,13 @@ struct ImpactConfirmationView: View {
                 guard granted else { return }
 
                 let content = UNMutableNotificationContent()
-                content.title = causeName
+                content.title = "Flourish • \(causeName)"
                 content.body = "Your $\(donationState.finalAmount) provided \(provided) meals. Today's count: \(mealCount) meals packed across \(causeCity). Thank you!"
                 content.sound = .default
                 content.categoryIdentifier = "GIVE_IMPACT"
+                if let logoAttachment = makeNotificationLogoAttachment() {
+                    content.attachments = [logoAttachment]
+                }
 
                 let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 10, repeats: false)
                 let request = UNNotificationRequest(
@@ -236,6 +239,25 @@ struct ImpactConfirmationView: View {
                 // Silently continue
             }
         }
+    }
+
+    private func makeNotificationLogoAttachment() -> UNNotificationAttachment? {
+        let possibleNames = ["flourish_notification_logo", "flourish_logo", "logo512", "logo192"]
+
+        for name in possibleNames {
+            if let image = UIImage(named: name),
+               let data = image.pngData() {
+                let fileURL = FileManager.default.temporaryDirectory.appendingPathComponent("\(name).png")
+                do {
+                    try data.write(to: fileURL, options: .atomic)
+                    return try UNNotificationAttachment(identifier: "flourish-logo", url: fileURL, options: nil)
+                } catch {
+                    continue
+                }
+            }
+        }
+
+        return nil
     }
 
     private func shareGiveClip() {
