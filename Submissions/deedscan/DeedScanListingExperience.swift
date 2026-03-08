@@ -146,41 +146,29 @@ struct DeedScanListingExperience: ClipExperience {
         }
     }
 
+    private func carouselImage(urlString: String, tag: Int) -> some View {
+        AsyncImage(url: URL(string: urlString)) { phase in
+            switch phase {
+            case .success(let image):
+                image
+                    .resizable()
+                    .scaledToFill()
+            case .failure:
+                Color(.tertiarySystemFill)
+            default:
+                ProgressView()
+            }
+        }
+        .frame(height: 220)
+        .clipped()
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .tag(tag)
+    }
+
     private var photoCarousel: some View {
         TabView {
-            AsyncImage(url: URL(string: Self.photo1)) { phase in
-                switch phase {
-                case .success(let image):
-                    image
-                        .resizable()
-                        .scaledToFill()
-                case .failure:
-                    Color(.tertiarySystemFill)
-                default:
-                    ProgressView()
-                }
-            }
-            .frame(height: 220)
-            .clipped()
-            .clipShape(RoundedRectangle(cornerRadius: 12))
-            .tag(0)
-
-            AsyncImage(url: URL(string: Self.photo2)) { phase in
-                switch phase {
-                case .success(let image):
-                    image
-                        .resizable()
-                        .scaledToFill()
-                case .failure:
-                    Color(.tertiarySystemFill)
-                default:
-                    ProgressView()
-                }
-            }
-            .frame(height: 220)
-            .clipped()
-            .clipShape(RoundedRectangle(cornerRadius: 12))
-            .tag(1)
+            carouselImage(urlString: Self.photo1, tag: 0)
+            carouselImage(urlString: Self.photo2, tag: 1)
         }
         .tabViewStyle(.page)
         .frame(height: 220)

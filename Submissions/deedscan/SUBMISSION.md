@@ -1,6 +1,15 @@
 ## Team Name: DeedScan
-## Clip Name: DeedScan — View Property
-## Invocation URL Pattern: deedscan.app/clip (query param `id` optional: deedscan.app/clip?id=demo_listing_001)
+
+## Clip experiences (two)
+
+This submission includes two DeedScan App Clip experiences:
+
+- **DeedScanListingExperience** — Hardcoded demo listing; no API.  
+  **URL pattern:** `deedscan.app/clip` (optional query: `deedscan.app/clip?id=demo_listing_001`).
+
+- **DeedScanClipExperience** — API-backed listing; fetches from backend.  
+  **URL pattern:** `deedscan.app/clip/:id` (e.g. `deedscan.app/clip/demo_listing_001`).  
+  For lab compatibility, the clip also accepts `deedscan.app/clip/42` (id `42` is mapped to `demo_listing_001` for the API call).
 
 ---
 
@@ -40,11 +49,9 @@ None required. The Clip uses hardcoded demo data and deep-links into the web app
 
 **What does your working prototype demonstrate?**
 
-- **Landing:** Hardcoded demo listing — no API calls, no loading state
-- **Photo carousel:** 2 swipeable photos (AsyncImage, TabView .page)
-- **Property detail:** Title, address, price, agent savings pill, specs (beds, sqft, 0% Commission), AI Fraud Score badge
-- **Neighbourhood Snapshot:** Summary + "See more" sheet with Transit, Groceries, Schools
-- **Message Seller CTA:** Opens `http://localhost:3000/messages?listingId=demo_listing_001&sellerId=demo_seller_001`
+- **DeedScanListingExperience (Yard Sign tab):** Hardcoded demo — no API. Tap card or enter `deedscan.app/clip`. Message Seller opens localhost:3000.
+- **DeedScanClipExperience (On-Site tab):** API-backed. Tap "DeedScan Property View" card or enter `deedscan.app/clip/demo_listing_001` (or `deedscan.app/clip/42`; the clip maps `42` → `demo_listing_001` so it works with the lab default sample URL). Requires backend at `http://localhost:3000` with `GET /api/listings/demo_listing_001`.
+- **Landing:** Photo carousel, property detail, confidence badge, Message Seller / View Full Listing, optional "More nearby".
 
 ---
 
@@ -56,8 +63,29 @@ None required. The Clip uses hardcoded demo data and deep-links into the web app
 
 ### Demo Video
 
-Link: ___ (add screen recording of: tap card → property loads → Message Seller / Neighbourhood sheet)
+**Required for PR acceptance.** Add a link to a short screen recording that shows:
+- Tap card (or enter URL) → property loads
+- Message Seller and/or Neighbourhood sheet
+
+Upload the video (e.g. Google Drive, Loom, YouTube unlisted, or GitHub), then replace the placeholder below with the actual URL.
+
+**Link:** ___ *(add URL when ready)*
 
 ### Screenshot(s)
 
-(Add screenshots of: property detail view, AI badge, Neighbourhood Snapshot, Message Seller CTA)
+**Required for PR acceptance.** Screenshots are stored in `Submissions/deedscan/screenshots/` and embedded below. Add more as you complete features.
+
+| Experience | Description |
+|------------|-------------|
+| **On-Site (API-backed)** | Property detail, Verified badge, Message Seller / View Full Listing |
+| **Yard Sign (hardcoded)** | Price, savings pill, specs, AI badge, Neighbourhood Snapshot, Message Seller |
+
+#### Property view — On-Site clip (DeedScanClipExperience)
+
+![Property view — On-Site](screenshots/property-view-on-site.png)
+
+#### Property view — Yard Sign clip (DeedScanListingExperience)
+
+![Property view — Yard Sign](screenshots/property-view-yard-sign.png)
+
+*(Optional: add more screenshots for AI badge close-up, Neighbourhood "See more" sheet, or Message Seller CTA and link them here.)*

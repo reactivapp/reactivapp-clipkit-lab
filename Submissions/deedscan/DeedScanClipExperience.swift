@@ -40,6 +40,16 @@ private struct NearbyListingsResponse: Codable {
     let listings: [ListingResponse]?
 }
 
+// MARK: - Helpers
+
+private func formatPrice(_ cents: Int) -> String? {
+    let formatter = NumberFormatter()
+    formatter.numberStyle = .currency
+    formatter.currencyCode = "CAD"
+    formatter.maximumFractionDigits = 0
+    return formatter.string(from: NSNumber(value: cents))
+}
+
 // MARK: - DeedScan Clip Experience
 
 struct DeedScanClipExperience: ClipExperience {
@@ -61,6 +71,14 @@ struct DeedScanClipExperience: ClipExperience {
 
     private var listingId: String {
         context.pathParameters["id"] ?? context.queryParameters["id"] ?? ""
+    }
+
+    /// URL path/query gives the listing id. Backend expects demo IDs (e.g. demo_listing_001).
+    /// The lab's default sample URL uses id "42"; we map that to demo_listing_001 so the clip works
+    /// when opened from the On-Site card without requiring changes outside this submission.
+    private var apiListingId: String {
+        let id = listingId
+        return id.isEmpty ? "" : (id == "42" ? "demo_listing_001" : id)
     }
 
     /// Local dev: backend + Auth0 are configured for http://localhost:3000 on your Mac.
@@ -252,14 +270,6 @@ struct DeedScanClipExperience: ClipExperience {
         return ("Low", .red)
     }
 
-    private func formatPrice(_ cents: Int) -> String? {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .currency
-        formatter.currencyCode = "CAD"
-        formatter.maximumFractionDigits = 0
-        return formatter.string(from: NSNumber(value: cents))
-    }
-
     // MARK: - CTAs
 
     private func ctaButtons(listing: ListingResponse) -> some View {
@@ -315,7 +325,8 @@ struct DeedScanClipExperience: ClipExperience {
     // MARK: - API
 
     private func loadListing() async {
-        guard !listingId.isEmpty else {
+        let id = apiListingId
+        guard !id.isEmpty else {
             errorMessage = "No listing ID. Tap the card or type deedscan.app/clip/demo_listing_001"
             isLoading = false
             return
@@ -324,14 +335,17 @@ struct DeedScanClipExperience: ClipExperience {
         isLoading = true
         errorMessage = nil
 
-        guard let url = URL(string: "\(apiBaseURL)/api/listings/\(listingId)") else {
+        guard let url = URL(string: "\(apiBaseURL)/api/listings/\(id)") else {
             errorMessage = "Invalid API URL"
             isLoading = false
             return
         }
 
+        var request = URLRequest(url: url)
+        request.timeoutInterval = 15
+
         do {
-            let (data, response) = try await URLSession.shared.data(from: url)
+            let (data, response) = try await URLSession.shared.data(for: request)
             guard let http = response as? HTTPURLResponse else {
                 errorMessage = "Invalid response"
                 isLoading = false
@@ -343,12 +357,15 @@ struct DeedScanClipExperience: ClipExperience {
                 return
             }
             let decoded = try JSONDecoder().decode(ListingResponse.self, from: data)
+            let lat = decoded.latitude
+            let lng = decoded.longitude
+            let excludeId = decoded.id
             await MainActor.run {
                 listing = decoded
-                if let lat = decoded.latitude, let lng = decoded.longitude {
-                    Task { await loadNearby(lat: lat, lng: lng, excludeId: decoded.id) }
-                }
                 isLoading = false
+            }
+            if let lat = lat, let lng = lng {
+                await loadNearby(lat: lat, lng: lng, excludeId: excludeId)
             }
         } catch {
             await MainActor.run {
@@ -363,7 +380,7 @@ struct DeedScanClipExperience: ClipExperience {
     }
 
     private func loadNearby(lat: Double, lng: Double, excludeId: String) async {
-        var components = URLComponents(string: "\(apiBaseURL)/api/listings/nearby")!
+        guard var components = URLComponents(string: "\(apiBaseURL)/api/listings/nearby") else { return }
         components.queryItems = [
             URLQueryItem(name: "lat", value: String(lat)),
             URLQueryItem(name: "lng", value: String(lng)),
@@ -371,8 +388,11 @@ struct DeedScanClipExperience: ClipExperience {
         ]
         guard let url = components.url else { return }
 
+        var request = URLRequest(url: url)
+        request.timeoutInterval = 15
+
         do {
-            let (data, _) = try await URLSession.shared.data(from: url)
+            let (data, _) = try await URLSession.shared.data(for: request)
             var items: [ListingResponse] = []
             if let arr = try? JSONDecoder().decode([ListingResponse].self, from: data) {
                 items = arr
@@ -432,13 +452,5 @@ private struct PropertyCardView: View {
             .glassEffect(.regular.interactive(), in: RoundedRectangle(cornerRadius: 16))
         }
         .buttonStyle(.plain)
-    }
-
-    private func formatPrice(_ cents: Int) -> String? {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .currency
-        formatter.currencyCode = "CAD"
-        formatter.maximumFractionDigits = 0
-        return formatter.string(from: NSNumber(value: cents))
     }
 }
