@@ -1,3 +1,5 @@
+![ClipBet Logo](assets/logo.png)
+
 ## Team Name: ClipBet
 ## Clip Name: ClipBet
 ## Invocation URL Pattern: 
@@ -108,7 +110,7 @@ Minimum expectation:
 - Invokable via your URL pattern in Invocation Console
 - At least one complete user flow with a clear end state
 
-The prototype demonstrates both bettor and operator flows running inside the Reactiv ClipKit simulator, with all data mocked locally (or managed via backend-optional if applicable to the final demo).
+The prototype demonstrates both bettor and operator flows running inside the Reactiv ClipKit simulator, with all data mocked locally.
 
 **Implemented screens and flows:**
 - **Discovery** (`/discover`): Entry point to view current event info or create a new market.
@@ -151,9 +153,33 @@ Link:
 
 *(Note: Based on the requirements, you can treat the first 30 seconds of the video, which outlines the user (bettor) flow, as the main part of the submission. The remainder of the video demonstrates the ephemeral operator flow.)*
 
-### Screenshot(s)
+### Screenshots
 
-*(Include screenshots here: Discovery view, Event Landing, Pace-A-Bet UI, Organizer Create Form, Organizer Dashboard, Resolved Event view)*
+**Bettor Flow:**
+1. **Event Landing (Start for both Organizer and Bettor):** The initial view of a specific prediction market.
+![Event Landing](assets/scr1.png)
+
+2. **Betting Flow:**
+![Betting Flow](assets/scr2.png)
+
+3. **Payment Confirmation:**
+![Payment Confirmation](assets/scr3.png)
+
+4. **Success:**
+![Success](assets/scr4.png)
+
+5. **Bets Closed:**
+![Bets Closed](assets/scr5.png)
+
+6. **Event Ended:**
+![Event Ended](assets/scr6.png)
+
+**Organizer Flow:**
+1. **Creating Event:**
+![Creating Event](assets/scr7.png)
+
+2. **Viewing the Event:**
+![Live Dashboard](assets/scr8.png)
 
 ### Website/Live Demo
 Link: https://clipbet-reactiv.vercel.app/
