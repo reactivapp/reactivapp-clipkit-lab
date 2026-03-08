@@ -12,7 +12,6 @@ import SwiftUI
 struct CreateEventFlow: View {
 
     var onEventCreated: ((PredictionEvent, String, String) -> Void)?
-    var onCancel: (() -> Void)?
 
     enum Step {
         case signIn
@@ -69,15 +68,6 @@ struct CreateEventFlow: View {
 
     private var signInView: some View {
         VStack(spacing: 0) {
-            HStack {
-                ClipBetBackButton {
-                    onCancel?()
-                }
-                Spacer()
-            }
-            .padding(.horizontal, 24)
-            .padding(.top, 16)
-            
             Spacer()
 
             VStack(spacing: 20) {
@@ -87,7 +77,7 @@ struct CreateEventFlow: View {
 
                 Text("Create a Market")
                     .font(.custom("Cormorant Garamond", size: 28))
-                    .fontWeight(.regular)
+                    .fontWeight(.light)
                     .foregroundColor(ClipBetColors.textPrimary)
 
                 Text("Sign in to create prediction markets at your event")
@@ -129,7 +119,7 @@ struct CreateEventFlow: View {
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 16)
                 .background(Color.black)
-                .clipShape(RoundedRectangle(cornerRadius: 2))
+                .clipShape(RoundedRectangle(cornerRadius: 8))
             }
             .padding(.horizontal, 24)
             .padding(.bottom, 48)
@@ -141,18 +131,10 @@ struct CreateEventFlow: View {
     private var termsView: some View {
         ScrollView {
             VStack(spacing: 0) {
-                HStack {
-                    ClipBetBackButton {
-                        onCancel?()
-                    }
-                    Spacer()
-                }
-                .padding(.horizontal, 24)
-                .padding(.top, 16)
 
                 Text("Terms of Service")
                     .font(.custom("Cormorant Garamond", size: 28))
-                    .fontWeight(.regular)
+                    .fontWeight(.light)
                     .foregroundColor(ClipBetColors.textPrimary)
                     .padding(.top, 32)
                     .padding(.bottom, 24)
@@ -185,7 +167,7 @@ struct CreateEventFlow: View {
         HStack(alignment: .top, spacing: 12) {
             Text(number)
                 .font(.custom("Cormorant Garamond", size: 22))
-                .fontWeight(.regular)
+                .fontWeight(.light)
                 .foregroundColor(ClipBetColors.yes)
                 .frame(width: 20)
             Text(text)
@@ -200,18 +182,10 @@ struct CreateEventFlow: View {
     private var formView: some View {
         ScrollView {
             VStack(spacing: 0) {
-                HStack {
-                    ClipBetBackButton {
-                        onCancel?()
-                    }
-                    Spacer()
-                }
-                .padding(.horizontal, 24)
-                .padding(.top, 16)
 
                 Text("Create Market")
                     .font(.custom("Cormorant Garamond", size: 28))
-                    .fontWeight(.regular)
+                    .fontWeight(.light)
                     .foregroundColor(ClipBetColors.textPrimary)
                     .padding(.top, 32)
                     .padding(.bottom, 24)
@@ -369,14 +343,14 @@ struct CreateEventFlow: View {
                             } label: {
                                 Text("$\(Int(amount))")
                                     .font(.custom("DM Mono", size: 13))
-                                    .foregroundColor(minimumBet == amount ? ClipBetColors.bg : ClipBetColors.textPrimary)
+                                    .foregroundColor(minimumBet == amount ? ClipBetColors.surface : ClipBetColors.textSecondary)
                                     .padding(.horizontal, 16)
                                     .padding(.vertical, 10)
-                                    .background(minimumBet == amount ? ClipBetColors.dark : Color.white)
+                                    .background(minimumBet == amount ? ClipBetColors.dark : Color.clear)
                                     .clipShape(RoundedRectangle(cornerRadius: 2))
                                     .overlay(
                                         RoundedRectangle(cornerRadius: 2)
-                                            .stroke(minimumBet == amount ? Color.clear : ClipBetColors.textPrimary, lineWidth: 1.5)
+                                            .stroke(ClipBetColors.divider, lineWidth: 1)
                                     )
                             }
                         }
@@ -423,7 +397,7 @@ struct CreateEventFlow: View {
 
                 Text("Preview")
                     .font(.custom("Cormorant Garamond", size: 28))
-                    .fontWeight(.regular)
+                    .fontWeight(.light)
                     .foregroundColor(ClipBetColors.textPrimary)
                     .padding(.top, 16)
                     .padding(.bottom, 24)
@@ -447,7 +421,7 @@ struct CreateEventFlow: View {
 
                         Text(eventName)
                             .font(.custom("Cormorant Garamond", size: 24))
-                            .fontWeight(.regular)
+                            .fontWeight(.light)
                             .foregroundColor(ClipBetColors.textPrimary)
                             .multilineTextAlignment(.center)
 
@@ -537,9 +511,6 @@ struct CreateEventFlow: View {
         outcomes.filter { !$0.trimmingCharacters(in: .whitespaces).isEmpty }
     }
 
-    // sends everything to the backend to actually create the event.
-    // if the api call fails (like if the server is down), we just
-    // create a mock event locally so the demo still works.
     private func createMarket() {
         isCreating = true
 
@@ -562,8 +533,7 @@ struct CreateEventFlow: View {
                 self.qrURL = url
                 withAnimation { step = .qrCard }
             case .failure:
-                // fallback: if the server is down or whatever, just make
-                // a local mock event so the flow still works for demo purposes
+                // Fallback for demo
                 let mockId = UUID()
                 self.createdEvent = PredictionEvent(
                     id: mockId,
@@ -589,16 +559,14 @@ struct CreateEventFlow: View {
     }
 
     // MARK: - QR Card View (Printable PDF)
-    // this is the final screen after creating an event.
-    // it shows a printable card with the qr code that people
-    // can scan at the venue to place their bets.
+
     private var qrCardView: some View {
         ScrollView {
             VStack(spacing: 0) {
 
                 Text("Your Market is Live")
                     .font(.custom("Cormorant Garamond", size: 28))
-                    .fontWeight(.regular)
+                    .fontWeight(.light)
                     .foregroundColor(ClipBetColors.textPrimary)
                     .padding(.top, 32)
                     .padding(.bottom, 8)
@@ -629,7 +597,7 @@ struct CreateEventFlow: View {
 
                         Text(eventName)
                             .font(.custom("Cormorant Garamond", size: 22))
-                            .fontWeight(.regular)
+                            .fontWeight(.light)
                             .foregroundColor(ClipBetColors.textPrimary)
                             .multilineTextAlignment(.center)
 
@@ -707,11 +675,9 @@ struct CreateEventFlow: View {
                             .foregroundColor(ClipBetColors.textPrimary)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 14)
-                            .background(Color.white)
-                            .clipShape(RoundedRectangle(cornerRadius: 2))
                             .overlay(
                                 RoundedRectangle(cornerRadius: 2)
-                                    .stroke(ClipBetColors.textPrimary, lineWidth: 1.5)
+                                    .stroke(ClipBetColors.dark, lineWidth: 1)
                             )
                         }
                     }

@@ -59,7 +59,7 @@ struct OutcomeRow: View {
 
                 Text(String(format: "%.0f%%", percentage))
                     .font(.custom("Cormorant Garamond", size: 28))
-                    .fontWeight(.regular)
+                    .fontWeight(.light)
                     .foregroundColor(color)
             }
 
@@ -164,7 +164,7 @@ struct StatColumn: View {
         VStack(spacing: 4) {
             Text(value)
                 .font(.custom("Cormorant Garamond", size: 26))
-                .fontWeight(.regular)
+                .fontWeight(.light)
                 .foregroundColor(ClipBetColors.textPrimary)
 
             Text(label)
@@ -199,9 +199,8 @@ struct ClipBetPrimaryButton: View {
             .foregroundColor(ClipBetColors.bg)
             .frame(maxWidth: .infinity)
             .padding(.vertical, 16)
-            .background(ClipBetColors.dark)
+            .background(isEnabled ? ClipBetColors.dark : ClipBetColors.textFaint)
             .clipShape(RoundedRectangle(cornerRadius: 2))
-            .opacity(isEnabled ? 1.0 : 0.5)
         }
         .disabled(!isEnabled)
     }
@@ -216,15 +215,14 @@ struct ClipBetSecondaryButton: View {
     var body: some View {
         Button(action: action) {
             Text(title)
-                .font(.custom("DM Mono", size: 13))
-                .kerning(2.4)
-                .foregroundColor(ClipBetColors.textPrimary)
+                .font(.custom("DM Mono", size: 11))
+                .kerning(1.4)
+                .foregroundColor(ClipBetColors.textSecondary)
                 .frame(maxWidth: .infinity)
-                .padding(.vertical, 16)
-                .background(Color.white)
+                .padding(.vertical, 14)
                 .overlay(
                     RoundedRectangle(cornerRadius: 2)
-                        .stroke(ClipBetColors.textPrimary, lineWidth: 1.5)
+                        .stroke(ClipBetColors.divider, lineWidth: 1)
                 )
         }
     }
@@ -244,10 +242,10 @@ struct AmountButton: View {
                 .foregroundColor(isSelected ? ClipBetColors.bg : ClipBetColors.textPrimary)
                 .padding(.horizontal, 16)
                 .padding(.vertical, 12)
-                .background(isSelected ? ClipBetColors.dark : Color.white)
+                .background(isSelected ? ClipBetColors.dark : Color.clear)
                 .overlay(
                     RoundedRectangle(cornerRadius: 2)
-                        .stroke(isSelected ? Color.clear : ClipBetColors.textPrimary, lineWidth: 1.5)
+                        .stroke(isSelected ? Color.clear : ClipBetColors.divider, lineWidth: 1)
                 )
                 .clipShape(RoundedRectangle(cornerRadius: 2))
         }
@@ -268,14 +266,7 @@ struct ClipBetBackButton: View {
                     .font(.custom("DM Mono", size: 11))
                     .kerning(1.6)
             }
-            .foregroundColor(ClipBetColors.textPrimary)
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
-            .background(Color.white)
-            .overlay(
-                RoundedRectangle(cornerRadius: 2)
-                    .stroke(ClipBetColors.textPrimary, lineWidth: 1.5)
-            )
+            .foregroundColor(ClipBetColors.textSecondary)
         }
     }
 }
