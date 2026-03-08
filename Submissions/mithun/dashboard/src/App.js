@@ -454,8 +454,8 @@ const STARTERS = [
 
 const STORAGE_KEYS = {
   assistantId: 'giveclip-assistant-id',
-  threadId: 'giveclip-thread-id',
-  messages: 'giveclip-chat-messages',
+  threadId: 'giveclip-thread-id-v2',
+  messages: 'giveclip-chat-messages-v2',
 };
 
 function extractAssistantText(result) {
@@ -592,12 +592,39 @@ function ChatPanel({ data, onClose }) {
     }
   }, [loading, buildContext, data]);
 
+  const handleResetChat = useCallback(async () => {
+    setMessages([]);
+    setInput('');
+    threadRef.current = null;
+    localStorage.removeItem(STORAGE_KEYS.messages);
+    localStorage.removeItem(STORAGE_KEYS.threadId);
+    setReady(false);
+
+    try {
+      let aId = localStorage.getItem(STORAGE_KEYS.assistantId);
+      if (!aId) {
+        const a = await bbCreateAssistant('GiveClip Analyst', SYSTEM_PROMPT);
+        aId = a.assistant_id;
+        localStorage.setItem(STORAGE_KEYS.assistantId, aId);
+      }
+      const t = await bbCreateThread(aId);
+      const tId = t.thread_id;
+      localStorage.setItem(STORAGE_KEYS.threadId, tId);
+      threadRef.current = tId;
+    } catch (err) {
+      console.error('Reset chat init:', err);
+    } finally {
+      setReady(true);
+    }
+  }, []);
+
   return (
     <aside className="chat-panel">
       <div className="chat-header">
         <span className="chat-title">AI Insights</span>
         <div className="chat-header-right">
           <span className="chat-badge">Backboard</span>
+          <button className="chat-reset-btn" onClick={handleResetChat} title="Reset chat">Reset</button>
           <button className="chat-close-btn" onClick={onClose} title="Close chat">&#x2715;</button>
         </div>
       </div>
