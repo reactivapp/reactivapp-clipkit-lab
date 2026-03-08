@@ -41,16 +41,17 @@ struct ReturnclipClipExperience: ClipExperience {
     @State private var showingImageSourceDialog = false
     @State private var showingCamera = false
 
-    private var orderId: String {
-        context.pathParameters["orderId"] ?? "RC-000000"
+    private var orderId: String? {
+        context.pathParameters["orderId"]
     }
 
-    private var scannedSku: String {
-        context.pathParameters["sku"] ?? "hoodie"
+    private var scannedSku: String? {
+        context.pathParameters["sku"]
     }
 
     private var scannedItem: ReturnMockData.OrderItem? {
-        ReturnMockData.orderItems.first { $0.sku == scannedSku }
+        guard let sku = scannedSku else { return nil }
+        return ReturnMockData.orderItems.first { $0.sku == sku }
     }
 
     // MARK: - Body
@@ -96,7 +97,7 @@ struct ReturnclipClipExperience: ClipExperience {
 
             ClipHeader(
                 title: "Item Scanned",
-                subtitle: "Order \(orderId)",
+                subtitle: "Order \(orderId ?? "Unknown")",
                 systemImage: "qrcode.viewfinder"
             )
 
@@ -157,7 +158,7 @@ struct ReturnclipClipExperience: ClipExperience {
 
             ClipHeader(
                 title: "Item Not Found",
-                subtitle: "Order \(orderId)",
+                subtitle: "Order \(orderId ?? "Unknown")",
                 systemImage: "exclamationmark.triangle.fill"
             )
 
@@ -628,7 +629,7 @@ struct ReturnclipClipExperience: ClipExperience {
                 // Return summary card
                 GlassEffectContainer {
                     VStack(spacing: 8) {
-                        summaryRow(label: "Order", value: orderId)
+                        summaryRow(label: "Order", value: orderId ?? "—")
                         summaryRow(label: "Item", value: selectedItem?.name ?? "—")
                         summaryRow(label: "Reason", value: selectedReason?.label ?? "—")
                         summaryRow(label: "Resolution", value: selectedResolution?.title ?? "—")
@@ -652,7 +653,7 @@ struct ReturnclipClipExperience: ClipExperience {
                         .padding(20)
                         .glassEffect(.regular.interactive(), in: RoundedRectangle(cornerRadius: 20))
 
-                    Text("RET-\(orderId)-\(String(format: "%04d", Int.random(in: 1000...9999)))")
+                    Text("RET-\(orderId ?? "000000")-\(String(format: "%04d", Int.random(in: 1000...9999)))")
                         .font(.system(size: 12, weight: .medium, design: .monospaced))
                         .foregroundStyle(.tertiary)
                 }
