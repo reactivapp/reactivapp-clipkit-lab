@@ -4,7 +4,7 @@
 ## Clip Name: ClipBet
 ## Invocation URL Pattern: 
 - `clipbet.io/event/:eventId` (opens a specific prediction market for one event)
-- `clipbet.io/discover` (opens a generic discovery / create-event entry point)
+- Easiest simulator example: `clipbet.io/event/demo`
 
 ---
 
@@ -33,8 +33,10 @@ Which user moment or touchpoint are you targeting?
 
 What friction or missed opportunity are you solving for? (3-5 sentences)
 
-When people are at a bar, game, or concert, there is a lot of energy and strong opinions about what will happen next (overtime, encore, final score, etc.), but there is no simple way to act on those opinions in the moment. Existing prediction markets require downloading a full app, creating an account, and going through identity checks before placing a bet, which kills the spontaneity. By the time someone finishes onboarding, the key moment has usually passed. Venues and event organizers also have almost no way to turn this in-the-moment hype into direct revenue or to capture fan identity beyond the ticket sale. ClipBet turns this gap into a simple flow: scan a code, place a small prediction in under 30 seconds, and let the venue and platform share in the pool.
+When people are at a bar, game, or concert, there is a lot of energy and strong opinions about what will happen next (overtime, encore, final score, etc.), but there is no simple way to act on those opinions in the moment. Existing prediction products usually require a full app and multi-step onboarding before a wager can be placed, which kills spontaneity. By the time onboarding is done, the key moment often has already passed. Venues and event organizers also have almost no way to turn this in-the-moment hype into direct revenue or to capture fan identity beyond the ticket sale. ClipBet turns this gap into a simple flow: scan a code, place a small prediction in under 30 seconds, and let the venue and platform share in the pool.
 
+> [!IMPORTANT]
+> **Primary Focus & Responsibility.** The App Clip is scoped to the bettor experience only (open event, place bet, confirm, done). The prototype also includes an optional quick organizer demo for one short-term, single event in the current session. Organizer onboarding and long-term management happen in the full app/website, where the organizer must authenticate and explicitly agree to Terms of Service before creating or publishing any market.
 ---
 
 ### 2. Proposed Solution
@@ -44,7 +46,7 @@ When people are at a bar, game, or concert, there is a lot of energy and strong 
 - [x] NFC Tag (embedded in object — wristband, poster, etc.)
 - [x] iMessage / SMS Link
 - [ ] Safari Smart App Banner
-- [x] Apple Maps (location-based discovery of nearby active prediction markets)
+- [x] Apple Maps (location-based entry to a specific active event)
 - [ ] Siri Suggestion
 - [ ] Other: ___
 
@@ -58,17 +60,14 @@ When people are at a bar, game, or concert, there is a lot of energy and strong 
 3. **Pay:** Check estimated returns and confirm payment with Apple Pay.
 4. **Success:** View confirmation and enable result notifications.
 
-**B. Organizer (operator) flow**
-1. **Launch & Setup:** An organizer launches the Clip via `clipbet.io/discover` (or a "Create your own" QR). They view the current event info, pool, and bettors.
-2. **Authenticate & Agree:** The organizer signs in with Apple securely and agrees with the terms of service.
-3. **Create Market:** They upload an event photo, provide a name and description, add specific outcomes, and define the event time, location, and minimum bet amount.
-4. **Preview & Go Live:** The organizer previews the market and taps to create it.
-5. **Share the Market:** A unique QR code is generated and displayed. The organizer can scan it from another device or access core share functionality.
-6. **Manage:** Persistent management (pool history, outcome resolution across events) is handled via the **ClipBet Website**, while the Clip provides a one-time view of current market performance for the event just created.
+**Compliance and regulated flow (production):**
+- **Before market publication (organizer side, full app/website):** Organizer authentication, Terms of Service acceptance, and operator verification are completed before a QR/link is issued.
+- **At wager attempt (bettor side):** The backend enforces age gate (19+), jurisdiction/geofence eligibility, and user identity checks as required by local regulation.
+- **Before payout:** KYC/AML review and transaction monitoring are executed on the backend before any funds are released.
+- **App Clip scope:** Primary submission scope is bettor interaction. The optional organizer demo is limited to one short-term, single event in the current session with no persistence. Compliance decisions, identity state, and payout authorization are server-side and outside the Clip lifecycle.
 
-**C. Potential / Discovery flow**
-1. A user launches `clipbet.io/discover` and sees "Browse Nearby Events" or "Create Event".
-2. Tapping a market takes them directly into the Bettor flow for that specific event.
+**Organizer handoff:**
+Organizer market creation and ongoing dashboard management are handled in the full app/website. The prototype includes a quick organizer demo path for a short-term, single event only. No persistence is used. Multi-event workflows and long-running events require the full app/website.
 
 
 **How does the 8-hour notification window factor into your strategy?**
@@ -91,21 +90,16 @@ Potential additions to quietly manage the market's lifecycle:
 
 **None required.**
 
-**Current flows are App Clip compliant:**
-- **Bettor**: `clipbet.io/event/:eventId` → place bet → done (stateless)
-- **Quick organizer**: `clipbet.io/discover` → generate QR → done (stateless)
+**The solution is fully App Clip compliant:**
+- **Bettor Path**: `clipbet.io/event/:eventId` → place bet → done (stateless)
 
-**No persistence needed:**
-- Organizers pre-register on website (19+, compliance)
-- Each Clip launch = fresh, independent task
-- No local tokens, no dashboard reopening, no identity checks in Clip
-- Resolution/management happens on website (`clipbet.io/my-markets` as  example)
+**Architecture and Constraints:**
+- **Single Task**: Primary invocation is one bettor action on one event. The organizer demo is a separate optional prototype path for one event in-session.
+- **No Persistence**: The Clip is stateless. Session, compliance, KYC/AML, and payout controls are managed by backend services and the full app/website.
+- **Short-Lived**: The bettor flow is designed to complete in under 30 seconds, following App Clip intent.
+- **Organizer demo limit**: The optional organizer prototype path is limited to one short-term, single event in-session. It does not provide persistent multi-event management.
 
-**Dedicated URLs = Separate Tasks:**
-- `/event/:eventId` is for bettors to interact with a specific market.
-- `/discover` is for organizers to quickly generate new market QRs.
-
-Both flows complete in under 30 seconds with zero stored state.
+The implemented Clip flow completes in under 30 seconds with zero stored state.
 
 ---
 
@@ -118,16 +112,17 @@ Minimum expectation:
 - Invokable via your URL pattern in Invocation Console
 - At least one complete user flow with a clear end state
 
-The prototype demonstrates both bettor and organizer flows running inside the Reactiv ClipKit simulator, with all data mocked locally to showcase the complete user experience.
+The prototype demonstrates the bettor App Clip flow running inside the Reactiv ClipKit simulator, with data mocked locally to showcase the interaction and timing.
+Current simulator registration is `clipbet.io/event/:eventId`.
 
 **Screens and flows implemented:**
-- **Discovery** (`/discover`): Entry point for organizers to view active nearby markets or start the creation flow.
 - **Event Landing** (`/event/:eventId`): Dashboard featuring event description, pool stats, and active betting counts.
 - **Bettor Flow:** Sequential path through outcome selection, nickname/email input, and native Apple Pay payment sheet.
 - **Success & Receipt:** Confirmation screen showing bet details and result notification toggle.
-- **Organizer Setup (Creation):** Creation flow featuring **Sign In with Apple**, TOS agreement, and market metadata entry (question, outcomes, and event photo).
-- **Market Preview:** UI rendering of the market, allowing organizers to verify event details before generating the live QR.
-- **Organizer Dashboard (Demo):** Dashboard view showing live entry counts, platform fees, and resolution controls.
+- **Compliance integration point:** Payment confirmation is shown as a client step; real production approval (age, jurisdiction, KYC/AML, payout release) is enforced by backend services.
+- **Organizer quick setup (prototype):** One short-term, single-event creation path with event details, preview, and QR generation in the same session.
+- **Organizer dashboard (prototype):** Demo view for one event only, with no persistent reopen behavior.
+- **Organizer management location (production):** Multi-event management, resolution history, and long-running event operations are handled in the full app/website.
 
 ---
 
@@ -144,7 +139,7 @@ ClipBet mainly boosts in-person venues like bars, local LAN tournaments (Valoran
 **What conversion or engagement improvement do you estimate, and why?**
 People bet on everything—from pro sports to local chess tournaments, "Hackathon best project," or "Will our bar trivia team take first?" We estimate a **20-30% participation rate** among attendees for small $5-15 bets. This creates $200-500 pools per event, with a platform cut generating immediate revenue.
 
-Having even a tiny amount of money on the line makes people care more and stay longer for the final result. This is a great way to get people outdoors to watch local sports or community events they already love. By turning viewers into active participants, it brings the community closer together and provides organizers with a stable, predictable income for every event they host. Plus, it kinda symbolizes  the "wisdom of the crowd," making the results feel like a shared story everyone helped write. 
+Having even a tiny amount of money on the line makes people care more and stay longer for the final result. This is a great way to get people outdoors to watch local sports or community events they already love. By turning viewers into active participants, it brings the community closer together and provides organizers with a stable, predictable income for every event they host. It also reflects a practical form of "wisdom of the crowd," where outcomes feel like a shared story the audience helped shape.
 
 **Why this touchpoint is the right place to intervene?**
 Live local events are where communities already gather, but they often lack a shared activity that gets everyone involved. Betting on hyperlocal outcomes (neighborhood soccer, LAN gaming matches, chess club tournaments, hackathon winners) turns passive watching into active participation. 
@@ -159,12 +154,12 @@ Link:
 - Google Drive: https://drive.google.com/file/d/1arkTgzk7cXeK3CRYdO5rOis4Jtj7y74J/view?usp=sharing
 - YouTube: https://youtu.be/yDGhNRkr158?si=1MTYBVBpnEIokRvg
 
-*(Note: Based on the requirements, you can treat the first 30 seconds of the video, which outlines the user (bettor) flow, as the main part of the submission. The remainder of the video demonstrates the ephemeral operator flow.)*
+*(Note: For submission evaluation, the primary App Clip scope is the bettor flow shown in the first part of the video.)*
 
 ### Screenshots
 
 **Bettor Flow:**
-1. **Event Landing (Start for both Organizer and Bettor):** The initial view of a specific prediction market.
+1. **Event Landing:** The initial view of a specific prediction market.
 ![Event Landing](assets/scr1.png)
 
 2. **Betting Flow:**
@@ -181,13 +176,6 @@ Link:
 
 6. **Event Ended:**
 ![Event Ended](assets/scr6.png)
-
-**Organizer Flow:**
-1. **Creating Event:**
-![Creating Event](assets/scr7.png)
-
-2. **Viewing the Event:**
-![Live Dashboard](assets/scr8.png)
 
 ### Website/Live Demo
 Link: https://clipbet-reactiv.vercel.app/
