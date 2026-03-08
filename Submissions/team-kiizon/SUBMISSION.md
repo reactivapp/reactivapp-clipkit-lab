@@ -1,6 +1,6 @@
-## Team Name: Team Me
-## Clip Name: RestaurantExperience
-## Invocation URL Pattern: example.com/team-kiizon/:param
+## Team Name: Team Kiizon
+## Clip Name: Servd
+## Invocation URL Pattern: `momsgoldendumplings.com/reserve/:flow`
 
 ---
 
@@ -21,19 +21,19 @@ Which user moment or touchpoint are you targeting?
 - [ ] Discovery / first awareness
 - [ ] Intent / consideration
 - [ ] Purchase / conversion
-- [ ] In-person / on-site interaction
-- [ ] Post-purchase / re-engagement
+- [X] In-person / on-site interaction
+- [X] Post-purchase / re-engagement
 - [ ] Other: ___
 
 What friction or missed opportunity are you solving for? (3-5 sentences)
 
----
+Restaurants have no direct channel to re-engage guests after a visit. Third-party delivery platforms like Uber Eats and DoorDash own that re-engagement layer and charge 20–30% commission for every order that flows through it. When a guest leaves without an app install, the restaurant loses them entirely: no feedback, no loyalty, no takeout conversion. Servd turns a simple waitlist scan into an owned re-engagement channel. The reservation is not the product; it is the trigger that opens the 8-hour App Clip notification window, giving the restaurant three high-intent touchpoints with the guest before the evening ends.
 
 ### 2. Proposed Solution
 
 **How is the Clip invoked?** (check all that apply)
-- [Y] QR Code (printed on physical surface)
-- [ ] NFC Tag (embedded in object — wristband, poster, etc.)
+- [X] QR Code (printed on physical surface — at venue entrance or host stand)
+- [X] NFC Tag (embedded at host stand)
 - [ ] iMessage / SMS Link
 - [ ] Safari Smart App Banner
 - [ ] Apple Maps (location-based)
@@ -41,55 +41,86 @@ What friction or missed opportunity are you solving for? (3-5 sentences)
 - [ ] Other: ___
 
 **End-to-end user experience** (step by step):
-1. Scan. Diner sits down and scans the QR code on the table. A Reactiv Clip launches instantly. No download, no account, no loading.
-2. Browse. The menu appears in the user's language (English or French). AI recommends dishes based on time of day and weather. Dietary filters and allergen info are built in.
-3. Order and pay. Diner adds items, taps Apple Pay, done. The order is tagged to their table and sent to the kitchen. Under 30 seconds from scan to confirmation.
-4. Feedback. Within 8 hours, a push notification asks the diner to rate their experience privately through the Clip, giving the restaurant direct, actionable feedback instead of public Google reviews.
-5. Re-engage. A follow-up notification offers quick reordering for pickup, converting a one-time diner into a repeat takeout customer without needing an app install.
+
+1. Guest scans a QR code at the restaurant entrance or host stand.
+2. The Servd App Clip opens instantly — no download, no account, no onboarding.
+3. Guest selects their party size and taps **Join Waitlist** (under 10 seconds).
+4. Confirmation screen: "You're on the list — we'll notify you when your table is ready."
+5. _(~15–30 min)_ Push notification: **"Your table is ready! Head to the host."**
+6. _(~2 hours)_ Push notification: **"How was your meal? Rate us and get 15% off takeout."** — opens `/reserve/feedback` in the Clip.
+7. Guest rates their experience and claims a `SERVD15` discount code.
+8. _(~6 hours)_ Push notification: **"Still hungry? Your free Pan-Fried Buns reward expires tonight."** — opens `/reserve/offer` in the Clip.
+9. Guest taps **Order Takeout Now** and applies `DUMPLING2025` for a free item — one-time diner becomes a repeat customer.
 
 **How does the 8-hour notification window factor into your strategy?**
 
-Restaurants are always looking for reviews. The 8-hour notification window factor can streamline this review process making it easy for restaurants to retrieve feedback on what they're doing well and not so well. This also benefits other customers who might be ordering as they can have an accurate rating of previous customers who have left a review from the 8-hour notification window factor.
+The waitlist join is the sole purpose of the Clip interaction as it happens in under 30 seconds and requires no login. Its real value is that it opens the App Clip 8-hour notification window. We use all three notification slots deliberately:
+
+1. Alert user that their table reservation is ready.
+2. After ~2 hours, capture sentiment and issues, offering discount code for completion.
+3. After ~6 hours, convert diner to repeat takeout customer by offering limited time promotions.
+
+
+The restaurant sends these notifications without the guest ever granting explicit permission — that is the core Reactiv Clips value proposition.
 
 ### 3. Platform Extensions (if applicable)
 
-Does your solution require new Reactiv Clips capabilities that do not exist today? If so, describe them and explain why they are required.
+No new Reactiv Clips capabilities required. The solution uses the existing 8-hour notification window as-is. In a production deployment, the restaurant POS system would trigger the "table ready" notification when the table is assigned, and the Reactiv platform would schedule notifications 2 and 3 relative to clip invocation time.
 
 ---
 
 ### 4. Prototype Description
 
-What does your working prototype demonstrate? Which screens/flows are implemented?
+The working prototype demonstrates three complete flows, each invokable via the Invocation Console:
 
-Minimum expectation:
-- A working `ClipExperience`
-- Invokable via your URL pattern in Invocation Console
-- At least one complete user flow with a clear end state
+`momsgoldendumplings.com/reserve/waitlist`: Party-size selector -> Join Waitlist -> Confirmation 
+`momsgoldendumplings.com/reserve/feedback`: Star rating -> Submit -> SERVD15 reward code 
+`momsgoldendumplings.com/reserve/offer`: Pan-Fried Buns promo -> Order Takeout Now 
 
----
+All three flows are implemented as lightweight, single-screen SwiftUI views with no navigation stack, no login, and no persistent state.
+
+Both momsgoldendumplings.com/reserve/feedback and momsgoldendumplings.com/reserve/offer should direct to app menu however it is implemented here for the demo.
 
 ### 5. Impact Hypothesis
 
-How does this create measurable business impact? Be specific about:
-- Which channel benefits (in-person, online, or both)?
-- What conversion or engagement improvement do you estimate, and why?
-- Why this touchpoint is the right place to intervene
+**Channel:** In-person dining -> owned takeout re-engagement (bypasses third-party platforms)
 
-Channel: In-person dining (primary), with expansion to online takeout/pickup.
-The intervention point is the moment a diner sits down and decides how to order. Today, this is the highest-friction touchpoint in a restaurant visit. The current options are: wait for a server (slow, inconsistent), use a mobile web ordering page via QR code (slow to load, clunky UI, often requires account creation), or walk up to a counter (breaks the dining experience). Each of these creates drop-off, frustration, or added labor cost.
-A Reactiv Clip replaces all of that with a single QR scan that launches a native ordering experience in under a second. No download, no account, no card entry. Just Apple Pay.
+**Conversion estimate:** If 30% of guests scan the QR code and 20% of those respond to the evening takeout notification, a restaurant doing 100 covers/night captures ~6 incremental direct takeout orders per day - at zero commission, compared to 20-30% commision fees on delivery platforms.
 
-Estimated conversion and engagement improvements:
-Restaurants using QR-based mobile web ordering see 15-30% adoption rates, largely held back by poor mobile web performance and friction. A native Clip experience that loads instantly and pays with Apple Pay could push adoption to 50%+ by removing every barrier that causes drop-off. Faster table turns (no waiting for a server to take orders or bring the bill) directly increase revenue per seat per hour. Removing the tipping interaction also reduces checkout hesitation, which is a growing pain point for Canadian diners as tip fatigue becomes a real cultural issue.
+**Why this touchpoint:** The moment a guest joins a waitlist is the highest-intent, lowest-friction moment to capture a notification window. The guest is already present, already engaged, and already waiting, the ask (party size + one tap) is trivially small. No other touchpoint offers this combination of physical presence, clear task, and high trust.
 
-Post-visit re-engagement creates a second revenue channel. 
-App Clips allow push notifications for up to 8 hours after launch. A diner who had a great experience at 7pm gets a notification at 10am the next morning to order pickup for lunch. This converts a one-time dine-in customer into a repeat takeout customer without requiring an app download, effectively giving restaurants a free retention and re-engagement tool that currently only exists through third-party delivery apps like Uber Eats (which take 20-30% commission).
-
-Why this touchpoint? 
-Restaurants are one of the last major consumer verticals still running on manual, human-mediated service flows. Reactiv's current strength is e-commerce. Expanding into food service opens an entirely new vertical where the Clip format (instant, ephemeral, no-install, payment-ready) is a perfect fit, and where existing solutions (mobile web menus, third-party delivery apps) are either poor experiences or extractive on margins.
 ### Demo Video
 
-Link: ___
+Link: https://youtube.com/shorts/T4hEG8byY54?feature=share
 
 ### Screenshot(s)
 
+**Flow 1 — Join Waitlist**
+![Join Waitlist](Assets/TeamKiizonAssets.xcassets/1flow.imageset/1flow.png)
+
+**Flow 2 — Waitlist Confirmed**
+![Waitlist Confirmed](Assets/TeamKiizonAssets.xcassets/2flow.imageset/2flow.png)
+
+**Notification 1 — Table Ready (~15–20 min)**
+![Table Ready Notification](Assets/TeamKiizonAssets.xcassets/3flow.imageset/3flow.png)
+
+**Notification 2 — How Was Your Meal? (~2h)**
+![Feedback Notification](Assets/TeamKiizonAssets.xcassets/4flow.imageset/4flow.png)
+
+**Flow 3 — Feedback Screen (empty)**
+![Feedback Empty](Assets/TeamKiizonAssets.xcassets/5flow.imageset/5flow.png)
+
+**Flow 3 — Feedback Screen (submitted)**
+![Feedback Submitted](Assets/TeamKiizonAssets.xcassets/6flow.imageset/6flow.png)
+
+**Flow 3 — Reward Unlocked (SERVD15)**
+![Reward Unlocked](Assets/TeamKiizonAssets.xcassets/7flow.imageset/7flow.png)
+
+**Notification 3 — Still Hungry? (~6h)**
+![Re-engagement Notification](Assets/TeamKiizonAssets.xcassets/8flow.imageset/8flow.png)
+
+**Flow 4 — Tonight's Offer (DUMPLING2025)**
+![Tonight's Offer](Assets/TeamKiizonAssets.xcassets/9flow.imageset/9flow.png)
+
+**Flow 4 — Takeout Menu (SERVD15 active)**
+![Takeout Menu](Assets/TeamKiizonAssets.xcassets/10flow.imageset/10flow.png)
