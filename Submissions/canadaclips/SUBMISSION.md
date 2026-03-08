@@ -113,3 +113,20 @@ Link: ___
 - Checkout screen
 - Payment success animation
 - Visit Store deep-link behavior
+
+<!-- Link to video or paste screenshots -->
+
+Video demo: https://drive.google.com/file/d/1y2qr6llciL2pgqPU5PtuVDP4nNlAj5ih/view?usp=sharing
+
+screenshots:
+https://github.com/user-attachments/assets/7379dd79-5a63-40b1-9e99-c26f58e11df3
+https://github.com/user-attachments/assets/829a02b4-50c1-4b76-afd4-df3642142193
+https://github.com/user-attachments/assets/5327cf5b-ca47-4742-812b-5c31b0202f83
+https://github.com/user-attachments/assets/76f40145-5903-4ccc-9e2a-3307e74c1f53
+https://github.com/user-attachments/assets/7122e4fa-05dd-4216-adbe-92ca39c0afac
+https://github.com/user-attachments/assets/0c0769b4-4251-4be2-bc2b-7334315b025f
+https://github.com/user-attachments/assets/a1c3b36f-5180-4053-98bf-d037026eeef3
+https://github.com/user-attachments/assets/04296ee5-0047-4c0a-ae17-94b68a765df0
+https://github.com/user-attachments/assets/709dafac-f176-40d8-8ff6-6b6580d23332
+
+**GitHub to merchant's side: https://github.com/ammar-adam/canada-clip-dashboard**
