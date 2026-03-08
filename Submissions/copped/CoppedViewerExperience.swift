@@ -2,22 +2,22 @@ import AVFoundation
 import SwiftUI
 import UIKit
 
-struct ClipStakesViewerExperience: ClipExperience {
-    static let urlPattern = "clip.clipstakes.app/v/:productId"
-    static let clipName = "ClipStakes Viewer"
+struct CoppedViewerExperience: ClipExperience {
+    static let urlPattern = "clip.copped.app/v/:productId"
+    static let clipName = "Copped Viewer"
     static let clipDescription = "Watch real customer clips and buy in seconds."
-    static let teamName = "ClipStakes"
+    static let teamName = "Copped"
     static let touchpoint: JourneyTouchpoint = .onSite
     static let invocationSource: InvocationSource = .nfcTag
 
     let context: ClipContext
 
-    @State private var clips: [ClipStakesClip] = []
+    @State private var clips: [CoppedClip] = []
     @State private var isLoading = true
     @State private var selectedClipID: String?
     @State private var showCheckout = false
     @State private var checkoutInFlight = false
-    @State private var checkoutOutcome: ClipStakesCheckoutOutcome?
+    @State private var checkoutOutcome: CoppedCheckoutOutcome?
     @State private var errorMessage: String?
     @State private var copiedReceiptURL = false
     @State private var pulseCTA = false
@@ -36,11 +36,11 @@ struct ClipStakesViewerExperience: ClipExperience {
         return raw
     }
 
-    private var product: ClipStakesProduct {
-        ClipStakesCatalog.product(for: productID)
+    private var product: CoppedProduct {
+        CoppedCatalog.product(for: productID)
     }
 
-    private var currentClip: ClipStakesClip? {
+    private var currentClip: CoppedClip? {
         if let selectedClipID,
            let match = clips.first(where: { $0.id == selectedClipID }) {
             return match
@@ -54,7 +54,7 @@ struct ClipStakesViewerExperience: ClipExperience {
 
     var body: some View {
         ZStack {
-            ClipStakesStageBackground()
+            CoppedStageBackground()
 
             if isLoading {
                 loadingView
@@ -79,7 +79,7 @@ struct ClipStakesViewerExperience: ClipExperience {
         }
         .sheet(isPresented: $showCheckout) {
             if currentClip != nil {
-                ClipStakesViewerCheckoutSheet(
+                CoppedViewerCheckoutSheet(
                     product: product,
                     isProcessing: checkoutInFlight,
                     onCancel: { showCheckout = false },
@@ -122,7 +122,7 @@ struct ClipStakesViewerExperience: ClipExperience {
         VStack(spacing: 8) {
             HStack {
                 VStack(alignment: .leading, spacing: 1) {
-                    ClipStakesInfoChip(title: "REAL CLIPS", icon: "play.rectangle.fill", tint: ClipStakesPalette.neonOrange)
+                    CoppedInfoChip(title: "REAL CLIPS", icon: "play.rectangle.fill", tint: CoppedPalette.neonOrange)
 
                     Text(product.name)
                         .font(.system(size: 17, weight: .black, design: .rounded))
@@ -143,7 +143,7 @@ struct ClipStakesViewerExperience: ClipExperience {
                     Text(errorMessage)
                         .font(.system(size: 11, weight: .medium, design: .rounded))
                 }
-                .foregroundStyle(ClipStakesPalette.neonOrange)
+                .foregroundStyle(CoppedPalette.neonOrange)
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
 
@@ -209,8 +209,8 @@ struct ClipStakesViewerExperience: ClipExperience {
             .padding(.vertical, 14)
             .background(
                 RoundedRectangle(cornerRadius: 16)
-                    .fill(ClipStakesPalette.primaryGradient)
-                    .shadow(color: ClipStakesPalette.neonPink.opacity(pulseCTA ? 0.35 : 0.12), radius: pulseCTA ? 18 : 8)
+                    .fill(CoppedPalette.primaryGradient)
+                    .shadow(color: CoppedPalette.neonPink.opacity(pulseCTA ? 0.35 : 0.12), radius: pulseCTA ? 18 : 8)
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 16)
@@ -260,9 +260,9 @@ struct ClipStakesViewerExperience: ClipExperience {
 
     // MARK: - Reel Page
 
-    private func reelPage(for clip: ClipStakesClip, isActive: Bool) -> some View {
+    private func reelPage(for clip: CoppedClip, isActive: Bool) -> some View {
         ZStack {
-            ClipStakesLoopingVideoPlayer(videoURL: clip.videoURL, isActive: isActive)
+            CoppedLoopingVideoPlayer(videoURL: clip.videoURL, isActive: isActive)
 
             if let imageURL = clip.product.imageURL {
                 AsyncImage(url: imageURL) { phase in
@@ -296,7 +296,7 @@ struct ClipStakesViewerExperience: ClipExperience {
     }
 
     @ViewBuilder
-    private func positionedCaption(for clip: ClipStakesClip) -> some View {
+    private func positionedCaption(for clip: CoppedClip) -> some View {
         if let text = clip.textOverlay, !text.isEmpty {
             let caption = Text(text.uppercased())
                 .font(.system(size: 24, weight: .black, design: .rounded))
@@ -342,18 +342,18 @@ struct ClipStakesViewerExperience: ClipExperience {
 
     // MARK: - Receipt Panel
 
-    private func receiptPanel(outcome: ClipStakesCheckoutOutcome) -> some View {
-        let creatorURL = "clip.clipstakes.app/c/\(outcome.receiptID)"
+    private func receiptPanel(outcome: CoppedCheckoutOutcome) -> some View {
+        let creatorURL = "clip.copped.app/c/\(outcome.receiptID)"
 
         return VStack(alignment: .leading, spacing: 8) {
             HStack {
                 HStack(spacing: 4) {
                     Image(systemName: "checkmark.circle.fill")
                         .font(.system(size: 11))
-                        .foregroundStyle(ClipStakesPalette.mint)
+                        .foregroundStyle(CoppedPalette.mint)
                     Text("ORDER CONFIRMED")
                         .font(.system(size: 11, weight: .black, design: .rounded))
-                        .foregroundStyle(ClipStakesPalette.mint)
+                        .foregroundStyle(CoppedPalette.mint)
                 }
                 Spacer()
             }
@@ -365,7 +365,7 @@ struct ClipStakesViewerExperience: ClipExperience {
             HStack(spacing: 8) {
                 Button(copiedReceiptURL ? "Copied" : "Copy") {
                     Task { @MainActor in
-                        ClipStakesClipboard.copy(creatorURL)
+                        CoppedClipboard.copy(creatorURL)
                         copiedReceiptURL = true
                     }
                 }
@@ -373,7 +373,7 @@ struct ClipStakesViewerExperience: ClipExperience {
                 .foregroundStyle(.white)
                 .padding(.horizontal, 10)
                 .padding(.vertical, 6)
-                .background(ClipStakesPalette.neonBlue, in: RoundedRectangle(cornerRadius: 8))
+                .background(CoppedPalette.neonBlue, in: RoundedRectangle(cornerRadius: 8))
 
                 Text("Creator link")
                     .font(.system(size: 11, weight: .medium, design: .rounded))
@@ -393,11 +393,11 @@ struct ClipStakesViewerExperience: ClipExperience {
 
         let previousSelectedID = selectedClipID
 
-        _ = await ClipStakesShopifyPublicCatalogService.shared.loadCatalog(
+        _ = await CoppedShopifyPublicCatalogService.shared.loadCatalog(
             storeDomainOverride: storeDomainOverride
         )
 
-        let loaded = await ClipStakesMockBackend.shared.getClips(productId: productID)
+        let loaded = await CoppedMockBackend.shared.getClips(productId: productID)
         clips = loaded
 
         if let preferredClipID,
@@ -420,7 +420,7 @@ struct ClipStakesViewerExperience: ClipExperience {
         defer { checkoutInFlight = false }
 
         do {
-            let outcome = try await ClipStakesMockBackend.shared.performViewerCheckout(
+            let outcome = try await CoppedMockBackend.shared.performViewerCheckout(
                 productId: productID,
                 clipId: currentClip.id
             )
@@ -443,8 +443,8 @@ struct ClipStakesViewerExperience: ClipExperience {
 
 // MARK: - Checkout Sheet
 
-private struct ClipStakesViewerCheckoutSheet: View {
-    let product: ClipStakesProduct
+private struct CoppedViewerCheckoutSheet: View {
+    let product: CoppedProduct
     let isProcessing: Bool
     let onCancel: () -> Void
     let onConfirm: () -> Void
@@ -452,13 +452,13 @@ private struct ClipStakesViewerCheckoutSheet: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                ClipStakesPalette.ink.ignoresSafeArea()
+                CoppedPalette.ink.ignoresSafeArea()
 
                 VStack(spacing: 16) {
                     VStack(spacing: 6) {
                         Image(systemName: "creditcard.fill")
                             .font(.system(size: 28, weight: .light))
-                            .foregroundStyle(ClipStakesPalette.neonBlue)
+                            .foregroundStyle(CoppedPalette.neonBlue)
 
                         Text("CHECKOUT")
                             .font(.system(size: 20, weight: .black, design: .rounded))
@@ -485,7 +485,7 @@ private struct ClipStakesViewerCheckoutSheet: View {
                     if isProcessing {
                         HStack(spacing: 8) {
                             ProgressView()
-                                .tint(ClipStakesPalette.neonPink)
+                                .tint(CoppedPalette.neonPink)
                                 .scaleEffect(0.8)
                             Text("Processing Apple Pay...")
                                 .font(.system(size: 12, weight: .medium, design: .rounded))
@@ -495,10 +495,10 @@ private struct ClipStakesViewerCheckoutSheet: View {
 
                     HStack(spacing: 10) {
                         Button("Cancel", action: onCancel)
-                            .buttonStyle(ClipStakesSecondaryButtonStyle())
+                            .buttonStyle(CoppedSecondaryButtonStyle())
 
                         Button("Pay Now", action: onConfirm)
-                            .buttonStyle(ClipStakesPrimaryButtonStyle(disabled: isProcessing))
+                            .buttonStyle(CoppedPrimaryButtonStyle(disabled: isProcessing))
                             .disabled(isProcessing)
                     }
                 }
@@ -525,11 +525,11 @@ private struct ClipStakesViewerCheckoutSheet: View {
 
 // MARK: - Video Playback
 
-private struct ClipStakesLoopingVideoPlayer: View {
+private struct CoppedLoopingVideoPlayer: View {
     let videoURL: URL
     let isActive: Bool
 
-    @StateObject private var controller = ClipStakesLoopingVideoController()
+    @StateObject private var controller = CoppedLoopingVideoController()
 
     var body: some View {
         ZStack {
@@ -539,7 +539,7 @@ private struct ClipStakesLoopingVideoPlayer: View {
                 endPoint: .bottom
             )
 
-            ClipStakesPlayerLayerView(player: controller.player)
+            CoppedPlayerLayerView(player: controller.player)
                 .opacity(controller.isReady ? 1 : 0)
 
             if !controller.isReady {
@@ -581,7 +581,7 @@ private struct ClipStakesLoopingVideoPlayer: View {
 }
 
 @MainActor
-private final class ClipStakesLoopingVideoController: ObservableObject {
+private final class CoppedLoopingVideoController: ObservableObject {
     let player = AVQueuePlayer()
 
     @Published var isReady = false
@@ -660,22 +660,22 @@ private final class ClipStakesLoopingVideoController: ObservableObject {
     }
 }
 
-private struct ClipStakesPlayerLayerView: UIViewRepresentable {
+private struct CoppedPlayerLayerView: UIViewRepresentable {
     let player: AVQueuePlayer
 
-    func makeUIView(context: Context) -> ClipStakesPlayerContainerView {
-        let view = ClipStakesPlayerContainerView()
+    func makeUIView(context: Context) -> CoppedPlayerContainerView {
+        let view = CoppedPlayerContainerView()
         view.playerLayer.videoGravity = .resizeAspectFill
         view.playerLayer.player = player
         return view
     }
 
-    func updateUIView(_ uiView: ClipStakesPlayerContainerView, context: Context) {
+    func updateUIView(_ uiView: CoppedPlayerContainerView, context: Context) {
         uiView.playerLayer.player = player
     }
 }
 
-private final class ClipStakesPlayerContainerView: UIView {
+private final class CoppedPlayerContainerView: UIView {
     override class var layerClass: AnyClass {
         AVPlayerLayer.self
     }

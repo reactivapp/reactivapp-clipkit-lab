@@ -1,6 +1,6 @@
 import Foundation
 
-enum ClipStakesRemoteBackendError: LocalizedError {
+enum CoppedRemoteBackendError: LocalizedError {
     case network(URLError)
     case requestFailed(statusCode: Int, message: String)
     case invalidResponse(String)
@@ -36,8 +36,8 @@ enum ClipStakesRemoteBackendError: LocalizedError {
     }
 }
 
-enum ClipStakesRemoteBackend {
-    nonisolated static let defaultAPIBaseURL = URL(string: "https://clipstakes.skilled5041.workers.dev")!
+enum CoppedRemoteBackend {
+    nonisolated static let defaultAPIBaseURL = URL(string: "https://copped.skilled5041.workers.dev")!
 
     private static let session: URLSession = {
         let configuration = URLSessionConfiguration.ephemeral
@@ -51,7 +51,7 @@ enum ClipStakesRemoteBackend {
             return url
         }
 
-        if let persisted = UserDefaults.standard.string(forKey: "clipstakes.api_base_url"),
+        if let persisted = UserDefaults.standard.string(forKey: "copped.api_base_url"),
            let url = normalizedURL(from: persisted) {
             return url
         }
@@ -70,7 +70,7 @@ enum ClipStakesRemoteBackend {
         receiptId: String,
         apiBaseURL: URL,
         deviceID: String
-    ) async throws -> ClipStakesReceipt {
+    ) async throws -> CoppedReceipt {
         do {
             let response = try await requestJSON(
                 apiBaseURL: apiBaseURL,
@@ -86,19 +86,19 @@ enum ClipStakesRemoteBackend {
             let createdAt = dateValue(for: ["created_at", "createdAt"], in: payload) ?? Date()
 
             guard !productIDs.isEmpty else {
-                throw ClipStakesRemoteBackendError.invalidResponse("Receipt response did not include product IDs.")
+                throw CoppedRemoteBackendError.invalidResponse("Receipt response did not include product IDs.")
             }
 
-            return ClipStakesReceipt(
+            return CoppedReceipt(
                 id: receiptId,
                 productIDs: productIDs,
                 clipCreated: clipCreated,
                 createdAt: createdAt
             )
-        } catch let error as ClipStakesRemoteBackendError {
+        } catch let error as CoppedRemoteBackendError {
             if case .requestFailed(let statusCode, _) = error {
-                if statusCode == 404 { throw ClipStakesBackendError.receiptNotFound }
-                if statusCode == 409 || statusCode == 422 { throw ClipStakesBackendError.receiptAlreadyUsed }
+                if statusCode == 404 { throw CoppedBackendError.receiptNotFound }
+                if statusCode == 409 || statusCode == 422 { throw CoppedBackendError.receiptAlreadyUsed }
             }
             throw error
         }
@@ -109,7 +109,7 @@ enum ClipStakesRemoteBackend {
         productId: String,
         apiBaseURL: URL,
         deviceID: String
-    ) async throws -> ClipStakesUploadURLResponse {
+    ) async throws -> CoppedUploadURLResponse {
         let requestBody: [String: Any] = [
             "receipt_id": receiptId,
             "product_id": productId
@@ -129,13 +129,13 @@ enum ClipStakesRemoteBackend {
               let uploadURL = makeURL(from: uploadURLString, apiBaseURL: apiBaseURL),
               let videoURL = makeURL(from: videoURLString, apiBaseURL: apiBaseURL)
         else {
-            throw ClipStakesRemoteBackendError.invalidResponse("Upload response missing upload_url or video_url.")
+            throw CoppedRemoteBackendError.invalidResponse("Upload response missing upload_url or video_url.")
         }
 
         let key = stringValue(for: ["key"], in: payload)
             ?? videoURL.path.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
 
-        return ClipStakesUploadURLResponse(
+        return CoppedUploadURLResponse(
             uploadURL: uploadURL,
             videoURL: videoURL,
             key: key
@@ -148,10 +148,10 @@ enum ClipStakesRemoteBackend {
         productId: String,
         videoURL: URL,
         textOverlay: String?,
-        textPosition: ClipStakesTextPosition,
+        textPosition: CoppedTextPosition,
         durationSeconds: Int,
         apiBaseURL: URL
-    ) async throws -> ClipStakesCreateClipResponse {
+    ) async throws -> CoppedCreateClipResponse {
         var requestBody: [String: Any] = [
             "receipt_id": receiptId,
             "product_id": productId,
@@ -182,7 +182,7 @@ enum ClipStakesRemoteBackend {
                 in: wallet,
                 fallback: payload
             ) else {
-                throw ClipStakesRemoteBackendError.invalidResponse("Clip response missing wallet code.")
+                throw CoppedRemoteBackendError.invalidResponse("Clip response missing wallet code.")
             }
 
             let backendPassURL = urlValue(
@@ -210,7 +210,7 @@ enum ClipStakesRemoteBackend {
             let message = stringValue(for: ["message"], in: payload)
                 ?? "Clip created."
 
-            return ClipStakesCreateClipResponse(
+            return CoppedCreateClipResponse(
                 clipID: clipID,
                 walletCode: walletCode,
                 instantCreditCents: instantCreditCents,
@@ -220,9 +220,9 @@ enum ClipStakesRemoteBackend {
                 availableBalanceDisplay: availableBalanceCents.clipStakesCurrencyDisplay,
                 message: message
             )
-        } catch let error as ClipStakesRemoteBackendError {
+        } catch let error as CoppedRemoteBackendError {
             if case .requestFailed(let statusCode, _) = error, statusCode == 409 {
-                throw ClipStakesBackendError.receiptAlreadyUsed
+                throw CoppedBackendError.receiptAlreadyUsed
             }
             throw error
         }
@@ -231,7 +231,7 @@ enum ClipStakesRemoteBackend {
     static func getRewards(
         deviceID: String,
         apiBaseURL: URL
-    ) async throws -> ClipStakesRewardsSnapshot {
+    ) async throws -> CoppedRewardsSnapshot {
         let response = try await requestJSON(
             apiBaseURL: apiBaseURL,
             paths: ["/rewards/me"],
@@ -248,7 +248,7 @@ enum ClipStakesRemoteBackend {
             in: wallet,
             fallback: payload
         ) else {
-            throw ClipStakesRemoteBackendError.invalidResponse("Rewards response missing wallet code.")
+            throw CoppedRemoteBackendError.invalidResponse("Rewards response missing wallet code.")
         }
 
         let passURL = urlValue(
@@ -279,7 +279,7 @@ enum ClipStakesRemoteBackend {
                 ?? []
         )
 
-        return ClipStakesRewardsSnapshot(
+        return CoppedRewardsSnapshot(
             walletCode: walletCode,
             passURL: passURL,
             availableBalanceCents: availableBalanceCents,
@@ -310,7 +310,7 @@ enum ClipStakesRemoteBackend {
                     deviceID: deviceID,
                     body: body
                 )
-            } catch let error as ClipStakesRemoteBackendError {
+            } catch let error as CoppedRemoteBackendError {
                 lastError = error
                 if case .requestFailed(let statusCode, _) = error, statusCode == 404 {
                     continue
@@ -322,8 +322,8 @@ enum ClipStakesRemoteBackend {
             }
         }
 
-        throw (lastError as? ClipStakesRemoteBackendError)
-            ?? ClipStakesRemoteBackendError.invalidResponse("No valid backend endpoint found.")
+        throw (lastError as? CoppedRemoteBackendError)
+            ?? CoppedRemoteBackendError.invalidResponse("No valid backend endpoint found.")
     }
 
     private static func requestJSON(
@@ -347,7 +347,7 @@ enum ClipStakesRemoteBackend {
         do {
             let (data, response) = try await session.data(for: request)
             guard let httpResponse = response as? HTTPURLResponse else {
-                throw ClipStakesRemoteBackendError.invalidResponse("Backend returned a non-HTTP response.")
+                throw CoppedRemoteBackendError.invalidResponse("Backend returned a non-HTTP response.")
             }
 
             let object = try jsonObject(from: data)
@@ -360,28 +360,28 @@ enum ClipStakesRemoteBackend {
                 ?? stringValue(for: ["message", "error", "detail"], in: object)
                 ?? HTTPURLResponse.localizedString(forStatusCode: httpResponse.statusCode)
 
-            throw ClipStakesRemoteBackendError.requestFailed(
+            throw CoppedRemoteBackendError.requestFailed(
                 statusCode: httpResponse.statusCode,
                 message: message
             )
         } catch let error as URLError {
-            throw ClipStakesRemoteBackendError.network(error)
-        } catch let error as ClipStakesRemoteBackendError {
+            throw CoppedRemoteBackendError.network(error)
+        } catch let error as CoppedRemoteBackendError {
             throw error
         } catch {
-            throw ClipStakesRemoteBackendError.invalidResponse(error.localizedDescription)
+            throw CoppedRemoteBackendError.invalidResponse(error.localizedDescription)
         }
     }
 
     // MARK: - Parsing
 
-    private static func parseTransactions(from raw: [[String: Any]]) -> [ClipStakesRewardTransaction] {
+    private static func parseTransactions(from raw: [[String: Any]]) -> [CoppedRewardTransaction] {
         raw.compactMap { item in
             let amount = intValue(for: ["amount_cents", "amountCents", "amount"], in: item) ?? 0
             let kindRaw = stringValue(for: ["kind", "type", "event"], in: item)?.lowercased() ?? ""
-            let kind: ClipStakesRewardTransaction.Kind = kindRaw.contains("conversion") ? .conversion : .clipPublished
+            let kind: CoppedRewardTransaction.Kind = kindRaw.contains("conversion") ? .conversion : .clipPublished
 
-            return ClipStakesRewardTransaction(
+            return CoppedRewardTransaction(
                 id: stringValue(for: ["id"], in: item) ?? UUID().uuidString.lowercased(),
                 kind: kind,
                 amountCents: amount,

@@ -1,12 +1,12 @@
-## Team Name: ClipStakes
-## Clip Name: ClipStakes Viewer + ClipStakes Creator
-## Invocation URL Pattern: clip.clipstakes.app/v/:productId and clip.clipstakes.app/c/:receiptId (optional `?store=<domain>` for public Shopify catalog)
+## Team Name: Copped
+## Clip Name: Copped Viewer + Copped Creator
+## Invocation URL Pattern: clip.copped.app/v/:productId and clip.copped.app/c/:receiptId (optional `?store=<domain>` for public Shopify catalog)
 
 ---
 
 ## What Great Looks Like
 
-ClipStakes turns in-store shoppers into high-intent creators with immediate upside:
+Copped turns in-store shoppers into high-intent creators with immediate upside:
 - Viewer Clip: scan product QR, watch social-proof clips, buy fast
 - Creator Clip: scan receipt QR, record 5-15s clip, get instant $5 reward
 - Bonus loop: if clip converts within the 8-hour window, creator gets +$5
@@ -24,7 +24,7 @@ Which user moment or touchpoint are you targeting?
 - [x] Post-purchase / re-engagement
 - [ ] Other: ___
 
-In physical retail, shoppers still trust other customers more than polished ads, but merchants struggle to capture fresh UGC at the moment of purchase intent. Traditional UGC asks creators to do extra work later with weak incentives. ClipStakes solves this by attaching creation directly to the receipt moment and rewarding instantly. The model is simple: make a clip now, earn $5 now, and earn $5 more if your clip actually converts. This aligns creator effort with merchant outcomes while staying App Clip-native and no-account.
+In physical retail, shoppers still trust other customers more than polished ads, but merchants struggle to capture fresh UGC at the moment of purchase intent. Traditional UGC asks creators to do extra work later with weak incentives. Copped solves this by attaching creation directly to the receipt moment and rewarding instantly. The model is simple: make a clip now, earn $5 now, and earn $5 more if your clip actually converts. This aligns creator effort with merchant outcomes while staying App Clip-native and no-account.
 
 ---
 
@@ -41,17 +41,17 @@ In physical retail, shoppers still trust other customers more than polished ads,
 
 Note: In this simulator prototype, invocation is tested via URL input and an in-app NFC payload simulator button in the invocation console (no NFC entitlement required), while the trigger mapping above represents real App Clip deployment options.
 Catalog note: pass `?store=<domain>` to load products from public Shopify `products.json` without authentication.
-NFC demo note (free developer setup): the invocation console NFC button accepts either a full URL payload (`clip.clipstakes.app/v/prod_hoodie`) or a raw product ID payload (`prod_hoodie`), both mapped to the viewer clip.
+NFC demo note (free developer setup): the invocation console NFC button accepts either a full URL payload (`clip.copped.app/v/prod_hoodie`) or a raw product ID payload (`prod_hoodie`), both mapped to the viewer clip.
 
 **End-to-end user experience** (step by step):
-1. Shopper scans product trigger (`clip.clipstakes.app/v/prod_hoodie`) and watches ranked buyer clips.
+1. Shopper scans product trigger (`clip.copped.app/v/prod_hoodie`) and watches ranked buyer clips.
 2. Shopper buys from the viewer flow; conversion is logged and a receipt record is generated.
-3. Buyer scans receipt trigger (`clip.clipstakes.app/c/order_1234`), records a 5-15s clip, passes on-device validation, optionally adds text, and stakes clip for instant $5 coupon.
+3. Buyer scans receipt trigger (`clip.copped.app/c/order_1234`), records a 5-15s clip, passes on-device validation, optionally adds text, and stakes clip for instant $5 coupon.
 4. If any viewer purchase converts from that clip within 8 hours, creator becomes bonus-eligible (+$5).
 
 **How does the 8-hour notification window factor into your strategy?**
 
-ClipStakes uses the App Clip 8-hour window as a conversion reward channel. Instant reward removes dead-ends, while bonus reward uses the short-lifetime push window to reinforce behavior and close the loop between creator effort and merchant revenue.
+Copped uses the App Clip 8-hour window as a conversion reward channel. Instant reward removes dead-ends, while bonus reward uses the short-lifetime push window to reinforce behavior and close the loop between creator effort and merchant revenue.
 
 ---
 
@@ -68,14 +68,14 @@ No hard platform extensions are required for this prototype. Production rollout 
 
 This prototype includes two runnable `ClipExperience` flows in the simulator:
 
-- `ClipStakesViewerExperience`
-  - URL routing via `clip.clipstakes.app/v/:productId`
+- `CoppedViewerExperience`
+  - URL routing via `clip.copped.app/v/:productId`
   - Public Shopify catalog integration via unauthenticated `products.json` (with fallback)
   - Clip feed sorted by conversions then recency
   - Mock checkout that logs conversion and produces creator receipt URL
 
-- `ClipStakesCreatorExperience`
-  - URL routing via `clip.clipstakes.app/c/:receiptId`
+- `CoppedCreatorExperience`
+  - URL routing via `clip.copped.app/c/:receiptId`
   - Same public Shopify catalog source used for product resolution (no auth)
   - Receipt anti-fraud guard (one clip per receipt)
   - Product selection from receipt-only product list
@@ -85,7 +85,7 @@ This prototype includes two runnable `ClipExperience` flows in the simulator:
   - Optional text overlay + compositing attempt
   - Instant coupon success UX + wallet/share fallback actions
 
-All backend logic is represented by a local in-memory actor (`ClipStakesMockBackend`) that mirrors planned endpoint behavior.
+All backend logic is represented by a local in-memory actor (`CoppedMockBackend`) that mirrors planned endpoint behavior.
 
 ---
 

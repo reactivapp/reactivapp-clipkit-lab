@@ -3,12 +3,12 @@ internal import Combine
 import SwiftUI
 import UIKit
 
-struct ClipStakesVideoRecorder: View {
+struct CoppedVideoRecorder: View {
     let minDuration: TimeInterval
     let maxDuration: TimeInterval
-    let onRecorded: (ClipStakesRecordedVideo) -> Void
+    let onRecorded: (CoppedRecordedVideo) -> Void
 
-    @StateObject private var controller = ClipStakesCameraController()
+    @StateObject private var controller = CoppedCameraController()
     @State private var simulatorRecording = false
     @State private var simulatorElapsed: TimeInterval = 0
     @State private var simulatorError: String?
@@ -35,12 +35,12 @@ struct ClipStakesVideoRecorder: View {
                     Text(message)
                         .font(.system(size: 11, weight: .medium, design: .rounded))
                 }
-                .foregroundStyle(ClipStakesPalette.neonOrange)
+                .foregroundStyle(CoppedPalette.neonOrange)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 16)
                 .padding(.vertical, 8)
                 .frame(maxWidth: .infinity)
-                .background(ClipStakesPalette.neonOrange.opacity(0.08), in: RoundedRectangle(cornerRadius: 10))
+                .background(CoppedPalette.neonOrange.opacity(0.08), in: RoundedRectangle(cornerRadius: 10))
                 .padding(.horizontal, 12)
                 .padding(.bottom, 8)
             }
@@ -63,7 +63,7 @@ struct ClipStakesVideoRecorder: View {
     private var cameraBody: some View {
         VStack(spacing: 14) {
             ZStack(alignment: .topLeading) {
-                ClipStakesCameraPreview(session: controller.session)
+                CoppedCameraPreview(session: controller.session)
                     .frame(maxWidth: .infinity)
                     .frame(height: recordingCanvasHeight)
                     .background(Color.black)
@@ -123,7 +123,7 @@ struct ClipStakesVideoRecorder: View {
             if controller.isFinalizing {
                 HStack(spacing: 8) {
                     ProgressView()
-                        .tint(ClipStakesPalette.neonBlue)
+                        .tint(CoppedPalette.neonBlue)
                     Text("Saving your recording")
                         .font(.system(size: 12, weight: .semibold, design: .rounded))
                         .foregroundStyle(.white.opacity(0.8))
@@ -169,8 +169,8 @@ struct ClipStakesVideoRecorder: View {
                     .fill(
                         LinearGradient(
                             colors: [
-                                ClipStakesPalette.neonBlue.opacity(0.15),
-                                ClipStakesPalette.mint.opacity(0.1)
+                                CoppedPalette.neonBlue.opacity(0.15),
+                                CoppedPalette.mint.opacity(0.1)
                             ],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
@@ -225,7 +225,7 @@ struct ClipStakesVideoRecorder: View {
                         startSimulatorRecording()
                     }
                 },
-                accentColor: ClipStakesPalette.neonOrange
+                accentColor: CoppedPalette.neonOrange
             )
 
             recorderHint(
@@ -297,11 +297,11 @@ struct ClipStakesVideoRecorder: View {
     }
 
     @ViewBuilder
-    private func recordPill(elapsed: TimeInterval, mode: ClipStakesCaptureMode) -> some View {
+    private func recordPill(elapsed: TimeInterval, mode: CoppedCaptureMode) -> some View {
         let isActive = (mode == .camera ? controller.isRecording : simulatorRecording)
         HStack(spacing: 5) {
             Circle()
-                .fill(isActive ? Color.red : ClipStakesPalette.mint)
+                .fill(isActive ? Color.red : CoppedPalette.mint)
                 .frame(width: 6, height: 6)
             Text("\(Int(elapsed))s")
                 .font(.system(size: 11, weight: .bold, design: .monospaced))
@@ -331,7 +331,7 @@ struct ClipStakesVideoRecorder: View {
 
         let rounded = min(Int(simulatorElapsed.rounded()), Int(maxDuration))
         onRecorded(
-            ClipStakesRecordedVideo(
+            CoppedRecordedVideo(
                 fileURL: nil,
                 durationSeconds: rounded,
                 captureMode: .simulator
@@ -341,7 +341,7 @@ struct ClipStakesVideoRecorder: View {
 }
 
 @MainActor
-final class ClipStakesCameraController: NSObject, ObservableObject {
+final class CoppedCameraController: NSObject, ObservableObject {
     @Published var errorMessage: String?
     @Published var isSessionRunning = false
     @Published var isRecording = false
@@ -352,19 +352,19 @@ final class ClipStakesCameraController: NSObject, ObservableObject {
     let session = AVCaptureSession()
 
     private let movieOutput = AVCaptureMovieFileOutput()
-    private let sessionQueue = DispatchQueue(label: "clipstakes.camera.session")
+    private let sessionQueue = DispatchQueue(label: "copped.camera.session")
 
     private var isConfigured = false
     private var minDuration: TimeInterval = 5
     private var maxDuration: TimeInterval = 15
     private var recordingStartDate: Date?
     private var timer: Timer?
-    private var onRecorded: ((ClipStakesRecordedVideo) -> Void)?
+    private var onRecorded: ((CoppedRecordedVideo) -> Void)?
 
     func prepare(
         minDuration: TimeInterval,
         maxDuration: TimeInterval,
-        onRecorded: @escaping (ClipStakesRecordedVideo) -> Void
+        onRecorded: @escaping (CoppedRecordedVideo) -> Void
     ) {
         self.minDuration = minDuration
         self.maxDuration = maxDuration
@@ -557,7 +557,7 @@ final class ClipStakesCameraController: NSObject, ObservableObject {
         let boundedDuration = max(minDuration, min(duration, maxDuration))
 
         onRecorded?(
-            ClipStakesRecordedVideo(
+            CoppedRecordedVideo(
                 fileURL: outputURL,
                 durationSeconds: Int(boundedDuration.rounded()),
                 captureMode: .camera
@@ -567,11 +567,11 @@ final class ClipStakesCameraController: NSObject, ObservableObject {
 
     private static func tempMovieURL() -> URL {
         FileManager.default.temporaryDirectory
-            .appendingPathComponent("clipstakes-\(UUID().uuidString).mov")
+            .appendingPathComponent("copped-\(UUID().uuidString).mov")
     }
 }
 
-extension ClipStakesCameraController: AVCaptureFileOutputRecordingDelegate {
+extension CoppedCameraController: AVCaptureFileOutputRecordingDelegate {
     nonisolated func fileOutput(
         _ output: AVCaptureFileOutput,
         didStartRecordingTo fileURL: URL,
@@ -597,7 +597,7 @@ extension ClipStakesCameraController: AVCaptureFileOutputRecordingDelegate {
     }
 }
 
-struct ClipStakesCameraPreview: UIViewRepresentable {
+struct CoppedCameraPreview: UIViewRepresentable {
     let session: AVCaptureSession
 
     func makeUIView(context: Context) -> CameraPreviewView {

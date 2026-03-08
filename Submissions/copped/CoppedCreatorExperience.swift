@@ -1,11 +1,11 @@
 import SwiftUI
 import UIKit
 
-struct ClipStakesCreatorExperience: ClipExperience {
-    static let urlPattern = "clip.clipstakes.app/c/:receiptId"
-    static let clipName = "ClipStakes Creator"
+struct CoppedCreatorExperience: ClipExperience {
+    static let urlPattern = "clip.copped.app/c/:receiptId"
+    static let clipName = "Copped Creator"
     static let clipDescription = "Create a clip, get $5 now, and grow wallet balance on every conversion."
-    static let teamName = "ClipStakes"
+    static let teamName = "Copped"
     static let touchpoint: JourneyTouchpoint = .purchase
     static let invocationSource: InvocationSource = .qrCode
 
@@ -24,15 +24,15 @@ struct ClipStakesCreatorExperience: ClipExperience {
     let context: ClipContext
 
     @State private var step: CreatorStep = .loading
-    @State private var products: [ClipStakesProduct] = []
-    @State private var selectedProduct: ClipStakesProduct?
-    @State private var recordedVideo: ClipStakesRecordedVideo?
+    @State private var products: [CoppedProduct] = []
+    @State private var selectedProduct: CoppedProduct?
+    @State private var recordedVideo: CoppedRecordedVideo?
     @State private var textOverlay = ""
-    @State private var textPosition: ClipStakesTextPosition = .bottom
+    @State private var textPosition: CoppedTextPosition = .bottom
     @State private var validationMessage = ""
     @State private var isUploading = false
-    @State private var reward: ClipStakesCreateClipResponse?
-    @State private var rewardsSnapshot: ClipStakesRewardsSnapshot?
+    @State private var reward: CoppedCreateClipResponse?
+    @State private var rewardsSnapshot: CoppedRewardsSnapshot?
 
     @State private var walletAdded = false
     @State private var showShareSheet = false
@@ -44,9 +44,9 @@ struct ClipStakesCreatorExperience: ClipExperience {
 
     @State private var pulseHero = false
     @State private var pulseReward = false
-    @State private var demoAliasReceiptID = ClipStakesCreatorExperience.makeDemoAliasReceiptID()
+    @State private var demoAliasReceiptID = CoppedCreatorExperience.makeDemoAliasReceiptID()
 
-    private let deviceID = "clipstakes-device-id"
+    private let deviceID = "copped-device-id"
 
     private var receiptID: String {
         let raw = context.pathParameters["receiptId"] ?? "order_demo_hoodie"
@@ -67,7 +67,7 @@ struct ClipStakesCreatorExperience: ClipExperience {
     }
 
     private var apiBaseURL: URL {
-        ClipStakesRemoteBackend.resolveAPIBaseURL(override: apiBaseOverride)
+        CoppedRemoteBackend.resolveAPIBaseURL(override: apiBaseOverride)
     }
 
     private var firstProductIDForViewer: String {
@@ -107,7 +107,7 @@ struct ClipStakesCreatorExperience: ClipExperience {
 
     var body: some View {
         ZStack {
-            ClipStakesStageBackground()
+            CoppedStageBackground()
 
             ScrollView {
                 VStack(spacing: 12) {
@@ -122,12 +122,12 @@ struct ClipStakesCreatorExperience: ClipExperience {
                             Text(errorMessage)
                                 .font(.system(size: 12, weight: .medium, design: .rounded))
                         }
-                        .foregroundStyle(ClipStakesPalette.neonOrange)
+                        .foregroundStyle(CoppedPalette.neonOrange)
                         .multilineTextAlignment(.center)
                         .padding(.horizontal, 16)
                         .padding(.vertical, 8)
                         .frame(maxWidth: .infinity)
-                        .background(ClipStakesPalette.neonOrange.opacity(0.1), in: RoundedRectangle(cornerRadius: 10))
+                        .background(CoppedPalette.neonOrange.opacity(0.1), in: RoundedRectangle(cornerRadius: 10))
                     }
                 }
                 .padding(.horizontal, 12)
@@ -147,7 +147,7 @@ struct ClipStakesCreatorExperience: ClipExperience {
             await loadReceipt()
         }
         .sheet(isPresented: $showShareSheet) {
-            ClipStakesShareSheet(items: shareItems)
+            CoppedShareSheet(items: shareItems)
         }
     }
 
@@ -158,11 +158,11 @@ struct ClipStakesCreatorExperience: ClipExperience {
             HStack(spacing: 6) {
                 Image(systemName: "camera.aperture")
                     .font(.system(size: 10, weight: .bold))
-                    .foregroundStyle(ClipStakesPalette.neonPink)
+                    .foregroundStyle(CoppedPalette.neonPink)
                 Text("CREATOR")
                     .font(.system(size: 10, weight: .black, design: .rounded))
                     .tracking(1.2)
-                    .foregroundStyle(ClipStakesPalette.neonPink)
+                    .foregroundStyle(CoppedPalette.neonPink)
 
                 Spacer()
             }
@@ -173,9 +173,9 @@ struct ClipStakesCreatorExperience: ClipExperience {
                     RoundedRectangle(cornerRadius: 3)
                         .fill(Color.white.opacity(0.08))
                     RoundedRectangle(cornerRadius: 3)
-                        .fill(ClipStakesPalette.accentGradient)
+                        .fill(CoppedPalette.accentGradient)
                         .frame(width: max(8, geometry.size.width * progressValue))
-                        .shadow(color: ClipStakesPalette.neonBlue.opacity(pulseHero ? 0.4 : 0.15), radius: pulseHero ? 10 : 4)
+                        .shadow(color: CoppedPalette.neonBlue.opacity(pulseHero ? 0.4 : 0.15), radius: pulseHero ? 10 : 4)
                 }
             }
             .frame(height: 4)
@@ -185,7 +185,7 @@ struct ClipStakesCreatorExperience: ClipExperience {
                 HStack {
                     Text("Wallet \(rewardsSnapshot.availableBalanceDisplay)")
                         .font(.system(size: 10, weight: .bold, design: .monospaced))
-                        .foregroundStyle(ClipStakesPalette.mint)
+                        .foregroundStyle(CoppedPalette.mint)
                     Spacer()
                 }
             }
@@ -231,7 +231,7 @@ struct ClipStakesCreatorExperience: ClipExperience {
                     .frame(width: 56, height: 56)
                 Circle()
                     .trim(from: 0, to: 0.7)
-                    .stroke(ClipStakesPalette.accentGradient, style: StrokeStyle(lineWidth: 6, lineCap: .round))
+                    .stroke(CoppedPalette.accentGradient, style: StrokeStyle(lineWidth: 6, lineCap: .round))
                     .frame(width: 56, height: 56)
                     .rotationEffect(.degrees(pulseHero ? 240 : -30))
             }
@@ -261,10 +261,10 @@ struct ClipStakesCreatorExperience: ClipExperience {
                 Spacer()
                 Text("\(products.count) eligible")
                     .font(.system(size: 10, weight: .bold, design: .monospaced))
-                    .foregroundStyle(ClipStakesPalette.mint)
+                    .foregroundStyle(CoppedPalette.mint)
                     .padding(.horizontal, 8)
                     .padding(.vertical, 3)
-                    .background(ClipStakesPalette.mint.opacity(0.12), in: Capsule())
+                    .background(CoppedPalette.mint.opacity(0.12), in: Capsule())
             }
             .padding(.horizontal, 4)
 
@@ -288,7 +288,7 @@ struct ClipStakesCreatorExperience: ClipExperience {
         }
     }
 
-    private func productSelectionRow(_ product: ClipStakesProduct) -> some View {
+    private func productSelectionRow(_ product: CoppedProduct) -> some View {
         Button {
             beginRecording(for: product)
         } label: {
@@ -302,7 +302,7 @@ struct ClipStakesCreatorExperience: ClipExperience {
                     HStack(spacing: 6) {
                         Text(product.formattedPrice)
                             .font(.system(size: 12, weight: .bold, design: .monospaced))
-                            .foregroundStyle(ClipStakesPalette.mint)
+                            .foregroundStyle(CoppedPalette.mint)
                         Text("STAKE-READY")
                             .font(.system(size: 9, weight: .black, design: .rounded))
                             .tracking(0.6)
@@ -327,7 +327,7 @@ struct ClipStakesCreatorExperience: ClipExperience {
         .buttonStyle(.plain)
     }
 
-    private func beginRecording(for product: ClipStakesProduct) {
+    private func beginRecording(for product: CoppedProduct) {
         selectedProduct = product
         recordedVideo = nil
         textOverlay = ""
@@ -369,7 +369,7 @@ struct ClipStakesCreatorExperience: ClipExperience {
             .padding(.vertical, 8)
             .clipStakesGlassCard(cornerRadius: 12)
 
-            ClipStakesVideoRecorder(minDuration: 5, maxDuration: 15) { result in
+            CoppedVideoRecorder(minDuration: 5, maxDuration: 15) { result in
                 recordedVideo = result
                 step = .aiValidating
                 Task { await runValidation() }
@@ -390,7 +390,7 @@ struct ClipStakesCreatorExperience: ClipExperience {
                     step = .aiValidating
                     Task { await runValidation() }
                 }
-                .buttonStyle(ClipStakesPrimaryButtonStyle())
+                .buttonStyle(CoppedPrimaryButtonStyle())
             }
         }
         .padding(.bottom, 6)
@@ -402,11 +402,11 @@ struct ClipStakesCreatorExperience: ClipExperience {
         VStack(spacing: 14) {
             ZStack {
                 Circle()
-                    .stroke(ClipStakesPalette.neonBlue.opacity(0.15), lineWidth: 6)
+                    .stroke(CoppedPalette.neonBlue.opacity(0.15), lineWidth: 6)
                     .frame(width: 56, height: 56)
                 Circle()
                     .trim(from: 0, to: 0.6)
-                    .stroke(ClipStakesPalette.accentGradient, style: StrokeStyle(lineWidth: 6, lineCap: .round))
+                    .stroke(CoppedPalette.accentGradient, style: StrokeStyle(lineWidth: 6, lineCap: .round))
                     .frame(width: 56, height: 56)
                     .rotationEffect(.degrees(pulseHero ? 210 : -70))
                 Image(systemName: "brain")
@@ -458,7 +458,7 @@ struct ClipStakesCreatorExperience: ClipExperience {
                     )
 
                 Picker("Text Position", selection: $textPosition) {
-                    ForEach(ClipStakesTextPosition.allCases) { position in
+                    ForEach(CoppedTextPosition.allCases) { position in
                         Text(position.rawValue.capitalized)
                             .tag(position)
                     }
@@ -472,12 +472,12 @@ struct ClipStakesCreatorExperience: ClipExperience {
                 Button("Back") {
                     withAnimation(.easeOut(duration: 0.2)) { step = .record }
                 }
-                .buttonStyle(ClipStakesSecondaryButtonStyle())
+                .buttonStyle(CoppedSecondaryButtonStyle())
 
                 Button("Continue") {
                     withAnimation(.easeOut(duration: 0.25)) { step = .confirm }
                 }
-                .buttonStyle(ClipStakesPrimaryButtonStyle())
+                .buttonStyle(CoppedPrimaryButtonStyle())
             }
         }
         .padding(14)
@@ -489,7 +489,7 @@ struct ClipStakesCreatorExperience: ClipExperience {
             RoundedRectangle(cornerRadius: 12)
                 .fill(
                     LinearGradient(
-                        colors: [Color.black.opacity(0.5), ClipStakesPalette.neonBlue.opacity(0.3)],
+                        colors: [Color.black.opacity(0.5), CoppedPalette.neonBlue.opacity(0.3)],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
                     )
@@ -560,12 +560,12 @@ struct ClipStakesCreatorExperience: ClipExperience {
                 Spacer()
                 Image(systemName: "ticket.fill")
                     .font(.system(size: 24, weight: .bold))
-                    .foregroundStyle(ClipStakesPalette.neonOrange)
+                    .foregroundStyle(CoppedPalette.neonOrange)
             }
             .padding(12)
             .background(
                 LinearGradient(
-                    colors: [ClipStakesPalette.neonPink.opacity(0.25), ClipStakesPalette.neonOrange.opacity(0.2)],
+                    colors: [CoppedPalette.neonPink.opacity(0.25), CoppedPalette.neonOrange.opacity(0.2)],
                     startPoint: .topLeading,
                     endPoint: .bottomTrailing
                 ),
@@ -579,7 +579,7 @@ struct ClipStakesCreatorExperience: ClipExperience {
             if isUploading {
                 HStack(spacing: 8) {
                     ProgressView()
-                        .tint(ClipStakesPalette.neonPink)
+                        .tint(CoppedPalette.neonPink)
                         .scaleEffect(0.8)
                     Text("Uploading + minting reward...")
                         .font(.system(size: 12, weight: .medium, design: .rounded))
@@ -592,13 +592,13 @@ struct ClipStakesCreatorExperience: ClipExperience {
                 Button("Back") {
                     withAnimation(.easeOut(duration: 0.2)) { step = .addText }
                 }
-                .buttonStyle(ClipStakesSecondaryButtonStyle())
+                .buttonStyle(CoppedSecondaryButtonStyle())
                 .disabled(isUploading)
 
                 Button("Stake Clip") {
                     Task { await uploadAndStake() }
                 }
-                .buttonStyle(ClipStakesPrimaryButtonStyle(disabled: isUploading))
+                .buttonStyle(CoppedPrimaryButtonStyle(disabled: isUploading))
                 .disabled(isUploading)
             }
         }
@@ -620,7 +620,7 @@ struct ClipStakesCreatorExperience: ClipExperience {
                 VStack(spacing: 4) {
                     Image(systemName: "checkmark.circle.fill")
                         .font(.system(size: 32, weight: .bold))
-                        .foregroundStyle(ClipStakesPalette.mint)
+                        .foregroundStyle(CoppedPalette.mint)
 
                     Text("CLIP IS LIVE")
                         .font(.system(size: 10, weight: .black, design: .rounded))
@@ -646,7 +646,7 @@ struct ClipStakesCreatorExperience: ClipExperience {
 
                         Button(copiedWalletCode ? "Copied" : "Copy Wallet Code") {
                             Task { @MainActor in
-                                ClipStakesClipboard.copy(walletCode)
+                                CoppedClipboard.copy(walletCode)
                                 copiedWalletCode = true
                             }
                         }
@@ -664,7 +664,7 @@ struct ClipStakesCreatorExperience: ClipExperience {
                 .padding(20)
                 .background(
                     LinearGradient(
-                        colors: [ClipStakesPalette.neonPink, ClipStakesPalette.neonBlue],
+                        colors: [CoppedPalette.neonPink, CoppedPalette.neonBlue],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
                     ),
@@ -674,33 +674,33 @@ struct ClipStakesCreatorExperience: ClipExperience {
                     RoundedRectangle(cornerRadius: 18)
                         .stroke(Color.white.opacity(0.2), lineWidth: 0.5)
                 )
-                .shadow(color: ClipStakesPalette.neonPink.opacity(pulseReward ? 0.35 : 0.15), radius: pulseReward ? 20 : 10, y: 6)
+                .shadow(color: CoppedPalette.neonPink.opacity(pulseReward ? 0.35 : 0.15), radius: pulseReward ? 20 : 10, y: 6)
 
                 // Actions
                 VStack(spacing: 8) {
                     Button {
                         Task { @MainActor in
-                            let fallbackPassURL = ClipStakesRemoteBackend.fallbackWalletPassURL(
+                            let fallbackPassURL = CoppedRemoteBackend.fallbackWalletPassURL(
                                 apiBaseURL: apiBaseURL,
                                 walletCode: walletCode
                             )
-                            let passURLReachable = await ClipStakesURLLauncher.isReachable(passURL)
-                            if passURLReachable, await ClipStakesURLLauncher.open(passURL) {
+                            let passURLReachable = await CoppedURLLauncher.isReachable(passURL)
+                            if passURLReachable, await CoppedURLLauncher.open(passURL) {
                                 walletAdded = true
                                 walletStatusMessage = "Wallet pass opened."
                                 return
                             }
 
                             if passURL != fallbackPassURL {
-                                let fallbackReachable = await ClipStakesURLLauncher.isReachable(fallbackPassURL)
-                                if fallbackReachable, await ClipStakesURLLauncher.open(fallbackPassURL) {
+                                let fallbackReachable = await CoppedURLLauncher.isReachable(fallbackPassURL)
+                                if fallbackReachable, await CoppedURLLauncher.open(fallbackPassURL) {
                                     walletAdded = true
                                     walletStatusMessage = "Wallet pass opened."
                                     return
                                 }
                             }
 
-                            ClipStakesClipboard.copy(walletCode)
+                            CoppedClipboard.copy(walletCode)
                             walletStatusMessage = "Wallet pass link is unavailable. Wallet code copied."
                         }
                     } label: {
@@ -709,27 +709,27 @@ struct ClipStakesCreatorExperience: ClipExperience {
                             systemImage: walletAdded ? "checkmark.circle.fill" : "wallet.pass"
                         )
                     }
-                    .buttonStyle(ClipStakesPrimaryButtonStyle())
+                    .buttonStyle(CoppedPrimaryButtonStyle())
 
                     Button {
                         Task { await openViewerForSuccess(clipID: reward.clipID) }
                     } label: {
                         Label("Watch My Clip", systemImage: "play.rectangle.fill")
                     }
-                    .buttonStyle(ClipStakesSecondaryButtonStyle())
+                    .buttonStyle(CoppedSecondaryButtonStyle())
 
                     Button {
                         showShareSheet = true
                     } label: {
                         Label("Share to Stories", systemImage: "square.and.arrow.up")
                     }
-                    .buttonStyle(ClipStakesSecondaryButtonStyle())
+                    .buttonStyle(CoppedSecondaryButtonStyle())
 
                     Button("Refresh Balance") {
                         Task { await refreshRewards() }
                     }
                     .font(.system(size: 12, weight: .bold, design: .rounded))
-                    .foregroundStyle(ClipStakesPalette.mint)
+                    .foregroundStyle(CoppedPalette.mint)
                     .padding(.top, 2)
                 }
 
@@ -750,7 +750,7 @@ struct ClipStakesCreatorExperience: ClipExperience {
                             HStack(spacing: 8) {
                                 Image(systemName: item.kind == .conversion ? "cart.fill.badge.plus" : "video.badge.plus")
                                     .font(.system(size: 11, weight: .bold))
-                                    .foregroundStyle(ClipStakesPalette.mint)
+                                    .foregroundStyle(CoppedPalette.mint)
                                 Text(item.kind == .conversion ? "Conversion reward" : "Clip published")
                                     .font(.system(size: 11, weight: .medium, design: .rounded))
                                     .foregroundStyle(.white.opacity(0.74))
@@ -777,7 +777,7 @@ struct ClipStakesCreatorExperience: ClipExperience {
         VStack(spacing: 10) {
             Image(systemName: "lock.trianglebadge.exclamationmark")
                 .font(.system(size: 36, weight: .bold))
-                .foregroundStyle(ClipStakesPalette.neonOrange)
+                .foregroundStyle(CoppedPalette.neonOrange)
 
             Text("Receipt Already Used")
                 .font(.system(size: 18, weight: .bold, design: .rounded))
@@ -792,19 +792,19 @@ struct ClipStakesCreatorExperience: ClipExperience {
             if let rewardsSnapshot {
                 Text("Wallet balance: \(rewardsSnapshot.availableBalanceDisplay)")
                     .font(.system(size: 12, weight: .bold, design: .monospaced))
-                    .foregroundStyle(ClipStakesPalette.mint)
+                    .foregroundStyle(CoppedPalette.mint)
             }
 
             VStack(spacing: 8) {
                 Button("View Existing Clips") {
                     Task { await openViewerForBlockedReceipt() }
                 }
-                .buttonStyle(ClipStakesPrimaryButtonStyle())
+                .buttonStyle(CoppedPrimaryButtonStyle())
 
                 Button("Use Fresh Demo Receipt") {
                     Task { await openFreshDemoReceipt() }
                 }
-                .buttonStyle(ClipStakesSecondaryButtonStyle())
+                .buttonStyle(CoppedSecondaryButtonStyle())
             }
             .padding(.horizontal, 18)
 
@@ -825,7 +825,7 @@ struct ClipStakesCreatorExperience: ClipExperience {
         VStack(spacing: 10) {
             Image(systemName: "xmark.octagon.fill")
                 .font(.system(size: 36, weight: .bold))
-                .foregroundStyle(ClipStakesPalette.neonPink)
+                .foregroundStyle(CoppedPalette.neonPink)
 
             Text("Could Not Load Receipt")
                 .font(.system(size: 18, weight: .bold, design: .rounded))
@@ -840,7 +840,7 @@ struct ClipStakesCreatorExperience: ClipExperience {
             Button("Retry") {
                 Task { await loadReceipt() }
             }
-            .buttonStyle(ClipStakesPrimaryButtonStyle())
+            .buttonStyle(CoppedPrimaryButtonStyle())
             .padding(.horizontal, 20)
         }
         .padding(.vertical, 24)
@@ -866,7 +866,7 @@ struct ClipStakesCreatorExperience: ClipExperience {
         .background(Color.white.opacity(0.04))
     }
 
-    private func productThumb(_ product: ClipStakesProduct) -> some View {
+    private func productThumb(_ product: CoppedProduct) -> some View {
         ZStack {
             RoundedRectangle(cornerRadius: 8)
                 .fill(Color.white.opacity(0.08))
@@ -894,15 +894,15 @@ struct ClipStakesCreatorExperience: ClipExperience {
         .clipShape(RoundedRectangle(cornerRadius: 8))
     }
 
-    private func productAccent(_ product: ClipStakesProduct) -> LinearGradient {
+    private func productAccent(_ product: CoppedProduct) -> LinearGradient {
         let seed = abs(product.id.hashValue) % 3
         switch seed {
         case 0:
-            return LinearGradient(colors: [ClipStakesPalette.neonBlue, ClipStakesPalette.mint], startPoint: .topLeading, endPoint: .bottomTrailing)
+            return LinearGradient(colors: [CoppedPalette.neonBlue, CoppedPalette.mint], startPoint: .topLeading, endPoint: .bottomTrailing)
         case 1:
-            return LinearGradient(colors: [ClipStakesPalette.neonOrange, ClipStakesPalette.neonPink], startPoint: .topLeading, endPoint: .bottomTrailing)
+            return LinearGradient(colors: [CoppedPalette.neonOrange, CoppedPalette.neonPink], startPoint: .topLeading, endPoint: .bottomTrailing)
         default:
-            return LinearGradient(colors: [ClipStakesPalette.mint, ClipStakesPalette.neonBlue], startPoint: .topLeading, endPoint: .bottomTrailing)
+            return LinearGradient(colors: [CoppedPalette.mint, CoppedPalette.neonBlue], startPoint: .topLeading, endPoint: .bottomTrailing)
         }
     }
 
@@ -922,11 +922,11 @@ struct ClipStakesCreatorExperience: ClipExperience {
 
     private var shareItems: [Any] {
         guard let reward else {
-            return ["I created a ClipStakes video and unlocked rewards."]
+            return ["I created a Copped video and unlocked rewards."]
         }
 
         return [
-            "I just staked a clip on CLIPSTAKES and grew my wallet balance.",
+            "I just staked a clip on COPPED and grew my wallet balance.",
             "Wallet code: \(reward.walletCode)"
         ]
     }
@@ -942,7 +942,7 @@ struct ClipStakesCreatorExperience: ClipExperience {
 
         await refreshRewards()
 
-        _ = await ClipStakesShopifyPublicCatalogService.shared.loadCatalog(
+        _ = await CoppedShopifyPublicCatalogService.shared.loadCatalog(
             storeDomainOverride: storeDomainOverride
         )
 
@@ -956,7 +956,7 @@ struct ClipStakesCreatorExperience: ClipExperience {
             let fallbackProducts = await productsForUsedReceipt()
             await MainActor.run {
                 errorMessage = error.localizedDescription
-                if let backendError = error as? ClipStakesBackendError, backendError == .receiptAlreadyUsed {
+                if let backendError = error as? CoppedBackendError, backendError == .receiptAlreadyUsed {
                     if !fallbackProducts.isEmpty {
                         products = fallbackProducts
                     }
@@ -981,7 +981,7 @@ struct ClipStakesCreatorExperience: ClipExperience {
             validationMessage = ""
         }
 
-        let result = await ClipStakesAIValidator.validate(
+        let result = await CoppedAIValidator.validate(
             videoURL: recordedVideo.fileURL,
             expectedProductId: selectedProduct?.id ?? "",
             durationSeconds: recordedVideo.durationSeconds
@@ -1020,7 +1020,7 @@ struct ClipStakesCreatorExperience: ClipExperience {
 
             var preparedVideoURL = recordedVideo.fileURL
             if let sourceURL = preparedVideoURL, !trimmedTextOverlay.isEmpty {
-                let compositedURL = await ClipStakesVideoCompositor.addText(
+                let compositedURL = await CoppedVideoCompositor.addText(
                     to: sourceURL,
                     text: trimmedTextOverlay,
                     position: textPosition
@@ -1028,7 +1028,7 @@ struct ClipStakesCreatorExperience: ClipExperience {
                 preparedVideoURL = compositedURL ?? sourceURL
             }
 
-            let publishedVideoURL = await ClipStakesVideoStorage.shared.publishVideo(
+            let publishedVideoURL = await CoppedVideoStorage.shared.publishVideo(
                 sourceURL: preparedVideoURL,
                 upload: upload
             )
@@ -1067,48 +1067,48 @@ struct ClipStakesCreatorExperience: ClipExperience {
         }
     }
 
-    private func getReceipt() async throws -> ClipStakesReceipt {
+    private func getReceipt() async throws -> CoppedReceipt {
         if receiptID.hasPrefix("order_demo_hoodie_demo_") {
-            return await ClipStakesMockBackend.shared.ensureDemoReceipt(receiptId: receiptID)
+            return await CoppedMockBackend.shared.ensureDemoReceipt(receiptId: receiptID)
         }
 
         if receiptID.hasPrefix("order_demo_") {
-            return try await ClipStakesMockBackend.shared.getReceipt(receiptId: receiptID)
+            return try await CoppedMockBackend.shared.getReceipt(receiptId: receiptID)
         }
 
         do {
-            return try await ClipStakesRemoteBackend.getReceipt(
+            return try await CoppedRemoteBackend.getReceipt(
                 receiptId: receiptID,
                 apiBaseURL: apiBaseURL,
                 deviceID: deviceID
             )
-        } catch let error as ClipStakesBackendError where error == .receiptNotFound {
+        } catch let error as CoppedBackendError where error == .receiptNotFound {
             if receiptID.hasPrefix("order_demo_") {
-                return try await ClipStakesMockBackend.shared.getReceipt(receiptId: receiptID)
+                return try await CoppedMockBackend.shared.getReceipt(receiptId: receiptID)
             }
             throw error
-        } catch let error as ClipStakesRemoteBackendError where error.isConnectivityIssue {
-            return try await ClipStakesMockBackend.shared.getReceipt(receiptId: receiptID)
+        } catch let error as CoppedRemoteBackendError where error.isConnectivityIssue {
+            return try await CoppedMockBackend.shared.getReceipt(receiptId: receiptID)
         }
     }
 
-    private func createUploadURL(productId: String) async throws -> ClipStakesUploadURLResponse {
+    private func createUploadURL(productId: String) async throws -> CoppedUploadURLResponse {
         if receiptID.hasPrefix("order_demo_") {
-            return await ClipStakesMockBackend.shared.createUploadURL(
+            return await CoppedMockBackend.shared.createUploadURL(
                 receiptId: receiptID,
                 productId: productId
             )
         }
 
         do {
-            return try await ClipStakesRemoteBackend.createUploadURL(
+            return try await CoppedRemoteBackend.createUploadURL(
                 receiptId: receiptID,
                 productId: productId,
                 apiBaseURL: apiBaseURL,
                 deviceID: deviceID
             )
-        } catch let error as ClipStakesRemoteBackendError where error.isConnectivityIssue {
-            return await ClipStakesMockBackend.shared.createUploadURL(
+        } catch let error as CoppedRemoteBackendError where error.isConnectivityIssue {
+            return await CoppedMockBackend.shared.createUploadURL(
                 receiptId: receiptID,
                 productId: productId
             )
@@ -1121,11 +1121,11 @@ struct ClipStakesCreatorExperience: ClipExperience {
         productId: String,
         videoURL: URL,
         textOverlay: String?,
-        textPosition: ClipStakesTextPosition,
+        textPosition: CoppedTextPosition,
         durationSeconds: Int
-    ) async throws -> ClipStakesCreateClipResponse {
+    ) async throws -> CoppedCreateClipResponse {
         if receiptId.hasPrefix("order_demo_") {
-            return try await ClipStakesMockBackend.shared.createClip(
+            return try await CoppedMockBackend.shared.createClip(
                 receiptId: receiptId,
                 deviceID: deviceID,
                 productId: productId,
@@ -1137,7 +1137,7 @@ struct ClipStakesCreatorExperience: ClipExperience {
         }
 
         do {
-            return try await ClipStakesRemoteBackend.createClip(
+            return try await CoppedRemoteBackend.createClip(
                 receiptId: receiptId,
                 deviceID: deviceID,
                 productId: productId,
@@ -1147,8 +1147,8 @@ struct ClipStakesCreatorExperience: ClipExperience {
                 durationSeconds: durationSeconds,
                 apiBaseURL: apiBaseURL
             )
-        } catch let error as ClipStakesRemoteBackendError where error.isConnectivityIssue {
-            return try await ClipStakesMockBackend.shared.createClip(
+        } catch let error as CoppedRemoteBackendError where error.isConnectivityIssue {
+            return try await CoppedMockBackend.shared.createClip(
                 receiptId: receiptId,
                 deviceID: deviceID,
                 productId: productId,
@@ -1160,28 +1160,28 @@ struct ClipStakesCreatorExperience: ClipExperience {
         }
     }
 
-    private func getRewards() async -> ClipStakesRewardsSnapshot? {
+    private func getRewards() async -> CoppedRewardsSnapshot? {
         do {
-            return try await ClipStakesRemoteBackend.getRewards(
+            return try await CoppedRemoteBackend.getRewards(
                 deviceID: deviceID,
                 apiBaseURL: apiBaseURL
             )
-        } catch let error as ClipStakesRemoteBackendError where error.isConnectivityIssue {
-            return await ClipStakesMockBackend.shared.getRewards(deviceID: deviceID)
+        } catch let error as CoppedRemoteBackendError where error.isConnectivityIssue {
+            return await CoppedMockBackend.shared.getRewards(deviceID: deviceID)
         } catch {
             return nil
         }
     }
 
-    private func productsForUsedReceipt() async -> [ClipStakesProduct] {
+    private func productsForUsedReceipt() async -> [CoppedProduct] {
         if receiptID.hasPrefix("order_demo_") {
-            if let receipt = try? await ClipStakesMockBackend.shared.getReceiptIncludingUsed(receiptId: receiptID) {
+            if let receipt = try? await CoppedMockBackend.shared.getReceiptIncludingUsed(receiptId: receiptID) {
                 return receipt.products
             }
             return []
         }
 
-        if let receipt = try? await ClipStakesRemoteBackend.getReceipt(
+        if let receipt = try? await CoppedRemoteBackend.getReceipt(
             receiptId: receiptID,
             apiBaseURL: apiBaseURL,
             deviceID: deviceID
@@ -1194,7 +1194,7 @@ struct ClipStakesCreatorExperience: ClipExperience {
 
     @MainActor
     private func viewerLink(for productID: String, clipID: String?) -> URL {
-        var components = URLComponents(string: "https://clip.clipstakes.app/v/\(productID)")!
+        var components = URLComponents(string: "https://clip.copped.app/v/\(productID)")!
         if let clipID, !clipID.isEmpty {
             components.queryItems = [URLQueryItem(name: "clip", value: clipID)]
         }
@@ -1203,12 +1203,12 @@ struct ClipStakesCreatorExperience: ClipExperience {
 
     @MainActor
     private func creatorDemoLink() -> URL {
-        URL(string: "https://clip.clipstakes.app/c/demo")!
+        URL(string: "https://clip.copped.app/c/demo")!
     }
 
     private func openViewerForBlockedReceipt() async {
         let target = await MainActor.run { viewerLink(for: firstProductIDForViewer, clipID: nil) }
-        if await ClipStakesURLLauncher.open(target) {
+        if await CoppedURLLauncher.open(target) {
             await MainActor.run {
                 blockedStatusMessage = "Opened viewer."
             }
@@ -1216,7 +1216,7 @@ struct ClipStakesCreatorExperience: ClipExperience {
         }
 
         await MainActor.run {
-            ClipStakesClipboard.copy(target.absoluteString)
+            CoppedClipboard.copy(target.absoluteString)
             blockedStatusMessage = "Could not open viewer directly. Link copied."
         }
     }
@@ -1225,7 +1225,7 @@ struct ClipStakesCreatorExperience: ClipExperience {
         let productID = selectedProduct?.id ?? firstProductIDForViewer
         let target = await MainActor.run { viewerLink(for: productID, clipID: clipID) }
 
-        if await ClipStakesURLLauncher.open(target) {
+        if await CoppedURLLauncher.open(target) {
             await MainActor.run {
                 walletStatusMessage = "Opened your clip in viewer."
             }
@@ -1233,14 +1233,14 @@ struct ClipStakesCreatorExperience: ClipExperience {
         }
 
         await MainActor.run {
-            ClipStakesClipboard.copy(target.absoluteString)
+            CoppedClipboard.copy(target.absoluteString)
             walletStatusMessage = "Could not open viewer directly. Link copied."
         }
     }
 
     private func openFreshDemoReceipt() async {
         let target = await MainActor.run { creatorDemoLink() }
-        if await ClipStakesURLLauncher.open(target) {
+        if await CoppedURLLauncher.open(target) {
             await MainActor.run {
                 blockedStatusMessage = "Opened fresh demo receipt."
             }
@@ -1248,7 +1248,7 @@ struct ClipStakesCreatorExperience: ClipExperience {
         }
 
         await MainActor.run {
-            ClipStakesClipboard.copy(target.absoluteString)
+            CoppedClipboard.copy(target.absoluteString)
             blockedStatusMessage = "Could not open demo link directly. Link copied."
         }
     }

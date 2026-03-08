@@ -128,7 +128,7 @@ struct InvocationConsole: View {
                 HStack(spacing: 8) {
                     quickPayloadButton("prod_hoodie")
                     quickPayloadButton("prod_shirt")
-                    quickPayloadButton("clip.clipstakes.app/v/prod_hoodie")
+                    quickPayloadButton("clip.copped.app/v/prod_hoodie")
                 }
 
                 Spacer(minLength: 0)

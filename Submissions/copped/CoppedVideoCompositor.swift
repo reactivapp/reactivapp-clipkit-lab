@@ -3,11 +3,11 @@ import CoreGraphics
 import Foundation
 import UIKit
 
-enum ClipStakesVideoCompositor {
+enum CoppedVideoCompositor {
     static func addText(
         to sourceURL: URL,
         text: String,
-        position: ClipStakesTextPosition
+        position: CoppedTextPosition
     ) async -> URL? {
         await withCheckedContinuation { continuation in
             let asset = AVAsset(url: sourceURL)
@@ -111,7 +111,7 @@ enum ClipStakesVideoCompositor {
             }
 
             let outputURL = FileManager.default.temporaryDirectory
-                .appendingPathComponent("clipstakes-composited-\(UUID().uuidString).mp4")
+                .appendingPathComponent("copped-composited-\(UUID().uuidString).mp4")
 
             try? FileManager.default.removeItem(at: outputURL)
 

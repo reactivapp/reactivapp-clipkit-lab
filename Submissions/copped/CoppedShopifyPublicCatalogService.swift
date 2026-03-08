@@ -1,38 +1,38 @@
 import Foundation
 
-enum ClipStakesShopifyPublicConfig {
+enum CoppedShopifyPublicConfig {
     // Optional default store. Set this if you want public catalog loading without URL query params.
     // Example: "your-store.myshopify.com"
     static let defaultStoreDomain: String? = nil
     static let productsLimit = 250
 }
 
-enum ClipStakesCatalogSource {
+enum CoppedCatalogSource {
     case shopifyPublic
     case fallback
 }
 
-struct ClipStakesCatalogLoadResult {
-    let products: [ClipStakesProduct]
-    let source: ClipStakesCatalogSource
+struct CoppedCatalogLoadResult {
+    let products: [CoppedProduct]
+    let source: CoppedCatalogSource
     let storeDomain: String?
     let message: String?
 }
 
-actor ClipStakesShopifyPublicCatalogService {
-    static let shared = ClipStakesShopifyPublicCatalogService()
+actor CoppedShopifyPublicCatalogService {
+    static let shared = CoppedShopifyPublicCatalogService()
 
-    private var cachedProductsByDomain: [String: [ClipStakesProduct]] = [:]
+    private var cachedProductsByDomain: [String: [CoppedProduct]] = [:]
 
-    func loadCatalog(storeDomainOverride: String?) async -> ClipStakesCatalogLoadResult {
+    func loadCatalog(storeDomainOverride: String?) async -> CoppedCatalogLoadResult {
         let resolvedDomain = normalizeStoreDomain(storeDomainOverride)
-            ?? normalizeStoreDomain(ClipStakesShopifyPublicConfig.defaultStoreDomain)
+            ?? normalizeStoreDomain(CoppedShopifyPublicConfig.defaultStoreDomain)
 
         guard let resolvedDomain else {
-            let fallback = ClipStakesCatalog.fallbackProducts
-            ClipStakesCatalog.updatePublicProducts(fallback)
-            await ClipStakesMockBackend.shared.prepareDemoCatalog(with: fallback)
-            return ClipStakesCatalogLoadResult(
+            let fallback = CoppedCatalog.fallbackProducts
+            CoppedCatalog.updatePublicProducts(fallback)
+            await CoppedMockBackend.shared.prepareDemoCatalog(with: fallback)
+            return CoppedCatalogLoadResult(
                 products: fallback,
                 source: .fallback,
                 storeDomain: nil,
@@ -41,9 +41,9 @@ actor ClipStakesShopifyPublicCatalogService {
         }
 
         if let cached = cachedProductsByDomain[resolvedDomain], !cached.isEmpty {
-            ClipStakesCatalog.updatePublicProducts(cached)
-            await ClipStakesMockBackend.shared.prepareDemoCatalog(with: cached)
-            return ClipStakesCatalogLoadResult(
+            CoppedCatalog.updatePublicProducts(cached)
+            await CoppedMockBackend.shared.prepareDemoCatalog(with: cached)
+            return CoppedCatalogLoadResult(
                 products: cached,
                 source: .shopifyPublic,
                 storeDomain: resolvedDomain,
@@ -60,21 +60,21 @@ actor ClipStakesShopifyPublicCatalogService {
             }
 
             cachedProductsByDomain[resolvedDomain] = mapped
-            ClipStakesCatalog.updatePublicProducts(mapped)
-            await ClipStakesMockBackend.shared.prepareDemoCatalog(with: mapped)
+            CoppedCatalog.updatePublicProducts(mapped)
+            await CoppedMockBackend.shared.prepareDemoCatalog(with: mapped)
 
-            return ClipStakesCatalogLoadResult(
+            return CoppedCatalogLoadResult(
                 products: mapped,
                 source: .shopifyPublic,
                 storeDomain: resolvedDomain,
                 message: "Loaded \(mapped.count) public products from \(resolvedDomain)."
             )
         } catch {
-            let fallback = ClipStakesCatalog.fallbackProducts
-            ClipStakesCatalog.updatePublicProducts(fallback)
-            await ClipStakesMockBackend.shared.prepareDemoCatalog(with: fallback)
+            let fallback = CoppedCatalog.fallbackProducts
+            CoppedCatalog.updatePublicProducts(fallback)
+            await CoppedMockBackend.shared.prepareDemoCatalog(with: fallback)
 
-            return ClipStakesCatalogLoadResult(
+            return CoppedCatalogLoadResult(
                 products: fallback,
                 source: .fallback,
                 storeDomain: resolvedDomain,
@@ -91,7 +91,7 @@ actor ClipStakesShopifyPublicCatalogService {
         components.host = domain
         components.path = "/products.json"
         components.queryItems = [
-            URLQueryItem(name: "limit", value: String(ClipStakesShopifyPublicConfig.productsLimit))
+            URLQueryItem(name: "limit", value: String(CoppedShopifyPublicConfig.productsLimit))
         ]
 
         guard let url = components.url else {
@@ -108,14 +108,14 @@ actor ClipStakesShopifyPublicCatalogService {
         return decoded.products
     }
 
-    private func mapProducts(_ products: [ShopifyProduct]) -> [ClipStakesProduct] {
+    private func mapProducts(_ products: [ShopifyProduct]) -> [CoppedProduct] {
         products.compactMap { product in
             guard let id = product.id else { return nil }
             let rawPrice = product.variants.first?.price ?? "0"
             let numeric = Double(rawPrice.replacingOccurrences(of: ",", with: "")) ?? 0
             let image = product.image?.src ?? product.images.first?.src
 
-            return ClipStakesProduct(
+            return CoppedProduct(
                 id: String(id),
                 name: product.title ?? "Product \(id)",
                 price: numeric,

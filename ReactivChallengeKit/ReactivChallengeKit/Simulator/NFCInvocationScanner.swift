@@ -9,13 +9,13 @@ enum NFCInvocationScanner {
             return trimmed
         }
 
-        if trimmed.lowercased().hasPrefix("clip.clipstakes.app/") {
+        if trimmed.lowercased().hasPrefix("clip.copped.app/") {
             return trimmed
         }
 
         if let productID = extractProductID(from: trimmed) {
             let encoded = productID.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? productID
-            return "clip.clipstakes.app/v/\(encoded)"
+            return "clip.copped.app/v/\(encoded)"
         }
 
         return nil
@@ -24,8 +24,8 @@ enum NFCInvocationScanner {
     private static func extractProductID(from rawValue: String) -> String? {
         let lowered = rawValue.lowercased()
 
-        if lowered.hasPrefix("clipstakes:") {
-            let value = String(rawValue.dropFirst("clipstakes:".count))
+        if lowered.hasPrefix("copped:") {
+            let value = String(rawValue.dropFirst("copped:".count))
             if value.contains("/v/") {
                 return value.components(separatedBy: "/v/").last
             }

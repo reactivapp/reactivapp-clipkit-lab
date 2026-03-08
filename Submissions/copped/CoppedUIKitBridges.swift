@@ -1,7 +1,7 @@
 import SwiftUI
 import UIKit
 
-struct ClipStakesShareSheet: UIViewControllerRepresentable {
+struct CoppedShareSheet: UIViewControllerRepresentable {
     let items: [Any]
 
     func makeUIViewController(context: Context) -> UIActivityViewController {
@@ -11,14 +11,14 @@ struct ClipStakesShareSheet: UIViewControllerRepresentable {
     func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
 }
 
-enum ClipStakesClipboard {
+enum CoppedClipboard {
     @MainActor
     static func copy(_ value: String) {
         UIPasteboard.general.string = value
     }
 }
 
-enum ClipStakesURLLauncher {
+enum CoppedURLLauncher {
     static func isReachable(_ url: URL, timeout: TimeInterval = 2.5) async -> Bool {
         guard let scheme = url.scheme?.lowercased(), scheme == "http" || scheme == "https" else {
             return true

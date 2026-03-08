@@ -1,7 +1,7 @@
 import Foundation
 
-actor ClipStakesVideoStorage {
-    static let shared = ClipStakesVideoStorage()
+actor CoppedVideoStorage {
+    static let shared = CoppedVideoStorage()
 
     private let session: URLSession
     private let localStorageRoot: URL
@@ -17,13 +17,13 @@ actor ClipStakesVideoStorage {
             ?? fileManager.temporaryDirectory
 
         localStorageRoot = baseDirectory
-            .appendingPathComponent("clipstakes", isDirectory: true)
+            .appendingPathComponent("copped", isDirectory: true)
             .appendingPathComponent("r2-fallback", isDirectory: true)
 
         try? fileManager.createDirectory(at: localStorageRoot, withIntermediateDirectories: true)
     }
 
-    func publishVideo(sourceURL: URL?, upload: ClipStakesUploadURLResponse) async -> URL {
+    func publishVideo(sourceURL: URL?, upload: CoppedUploadURLResponse) async -> URL {
         guard let sourceURL else {
             return upload.videoURL
         }
@@ -45,7 +45,7 @@ actor ClipStakesVideoStorage {
         guard scheme == "https" || scheme == "http" else { return false }
 
         if let host = uploadURL.host?.lowercased(),
-           host == "upload.clipstakes.app" {
+           host == "upload.copped.app" {
             // Mock backend placeholder: skip noisy failing network calls.
             return false
         }

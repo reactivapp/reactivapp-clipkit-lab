@@ -1,6 +1,6 @@
 import SwiftUI
 
-enum ClipStakesPalette {
+enum CoppedPalette {
     static let ink = Color(red: 0.08, green: 0.05, blue: 0.12)
     static let shadowInk = Color(red: 0.04, green: 0.02, blue: 0.08)
     static let neonPink = Color(red: 1.00, green: 0.31, blue: 0.63)
@@ -30,29 +30,29 @@ enum ClipStakesPalette {
     )
 }
 
-struct ClipStakesStageBackground: View {
+struct CoppedStageBackground: View {
     var body: some View {
         ZStack {
             LinearGradient(
-                colors: [ClipStakesPalette.shadowInk, ClipStakesPalette.ink],
+                colors: [CoppedPalette.shadowInk, CoppedPalette.ink],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )
 
             Circle()
-                .fill(ClipStakesPalette.neonPink.opacity(0.22))
+                .fill(CoppedPalette.neonPink.opacity(0.22))
                 .blur(radius: 100)
                 .frame(width: 220, height: 220)
                 .offset(x: 120, y: -260)
 
             Circle()
-                .fill(ClipStakesPalette.neonBlue.opacity(0.16))
+                .fill(CoppedPalette.neonBlue.opacity(0.16))
                 .blur(radius: 110)
                 .frame(width: 240, height: 240)
                 .offset(x: -130, y: -60)
 
             Circle()
-                .fill(ClipStakesPalette.neonOrange.opacity(0.14))
+                .fill(CoppedPalette.neonOrange.opacity(0.14))
                 .blur(radius: 120)
                 .frame(width: 250, height: 250)
                 .offset(x: 80, y: 300)
@@ -61,18 +61,18 @@ struct ClipStakesStageBackground: View {
     }
 }
 
-struct ClipStakesGlassCardModifier: ViewModifier {
+struct CoppedGlassCardModifier: ViewModifier {
     let cornerRadius: CGFloat
 
     func body(content: Content) -> some View {
         content
             .background(
                 RoundedRectangle(cornerRadius: cornerRadius)
-                    .fill(ClipStakesPalette.cardBase)
+                    .fill(CoppedPalette.cardBase)
             )
             .overlay(
                 RoundedRectangle(cornerRadius: cornerRadius)
-                    .stroke(ClipStakesPalette.cardBorder, lineWidth: 0.5)
+                    .stroke(CoppedPalette.cardBorder, lineWidth: 0.5)
             )
             .shadow(color: .black.opacity(0.22), radius: 12, y: 6)
     }
@@ -80,11 +80,11 @@ struct ClipStakesGlassCardModifier: ViewModifier {
 
 extension View {
     func clipStakesGlassCard(cornerRadius: CGFloat = 22) -> some View {
-        modifier(ClipStakesGlassCardModifier(cornerRadius: cornerRadius))
+        modifier(CoppedGlassCardModifier(cornerRadius: cornerRadius))
     }
 }
 
-struct ClipStakesInfoChip: View {
+struct CoppedInfoChip: View {
     let title: String
     let icon: String
     var tint: Color = .white
@@ -104,7 +104,7 @@ struct ClipStakesInfoChip: View {
     }
 }
 
-struct ClipStakesPrimaryButtonStyle: ButtonStyle {
+struct CoppedPrimaryButtonStyle: ButtonStyle {
     var disabled = false
 
     func makeBody(configuration: Configuration) -> some View {
@@ -118,7 +118,7 @@ struct ClipStakesPrimaryButtonStyle: ButtonStyle {
                     .fill(
                         disabled
                             ? AnyShapeStyle(Color.gray.opacity(0.3))
-                            : AnyShapeStyle(ClipStakesPalette.primaryGradient)
+                            : AnyShapeStyle(CoppedPalette.primaryGradient)
                     )
             )
             .overlay(
@@ -131,7 +131,7 @@ struct ClipStakesPrimaryButtonStyle: ButtonStyle {
     }
 }
 
-struct ClipStakesSecondaryButtonStyle: ButtonStyle {
+struct CoppedSecondaryButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(.system(size: 14, weight: .semibold, design: .rounded))
@@ -149,7 +149,7 @@ struct ClipStakesSecondaryButtonStyle: ButtonStyle {
     }
 }
 
-struct ClipStakesStepPill: View {
+struct CoppedStepPill: View {
     let label: String
     let isActive: Bool
 
@@ -161,7 +161,7 @@ struct ClipStakesStepPill: View {
             .padding(.vertical, 5)
             .background(
                 Capsule()
-                    .fill(isActive ? AnyShapeStyle(ClipStakesPalette.accentGradient) : AnyShapeStyle(Color.white.opacity(0.08)))
+                    .fill(isActive ? AnyShapeStyle(CoppedPalette.accentGradient) : AnyShapeStyle(Color.white.opacity(0.08)))
             )
             .animation(.easeInOut(duration: 0.25), value: isActive)
     }
