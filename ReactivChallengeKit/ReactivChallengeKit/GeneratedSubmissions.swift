@@ -452,8 +452,8 @@ struct ReturnclipClipExperience: ClipExperience {
                 )
                 .padding(.top, 16)
 
-                // AI Exchange Recommendation (shown for wrong size)
-                if selectedReason == .wrongSize, let item = selectedItem {
+                // AI Exchange Recommendation (shown for wrong size on sized items)
+                if selectedReason == .wrongSize, let item = selectedItem, item.size != nil {
                     exchangeRecommendation(for: item)
                         .transition(.move(edge: .top).combined(with: .opacity))
                 }
@@ -652,8 +652,8 @@ struct ReturnclipClipExperience: ClipExperience {
                         delayFromInvocation: 60 * 60 * 2
                     ),
                     NotificationTemplate(
-                        title: "Your store credit is ready 🎉",
-                        body: "\(selectedResolution == .storeCredit ? "$" + String(format: "%.2f", (selectedItem?.price ?? 0) * 1.10) + " credit" : "Your refund") is being processed. Browse what's new while you wait!",
+                        title: selectedResolution == .storeCredit ? "Your store credit is ready 🎉" : selectedResolution == .exchange ? "Your exchange is on the way 🎉" : "Your refund is on the way 🎉",
+                        body: selectedResolution == .storeCredit ? "$\(String(format: "%.2f", (selectedItem?.price ?? 0) * 1.10)) credit is ready to use. Browse what's new!" : selectedResolution == .exchange ? "Your replacement item is being prepared. We'll notify you when it ships!" : "$\(String(format: "%.2f", selectedItem?.price ?? 0)) refund is being processed. Browse what's new while you wait!",
                         journeyStage: "Re-engage",
                         triggerDescription: "Sent when carrier scans package",
                         delayFromInvocation: 60 * 60 * 6
