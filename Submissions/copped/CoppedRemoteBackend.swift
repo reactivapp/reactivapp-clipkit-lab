@@ -37,7 +37,7 @@ enum CoppedRemoteBackendError: LocalizedError {
 }
 
 enum CoppedRemoteBackend {
-    nonisolated static let defaultAPIBaseURL = URL(string: "https://copped.skilled5041.workers.dev")!
+    nonisolated static let defaultAPIBaseURL = URL(string: "https://clipstakes.skilled5041.workers.dev")!
 
     private static let session: URLSession = {
         let configuration = URLSessionConfiguration.ephemeral
@@ -173,6 +173,8 @@ enum CoppedRemoteBackend {
             )
             let payload = payloadDict(from: response)
             let wallet = dictValue(for: ["wallet"], in: payload) ?? [:]
+            let reward = dictValue(for: ["reward"], in: payload) ?? [:]
+            let balances = dictValue(for: ["balances", "totals"], in: payload) ?? [:]
 
             let clipID = stringValue(for: ["clip_id", "clipId", "id"], in: payload)
                 ?? UUID().uuidString.lowercased()
@@ -199,12 +201,14 @@ enum CoppedRemoteBackend {
 
             let instantCreditCents = intValue(
                 for: ["instant_credit_cents", "instantCreditCents", "credited_cents", "creditedCents"],
-                in: payload
+                in: reward,
+                fallback: payload
             ) ?? 0
 
             let availableBalanceCents = intValue(
-                for: ["available_balance_cents", "availableBalanceCents", "balance_cents", "balanceCents"],
-                in: payload
+                for: ["available_cents", "available_balance_cents", "availableBalanceCents", "balance_cents", "balanceCents"],
+                in: balances,
+                fallback: payload
             ) ?? 0
 
             let message = stringValue(for: ["message"], in: payload)
@@ -242,6 +246,7 @@ enum CoppedRemoteBackend {
 
         let payload = payloadDict(from: response)
         let wallet = dictValue(for: ["wallet"], in: payload) ?? payload
+        let balances = dictValue(for: ["balances", "totals"], in: payload) ?? [:]
 
         guard let walletCode = stringValue(
             for: ["code", "wallet_code", "walletCode", "coupon_code", "couponCode"],
@@ -262,12 +267,20 @@ enum CoppedRemoteBackend {
         ) ?? fallbackWalletPassURL(apiBaseURL: apiBaseURL, walletCode: walletCode)
 
         let availableBalanceCents = intValue(
-            for: ["available_balance_cents", "availableBalanceCents", "balance_cents", "balanceCents"],
+            for: ["available_cents", "available_balance_cents", "availableBalanceCents", "balance_cents", "balanceCents"],
+            in: balances,
+            fallback: wallet
+        ) ?? intValue(
+            for: ["available_cents", "available_balance_cents", "availableBalanceCents", "balance_cents", "balanceCents"],
             in: wallet,
             fallback: payload
         ) ?? 0
 
         let lifetimeEarnedCents = intValue(
+            for: ["lifetime_earned_cents", "lifetimeEarnedCents"],
+            in: balances,
+            fallback: wallet
+        ) ?? intValue(
             for: ["lifetime_earned_cents", "lifetimeEarnedCents"],
             in: wallet,
             fallback: payload
@@ -288,6 +301,35 @@ enum CoppedRemoteBackend {
             lifetimeEarnedDisplay: lifetimeEarnedCents.clipStakesCurrencyDisplay,
             transactions: transactions
         )
+    }
+
+    static func getClips(
+        productId: String,
+        apiBaseURL: URL,
+        deviceID: String
+    ) async throws -> [CoppedClip] {
+        let response = try await requestJSON(
+            apiBaseURL: apiBaseURL,
+            paths: ["/clips/\(productId)"],
+            method: "GET",
+            deviceID: deviceID,
+            body: nil
+        )
+
+        let payload = payloadDict(from: response)
+        let rawClips = arrayValue(for: ["clips", "items", "data"], in: payload)
+            ?? arrayValue(for: ["clips", "items", "data"], in: response)
+            ?? []
+
+        let parsed = rawClips.compactMap { parseClip(from: $0, fallbackProductId: productId, apiBaseURL: apiBaseURL) }
+        return parsed
+            .filter(\.isActive)
+            .sorted {
+                if $0.conversions == $1.conversions {
+                    return $0.createdAt > $1.createdAt
+                }
+                return $0.conversions > $1.conversions
+            }
     }
 
     // MARK: - Networking
@@ -391,6 +433,68 @@ enum CoppedRemoteBackend {
                 createdAt: dateValue(for: ["created_at", "createdAt"], in: item) ?? Date()
             )
         }
+    }
+
+    private static func parseClip(
+        from raw: [String: Any],
+        fallbackProductId: String,
+        apiBaseURL: URL
+    ) -> CoppedClip? {
+        let clipID = stringValue(for: ["id", "clip_id", "clipId"], in: raw) ?? UUID().uuidString.lowercased()
+
+        let productDict = dictValue(for: ["product"], in: raw)
+        let nestedVideo = dictValue(for: ["video"], in: raw)
+        let nestedWallet = dictValue(for: ["wallet"], in: raw)
+
+        let productID = stringValue(for: ["product_id", "productId"], in: raw)
+            ?? stringValue(for: ["id", "product_id", "productId"], in: productDict ?? [:])
+            ?? fallbackProductId
+
+        let videoURL = urlValue(for: ["video_url", "videoURL", "url"], in: raw, apiBaseURL: apiBaseURL)
+            ?? urlValue(for: ["url", "video_url", "videoURL"], in: nestedVideo ?? [:], apiBaseURL: apiBaseURL)
+            ?? urlValue(for: ["playback_url", "playbackURL"], in: raw, apiBaseURL: apiBaseURL)
+        guard let videoURL else { return nil }
+
+        let textOverlay = stringValue(for: ["text_overlay", "textOverlay", "caption"], in: raw)
+        let textPositionRaw = stringValue(for: ["text_position", "textPosition"], in: raw)?.lowercased()
+        let textPosition = CoppedTextPosition(rawValue: textPositionRaw ?? "") ?? .bottom
+
+        let durationSeconds = intValue(
+            for: ["duration_seconds", "durationSeconds", "duration"],
+            in: raw
+        ) ?? 10
+
+        let couponCode = stringValue(
+            for: ["coupon_code", "couponCode", "wallet_code", "walletCode"],
+            in: raw
+        ) ?? stringValue(
+            for: ["code", "wallet_code", "walletCode"],
+            in: nestedWallet ?? [:]
+        ) ?? "COP-UNKNOWN"
+
+        let createdAt = dateValue(for: ["created_at", "createdAt"], in: raw) ?? Date()
+        let expiresAt = dateValue(for: ["expires_at", "expiresAt"], in: raw)
+            ?? createdAt.addingTimeInterval(365 * 24 * 60 * 60)
+
+        return CoppedClip(
+            id: clipID,
+            receiptID: stringValue(for: ["receipt_id", "receiptId", "order_id", "orderId"], in: raw) ?? "remote-receipt",
+            creatorDeviceID: stringValue(for: ["creator_device_id", "creatorDeviceId", "device_id", "deviceId"], in: raw) ?? "remote-device",
+            productID: productID,
+            videoURL: videoURL,
+            textOverlay: textOverlay,
+            textPosition: textPosition,
+            durationSeconds: max(1, min(120, durationSeconds)),
+            couponCode: couponCode,
+            couponRedeemed: boolValue(for: ["coupon_redeemed", "couponRedeemed", "redeemed"], in: raw) ?? false,
+            conversions: intValue(for: ["conversions", "conversion_count", "conversionCount"], in: raw) ?? 0,
+            bonusCouponCode: stringValue(for: ["bonus_coupon_code", "bonusCouponCode"], in: raw),
+            bonusPushed: boolValue(for: ["bonus_pushed", "bonusPushed"], in: raw) ?? false,
+            bonusRedeemed: boolValue(for: ["bonus_redeemed", "bonusRedeemed"], in: raw) ?? false,
+            isActive: boolValue(for: ["is_active", "isActive"], in: raw) ?? true,
+            createdAt: createdAt,
+            expiresAt: expiresAt
+        )
     }
 
     private static func productIDsFromReceiptPayload(_ payload: [String: Any]) -> [String] {

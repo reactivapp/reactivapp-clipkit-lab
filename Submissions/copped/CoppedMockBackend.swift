@@ -117,7 +117,7 @@ actor CoppedMockBackend {
 
     func createUploadURL(receiptId: String, productId: String) async -> CoppedUploadURLResponse {
         let key = "clips/\(UUID().uuidString.lowercased()).mp4"
-        let uploadURL = URL(string: "https://copped.skilled5041.workers.dev/upload/\(key)")!
+        let uploadURL = URL(string: "https://clipstakes.skilled5041.workers.dev/upload/\(key)")!
         let videoURL = Self.fallbackPlayableVideoURL(seed: key)
 
         return CoppedUploadURLResponse(
@@ -448,7 +448,7 @@ actor CoppedMockBackend {
         }
 
         let walletCode = Self.generateWalletCode()
-        let passURL = URL(string: "https://copped.skilled5041.workers.dev/wallet/\(walletCode)/pass")!
+        let passURL = URL(string: "https://clipstakes.skilled5041.workers.dev/wallet/\(walletCode)/pass")!
         let account = RewardAccount(
             walletCode: walletCode,
             passURL: passURL,

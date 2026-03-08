@@ -48,6 +48,17 @@ struct CoppedCreatorExperience: ClipExperience {
 
     private let deviceID = "copped-device-id"
 
+    private enum CreatorUploadError: LocalizedError {
+        case remoteUploadFailed
+
+        var errorDescription: String? {
+            switch self {
+            case .remoteUploadFailed:
+                return "Video upload to backend failed. Check network/backend and try again."
+            }
+        }
+    }
+
     private var receiptID: String {
         let raw = context.pathParameters["receiptId"] ?? "order_demo_hoodie"
         let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -56,6 +67,10 @@ struct CoppedCreatorExperience: ClipExperience {
             return demoAliasReceiptID
         }
         return trimmed
+    }
+
+    private var isDemoReceipt: Bool {
+        receiptID.hasPrefix("order_demo_")
     }
 
     private var storeDomainOverride: String? {
@@ -68,6 +83,11 @@ struct CoppedCreatorExperience: ClipExperience {
 
     private var apiBaseURL: URL {
         CoppedRemoteBackend.resolveAPIBaseURL(override: apiBaseOverride)
+    }
+
+    private var allowMockFallback: Bool {
+        guard let raw = context.queryParameters["mock"]?.lowercased() else { return false }
+        return raw == "1" || raw == "true" || raw == "yes"
     }
 
     private var firstProductIDForViewer: String {
@@ -86,6 +106,24 @@ struct CoppedCreatorExperience: ClipExperience {
 
     private var trimmedTextOverlay: String {
         textOverlay.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private var recorderPanelHeight: CGFloat {
+        let screenHeight = UIScreen.main.bounds.height
+        if screenHeight <= 700 {
+            return max(300, screenHeight * 0.5)
+        }
+        return min(520, screenHeight * 0.62)
+    }
+
+    private var showsInlineErrorBanner: Bool {
+        guard errorMessage != nil else { return false }
+        switch step {
+        case .record, .addText, .confirm, .success:
+            return true
+        case .loading, .selectProduct, .aiValidating, .blocked, .failure:
+            return false
+        }
     }
 
     private var stepTimeline: [(CreatorStep, String)] {
@@ -115,7 +153,7 @@ struct CoppedCreatorExperience: ClipExperience {
 
                     content
 
-                    if let errorMessage {
+                    if showsInlineErrorBanner, let errorMessage {
                         HStack(spacing: 6) {
                             Image(systemName: "exclamationmark.triangle.fill")
                                 .font(.system(size: 11))
@@ -374,7 +412,7 @@ struct CoppedCreatorExperience: ClipExperience {
                 step = .aiValidating
                 Task { await runValidation() }
             }
-            .frame(minHeight: max(420, UIScreen.main.bounds.height * 0.62))
+            .frame(height: recorderPanelHeight)
             .clipStakesGlassCard(cornerRadius: 18)
 
             HStack(spacing: 8) {
@@ -684,28 +722,37 @@ struct CoppedCreatorExperience: ClipExperience {
                                 apiBaseURL: apiBaseURL,
                                 walletCode: walletCode
                             )
-                            let passURLReachable = await CoppedURLLauncher.isReachable(passURL)
-                            if passURLReachable, await CoppedURLLauncher.open(passURL) {
+
+                            // Try primary pass URL first
+                            let primaryResult = await CoppedURLLauncher.downloadAndPresentPass(passURL)
+                            switch primaryResult {
+                            case .added, .dismissed:
                                 walletAdded = true
-                                walletStatusMessage = "Wallet pass opened."
+                                walletStatusMessage = "Wallet pass added."
                                 return
+                            case .failed:
+                                break
                             }
 
+                            // Try fallback URL if different
                             if passURL != fallbackPassURL {
-                                let fallbackReachable = await CoppedURLLauncher.isReachable(fallbackPassURL)
-                                if fallbackReachable, await CoppedURLLauncher.open(fallbackPassURL) {
+                                let fallbackResult = await CoppedURLLauncher.downloadAndPresentPass(fallbackPassURL)
+                                switch fallbackResult {
+                                case .added, .dismissed:
                                     walletAdded = true
-                                    walletStatusMessage = "Wallet pass opened."
+                                    walletStatusMessage = "Wallet pass added."
                                     return
+                                case .failed:
+                                    break
                                 }
                             }
 
                             CoppedClipboard.copy(walletCode)
-                            walletStatusMessage = "Wallet pass link is unavailable. Wallet code copied."
+                            walletStatusMessage = "Wallet pass unavailable. Wallet code copied."
                         }
                     } label: {
                         Label(
-                            walletAdded ? "Wallet Pass Ready" : "Add to Apple Wallet",
+                            walletAdded ? "Wallet Pass Added" : "Add to Apple Wallet",
                             systemImage: walletAdded ? "checkmark.circle.fill" : "wallet.pass"
                         )
                     }
@@ -724,13 +771,6 @@ struct CoppedCreatorExperience: ClipExperience {
                         Label("Share to Stories", systemImage: "square.and.arrow.up")
                     }
                     .buttonStyle(CoppedSecondaryButtonStyle())
-
-                    Button("Refresh Balance") {
-                        Task { await refreshRewards() }
-                    }
-                    .font(.system(size: 12, weight: .bold, design: .rounded))
-                    .foregroundStyle(CoppedPalette.mint)
-                    .padding(.top, 2)
                 }
 
                 if let walletStatusMessage {
@@ -801,10 +841,12 @@ struct CoppedCreatorExperience: ClipExperience {
                 }
                 .buttonStyle(CoppedPrimaryButtonStyle())
 
-                Button("Use Fresh Demo Receipt") {
-                    Task { await openFreshDemoReceipt() }
+                if receiptID.hasPrefix("order_demo_") {
+                    Button("Use Fresh Demo Receipt") {
+                        Task { await openFreshDemoReceipt() }
+                    }
+                    .buttonStyle(CoppedSecondaryButtonStyle())
                 }
-                .buttonStyle(CoppedSecondaryButtonStyle())
             }
             .padding(.horizontal, 18)
 
@@ -1016,7 +1058,8 @@ struct CoppedCreatorExperience: ClipExperience {
         }
 
         do {
-            let upload = try await createUploadURL(productId: selectedProduct.id)
+            let uploadResult = try await createUploadURL(productId: selectedProduct.id)
+            let upload = uploadResult.response
 
             var preparedVideoURL = recordedVideo.fileURL
             if let sourceURL = preparedVideoURL, !trimmedTextOverlay.isEmpty {
@@ -1028,26 +1071,38 @@ struct CoppedCreatorExperience: ClipExperience {
                 preparedVideoURL = compositedURL ?? sourceURL
             }
 
-            let publishedVideoURL = await CoppedVideoStorage.shared.publishVideo(
+            let publishedVideo = await CoppedVideoStorage.shared.publishVideo(
                 sourceURL: preparedVideoURL,
                 upload: upload
             )
 
-            let response = try await createClip(
+            if publishedVideo.usedLocalFallback && !allowMockFallback {
+                throw CreatorUploadError.remoteUploadFailed
+            }
+
+            let createClipResult = try await createClip(
                 receiptId: receiptID,
                 deviceID: deviceID,
                 productId: selectedProduct.id,
-                videoURL: publishedVideoURL,
+                videoURL: publishedVideo.videoURL,
                 textOverlay: trimmedTextOverlay.isEmpty ? nil : trimmedTextOverlay,
                 textPosition: textPosition,
                 durationSeconds: recordedVideo.durationSeconds
             )
+            let response = createClipResult.response
+            let usedConnectivityFallback = uploadResult.usedConnectivityFallback || createClipResult.usedConnectivityFallback
 
             await MainActor.run {
                 reward = response
                 copiedWalletCode = false
                 walletAdded = false
-                walletStatusMessage = nil
+                if usedConnectivityFallback {
+                    walletStatusMessage = "Network issue detected. This reward is from local demo fallback."
+                } else if publishedVideo.usedLocalFallback {
+                    walletStatusMessage = "Upload fell back locally. Retry on stable network for remote publishing."
+                } else {
+                    walletStatusMessage = nil
+                }
                 step = .success
             }
 
@@ -1092,25 +1147,28 @@ struct CoppedCreatorExperience: ClipExperience {
         }
     }
 
-    private func createUploadURL(productId: String) async throws -> CoppedUploadURLResponse {
-        if receiptID.hasPrefix("order_demo_") {
-            return await CoppedMockBackend.shared.createUploadURL(
-                receiptId: receiptID,
-                productId: productId
-            )
-        }
-
+    private func createUploadURL(productId: String) async throws -> (
+        response: CoppedUploadURLResponse,
+        usedConnectivityFallback: Bool
+    ) {
         do {
-            return try await CoppedRemoteBackend.createUploadURL(
-                receiptId: receiptID,
-                productId: productId,
-                apiBaseURL: apiBaseURL,
-                deviceID: deviceID
+            return (
+                response: try await CoppedRemoteBackend.createUploadURL(
+                    receiptId: receiptID,
+                    productId: productId,
+                    apiBaseURL: apiBaseURL,
+                    deviceID: deviceID
+                ),
+                usedConnectivityFallback: false
             )
         } catch let error as CoppedRemoteBackendError where error.isConnectivityIssue {
-            return await CoppedMockBackend.shared.createUploadURL(
-                receiptId: receiptID,
-                productId: productId
+            guard isDemoReceipt, allowMockFallback else { throw error }
+            return (
+                response: await CoppedMockBackend.shared.createUploadURL(
+                    receiptId: receiptID,
+                    productId: productId
+                ),
+                usedConnectivityFallback: true
             )
         }
     }
@@ -1123,39 +1181,37 @@ struct CoppedCreatorExperience: ClipExperience {
         textOverlay: String?,
         textPosition: CoppedTextPosition,
         durationSeconds: Int
-    ) async throws -> CoppedCreateClipResponse {
-        if receiptId.hasPrefix("order_demo_") {
-            return try await CoppedMockBackend.shared.createClip(
-                receiptId: receiptId,
-                deviceID: deviceID,
-                productId: productId,
-                videoURL: videoURL,
-                textOverlay: textOverlay,
-                textPosition: textPosition,
-                durationSeconds: durationSeconds
-            )
-        }
-
+    ) async throws -> (
+        response: CoppedCreateClipResponse,
+        usedConnectivityFallback: Bool
+    ) {
         do {
-            return try await CoppedRemoteBackend.createClip(
-                receiptId: receiptId,
-                deviceID: deviceID,
-                productId: productId,
-                videoURL: videoURL,
-                textOverlay: textOverlay,
-                textPosition: textPosition,
-                durationSeconds: durationSeconds,
-                apiBaseURL: apiBaseURL
+            return (
+                response: try await CoppedRemoteBackend.createClip(
+                    receiptId: receiptId,
+                    deviceID: deviceID,
+                    productId: productId,
+                    videoURL: videoURL,
+                    textOverlay: textOverlay,
+                    textPosition: textPosition,
+                    durationSeconds: durationSeconds,
+                    apiBaseURL: apiBaseURL
+                ),
+                usedConnectivityFallback: false
             )
         } catch let error as CoppedRemoteBackendError where error.isConnectivityIssue {
-            return try await CoppedMockBackend.shared.createClip(
-                receiptId: receiptId,
-                deviceID: deviceID,
-                productId: productId,
-                videoURL: videoURL,
-                textOverlay: textOverlay,
-                textPosition: textPosition,
-                durationSeconds: durationSeconds
+            guard receiptId.hasPrefix("order_demo_"), allowMockFallback else { throw error }
+            return (
+                response: try await CoppedMockBackend.shared.createClip(
+                    receiptId: receiptId,
+                    deviceID: deviceID,
+                    productId: productId,
+                    videoURL: videoURL,
+                    textOverlay: textOverlay,
+                    textPosition: textPosition,
+                    durationSeconds: durationSeconds
+                ),
+                usedConnectivityFallback: true
             )
         }
     }
@@ -1217,7 +1273,7 @@ struct CoppedCreatorExperience: ClipExperience {
 
         await MainActor.run {
             CoppedClipboard.copy(target.absoluteString)
-            blockedStatusMessage = "Could not open viewer directly. Link copied."
+            blockedStatusMessage = "Could not open clips. Link copied."
         }
     }
 
@@ -1234,7 +1290,7 @@ struct CoppedCreatorExperience: ClipExperience {
 
         await MainActor.run {
             CoppedClipboard.copy(target.absoluteString)
-            walletStatusMessage = "Could not open viewer directly. Link copied."
+            walletStatusMessage = "Could not open clip. Link copied."
         }
     }
 
@@ -1242,7 +1298,7 @@ struct CoppedCreatorExperience: ClipExperience {
         let target = await MainActor.run { creatorDemoLink() }
         if await CoppedURLLauncher.open(target) {
             await MainActor.run {
-                blockedStatusMessage = "Opened fresh demo receipt."
+                blockedStatusMessage = "Opened new demo receipt."
             }
             return
         }

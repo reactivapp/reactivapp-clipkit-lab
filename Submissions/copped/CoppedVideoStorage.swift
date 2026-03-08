@@ -1,6 +1,11 @@
 import Foundation
 
 actor CoppedVideoStorage {
+    struct PublishResult {
+        let videoURL: URL
+        let usedLocalFallback: Bool
+    }
+
     static let shared = CoppedVideoStorage()
 
     private let session: URLSession
@@ -9,8 +14,8 @@ actor CoppedVideoStorage {
     private init() {
         let fileManager = FileManager.default
         let configuration = URLSessionConfiguration.ephemeral
-        configuration.timeoutIntervalForRequest = 12
-        configuration.timeoutIntervalForResource = 20
+        configuration.timeoutIntervalForRequest = 30
+        configuration.timeoutIntervalForResource = 180
         session = URLSession(configuration: configuration)
 
         let baseDirectory = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
@@ -23,21 +28,21 @@ actor CoppedVideoStorage {
         try? fileManager.createDirectory(at: localStorageRoot, withIntermediateDirectories: true)
     }
 
-    func publishVideo(sourceURL: URL?, upload: CoppedUploadURLResponse) async -> URL {
+    func publishVideo(sourceURL: URL?, upload: CoppedUploadURLResponse) async -> PublishResult {
         guard let sourceURL else {
-            return upload.videoURL
+            return PublishResult(videoURL: upload.videoURL, usedLocalFallback: false)
         }
 
         if shouldAttemptRemoteUpload(to: upload.uploadURL),
            await uploadToPresignedURL(sourceFileURL: sourceURL, destinationURL: upload.uploadURL) {
-            return upload.videoURL
+            return PublishResult(videoURL: upload.videoURL, usedLocalFallback: false)
         }
 
         if let localURL = copyIntoPersistentStorage(sourceURL: sourceURL, key: upload.key) {
-            return localURL
+            return PublishResult(videoURL: localURL, usedLocalFallback: true)
         }
 
-        return sourceURL
+        return PublishResult(videoURL: sourceURL, usedLocalFallback: true)
     }
 
     private func shouldAttemptRemoteUpload(to uploadURL: URL) -> Bool {
@@ -54,18 +59,34 @@ actor CoppedVideoStorage {
     }
 
     private func uploadToPresignedURL(sourceFileURL: URL, destinationURL: URL) async -> Bool {
-        var request = URLRequest(url: destinationURL)
-        request.httpMethod = "PUT"
         let isQuickTime = sourceFileURL.pathExtension.lowercased() == "mov"
-        request.setValue(isQuickTime ? "video/quicktime" : "video/mp4", forHTTPHeaderField: "Content-Type")
 
-        do {
-            let (_, response) = try await session.upload(for: request, fromFile: sourceFileURL)
-            guard let httpResponse = response as? HTTPURLResponse else { return false }
-            return (200...299).contains(httpResponse.statusCode)
-        } catch {
-            return false
+        for attempt in 0..<2 {
+            var request = URLRequest(url: destinationURL)
+            request.httpMethod = "PUT"
+            request.setValue(isQuickTime ? "video/quicktime" : "video/mp4", forHTTPHeaderField: "Content-Type")
+
+            do {
+                let (_, response) = try await session.upload(for: request, fromFile: sourceFileURL)
+                if let httpResponse = response as? HTTPURLResponse, (200...299).contains(httpResponse.statusCode) {
+                    print("CoppedVideoStorage: upload succeeded [attempt=\(attempt + 1)] [status=\(httpResponse.statusCode)] [url=\(destinationURL.absoluteString)]")
+                    return true
+                }
+                if let httpResponse = response as? HTTPURLResponse {
+                    print("CoppedVideoStorage: upload failed [attempt=\(attempt + 1)] [status=\(httpResponse.statusCode)] [url=\(destinationURL.absoluteString)]")
+                } else {
+                    print("CoppedVideoStorage: upload failed [attempt=\(attempt + 1)] [status=non-http] [url=\(destinationURL.absoluteString)]")
+                }
+            } catch {
+                print("CoppedVideoStorage: upload error [attempt=\(attempt + 1)] [url=\(destinationURL.absoluteString)] [error=\(error.localizedDescription)]")
+            }
+
+            if attempt == 0 {
+                try? await Task.sleep(nanoseconds: 600_000_000)
+            }
         }
+
+        return false
     }
 
     private func copyIntoPersistentStorage(sourceURL: URL, key: String) -> URL? {

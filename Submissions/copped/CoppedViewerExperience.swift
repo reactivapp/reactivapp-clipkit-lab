@@ -22,12 +22,27 @@ struct CoppedViewerExperience: ClipExperience {
     @State private var copiedReceiptURL = false
     @State private var pulseCTA = false
 
+    private let deviceID = "copped-device-id"
+
     private var productID: String {
         context.pathParameters["productId"] ?? "prod_hoodie"
     }
 
     private var storeDomainOverride: String? {
         context.queryParameters["store"]
+    }
+
+    private var apiBaseOverride: String? {
+        context.queryParameters["api"] ?? context.queryParameters["api_base"]
+    }
+
+    private var apiBaseURL: URL {
+        CoppedRemoteBackend.resolveAPIBaseURL(override: apiBaseOverride)
+    }
+
+    private var allowMockFallback: Bool {
+        guard let raw = context.queryParameters["mock"]?.lowercased() else { return false }
+        return raw == "1" || raw == "true" || raw == "yes"
     }
 
     private var preferredClipID: String? {
@@ -343,7 +358,7 @@ struct CoppedViewerExperience: ClipExperience {
     // MARK: - Receipt Panel
 
     private func receiptPanel(outcome: CoppedCheckoutOutcome) -> some View {
-        let creatorURL = "clip.copped.app/c/\(outcome.receiptID)"
+        let creatorURL = URL(string: "https://clip.copped.app/c/\(outcome.receiptID)")!
 
         return VStack(alignment: .leading, spacing: 8) {
             HStack {
@@ -363,10 +378,16 @@ struct CoppedViewerExperience: ClipExperience {
                 .foregroundStyle(.white.opacity(0.65))
 
             HStack(spacing: 8) {
-                Button(copiedReceiptURL ? "Copied" : "Copy") {
-                    Task { @MainActor in
-                        CoppedClipboard.copy(creatorURL)
-                        copiedReceiptURL = true
+                Button("Open Creator") {
+                    Task {
+                        if await CoppedURLLauncher.open(creatorURL) {
+                            return
+                        }
+
+                        await MainActor.run {
+                            CoppedClipboard.copy(creatorURL.absoluteString)
+                            copiedReceiptURL = true
+                        }
                     }
                 }
                 .font(.system(size: 11, weight: .bold, design: .rounded))
@@ -375,9 +396,17 @@ struct CoppedViewerExperience: ClipExperience {
                 .padding(.vertical, 6)
                 .background(CoppedPalette.neonBlue, in: RoundedRectangle(cornerRadius: 8))
 
-                Text("Creator link")
-                    .font(.system(size: 11, weight: .medium, design: .rounded))
-                    .foregroundStyle(.white.opacity(0.5))
+                Button(copiedReceiptURL ? "Copied Link" : "Copy Link") {
+                    Task { @MainActor in
+                        CoppedClipboard.copy(creatorURL.absoluteString)
+                        copiedReceiptURL = true
+                    }
+                }
+                .font(.system(size: 11, weight: .bold, design: .rounded))
+                .foregroundStyle(.white)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 6)
+                .background(.white.opacity(0.15), in: RoundedRectangle(cornerRadius: 8))
             }
 
         }
@@ -397,8 +426,26 @@ struct CoppedViewerExperience: ClipExperience {
             storeDomainOverride: storeDomainOverride
         )
 
-        let loaded = await CoppedMockBackend.shared.getClips(productId: productID)
-        clips = loaded
+        do {
+            clips = try await CoppedRemoteBackend.getClips(
+                productId: productID,
+                apiBaseURL: apiBaseURL,
+                deviceID: deviceID
+            )
+        } catch let error as CoppedRemoteBackendError where error.isConnectivityIssue {
+            if allowMockFallback {
+                clips = await CoppedMockBackend.shared.getClips(productId: productID)
+                errorMessage = "Using local mock clips due to connectivity issue."
+            } else {
+                clips = []
+                errorMessage = "Could not load live clips. Check your connection and try again."
+            }
+        } catch {
+            clips = []
+            errorMessage = error.localizedDescription
+        }
+
+        let loaded = clips
 
         if let preferredClipID,
            loaded.contains(where: { $0.id == preferredClipID }) {
@@ -464,7 +511,7 @@ private struct CoppedViewerCheckoutSheet: View {
                             .font(.system(size: 20, weight: .black, design: .rounded))
                             .foregroundStyle(.white)
 
-                        Text("Quick checkout preview")
+                        Text("Secure one-tap checkout")
                             .font(.system(size: 12, weight: .medium, design: .rounded))
                             .foregroundStyle(.white.opacity(0.45))
                             .multilineTextAlignment(.center)
