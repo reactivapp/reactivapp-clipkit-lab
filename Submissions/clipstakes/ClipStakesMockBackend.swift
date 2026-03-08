@@ -3,20 +3,57 @@ import Foundation
 actor ClipStakesMockBackend {
     static let shared = ClipStakesMockBackend()
 
+    private static let instantRewardCents = 500
+    private static let conversionRewardCents = 500
+    private static let fallbackVideoCatalog: [URL] = [
+        URL(string: "https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4")!,
+        URL(string: "https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4")!,
+        URL(string: "https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4")!,
+    ]
+
+    private struct RewardAccount {
+        var walletCode: String
+        var passURL: URL
+        var availableBalanceCents: Int
+        var lifetimeEarnedCents: Int
+        var transactions: [ClipStakesRewardTransaction]
+    }
+
+    private struct PersistedState: Codable {
+        let clips: [ClipStakesClip]
+        let receipts: [ClipStakesReceipt]
+        let orderCounter: Int
+        let demoSeedKey: String?
+    }
+
     private var clips: [String: ClipStakesClip] = [:]
     private var receipts: [String: ClipStakesReceipt] = [:]
     private var conversions: [ClipStakesConversion] = []
     private var latestPushByClipID: [String: ClipStakesNotificationEvent] = [:]
+    private var rewardAccountsByDeviceID: [String: RewardAccount] = [:]
     private var orderCounter = 1000
     private var demoSeedKey: String?
+    private var didRunLegacyMigration = false
+    private let persistenceURL: URL
 
     private init() {
+        persistenceURL = Self.makePersistenceURL()
         let seed = Self.makeSeedData()
-        clips = seed.clips
-        receipts = seed.receipts
+
+        if let persisted = Self.loadPersistedState(from: persistenceURL) {
+            clips = Dictionary(uniqueKeysWithValues: persisted.clips.map { ($0.id, $0) })
+            receipts = Dictionary(uniqueKeysWithValues: persisted.receipts.map { ($0.id, $0) })
+            orderCounter = persisted.orderCounter
+            demoSeedKey = persisted.demoSeedKey
+        } else {
+            clips = seed.clips
+            receipts = seed.receipts
+            persistState()
+        }
     }
 
     func getClips(productId: String) async -> [ClipStakesClip] {
+        runLegacyVideoMigrationIfNeeded()
         try? await Task.sleep(nanoseconds: 200_000_000)
 
         return clips.values
@@ -27,6 +64,14 @@ actor ClipStakesMockBackend {
                 }
                 return $0.conversions > $1.conversions
             }
+    }
+
+    private func runLegacyVideoMigrationIfNeeded() {
+        guard !didRunLegacyMigration else { return }
+        didRunLegacyMigration = true
+        if migrateLegacyVideoHosts() {
+            persistState()
+        }
     }
 
     func getReceipt(receiptId: String) async throws -> ClipStakesReceipt {
@@ -43,11 +88,37 @@ actor ClipStakesMockBackend {
         return receipt
     }
 
+    func getReceiptIncludingUsed(receiptId: String) async throws -> ClipStakesReceipt {
+        try? await Task.sleep(nanoseconds: 120_000_000)
+
+        guard let receipt = receipts[receiptId] else {
+            throw ClipStakesBackendError.receiptNotFound
+        }
+
+        return receipt
+    }
+
+    func ensureDemoReceipt(receiptId: String) -> ClipStakesReceipt {
+        if let existing = receipts[receiptId] {
+            return existing
+        }
+
+        let templateProducts = receipts["order_demo_hoodie"]?.productIDs ?? ["prod_hoodie", "prod_hat"]
+        let receipt = ClipStakesReceipt(
+            id: receiptId,
+            productIDs: templateProducts,
+            clipCreated: false,
+            createdAt: Date()
+        )
+        receipts[receiptId] = receipt
+        persistState()
+        return receipt
+    }
+
     func createUploadURL(receiptId: String, productId: String) async -> ClipStakesUploadURLResponse {
-        let timestamp = Int(Date().timeIntervalSince1970)
-        let key = "clips/\(receiptId)/\(productId)/\(timestamp).mp4"
-        let uploadURL = URL(string: "https://upload.clipstakes.app/\(key)")!
-        let videoURL = URL(string: "https://r2.clipstakes.app/\(key)")!
+        let key = "clips/\(UUID().uuidString.lowercased()).mp4"
+        let uploadURL = URL(string: "https://clipstakes.skilled5041.workers.dev/upload/\(key)")!
+        let videoURL = Self.fallbackPlayableVideoURL(seed: key)
 
         return ClipStakesUploadURLResponse(
             uploadURL: uploadURL,
@@ -58,7 +129,7 @@ actor ClipStakesMockBackend {
 
     func createClip(
         receiptId: String,
-        deviceToken: String?,
+        deviceID: String,
         productId: String,
         videoURL: URL,
         textOverlay: String?,
@@ -78,18 +149,18 @@ actor ClipStakesMockBackend {
         }
 
         let clipID = UUID().uuidString.lowercased()
-        let couponCode = Self.generateCoupon(prefix: "CLIP")
+        var account = ensureRewardAccount(for: deviceID)
 
         let clip = ClipStakesClip(
             id: clipID,
             receiptID: receiptId,
-            deviceToken: deviceToken,
+            creatorDeviceID: deviceID,
             productID: productId,
             videoURL: videoURL,
             textOverlay: textOverlay,
             textPosition: textPosition,
             durationSeconds: durationSeconds,
-            couponCode: couponCode,
+            couponCode: account.walletCode,
             couponRedeemed: false,
             conversions: 0,
             bonusCouponCode: nil,
@@ -103,13 +174,26 @@ actor ClipStakesMockBackend {
         clips[clipID] = clip
         receipt.clipCreated = true
         receipts[receiptId] = receipt
+        persistState()
+
+        account = credit(
+            account: account,
+            deviceID: deviceID,
+            amountCents: Self.instantRewardCents,
+            kind: .clipPublished,
+            clipID: clipID,
+            orderID: nil
+        )
 
         return ClipStakesCreateClipResponse(
             clipID: clipID,
-            couponCode: couponCode,
-            couponValue: "$5.00",
-            passURL: URL(string: "https://api.clipstakes.app/pass/\(clipID)")!,
-            message: "Your clip is live! Here's $5 off your next purchase."
+            walletCode: account.walletCode,
+            instantCreditCents: Self.instantRewardCents,
+            instantCreditDisplay: Self.instantRewardCents.clipStakesCurrencyDisplay,
+            passURL: account.passURL,
+            availableBalanceCents: account.availableBalanceCents,
+            availableBalanceDisplay: account.availableBalanceCents.clipStakesCurrencyDisplay,
+            message: "Clip is live. Credit added to your wallet balance."
         )
     }
 
@@ -127,36 +211,36 @@ actor ClipStakesMockBackend {
         conversions.append(conversion)
 
         clip.conversions += 1
-
-        var bonusCouponCode = clip.bonusCouponCode
-        if bonusCouponCode == nil {
-            bonusCouponCode = Self.generateCoupon(prefix: "BONUS")
-            clip.bonusCouponCode = bonusCouponCode
-        }
+        let account = credit(
+            account: ensureRewardAccount(for: clip.creatorDeviceID),
+            deviceID: clip.creatorDeviceID,
+            amountCents: Self.conversionRewardCents,
+            kind: .conversion,
+            clipID: clip.id,
+            orderID: orderId
+        )
 
         let withinPushWindow = Date() < clip.expiresAt
-        var pushSent = false
-
-        if withinPushWindow, !clip.bonusPushed, clip.deviceToken != nil {
-            clip.bonusPushed = true
-            pushSent = true
-
+        if withinPushWindow {
             latestPushByClipID[clip.id] = ClipStakesNotificationEvent(
                 clipID: clip.id,
-                title: "Your clip just sold!",
-                body: "Someone bought because of you. Here's $5 more.",
-                bonusPassURL: URL(string: "https://api.clipstakes.app/pass/\(clip.id)/bonus"),
+                title: "Conversion reward earned",
+                body: "\(Self.conversionRewardCents.clipStakesCurrencyDisplay) added to your wallet balance.",
+                passURL: account.passURL,
                 createdAt: Date()
             )
         }
 
         clips[clipId] = clip
+        persistState()
 
         return ClipStakesConversionResponse(
             success: true,
-            bonusCouponCode: bonusCouponCode,
-            bonusPassURL: URL(string: "https://api.clipstakes.app/pass/\(clipId)/bonus"),
-            pushSent: pushSent,
+            creditedCents: Self.conversionRewardCents,
+            creditedDisplay: Self.conversionRewardCents.clipStakesCurrencyDisplay,
+            availableBalanceCents: account.availableBalanceCents,
+            availableBalanceDisplay: account.availableBalanceCents.clipStakesCurrencyDisplay,
+            pushSent: withinPushWindow,
             withinPushWindow: withinPushWindow
         )
     }
@@ -173,6 +257,7 @@ actor ClipStakesMockBackend {
             createdAt: Date()
         )
         receipts[orderId] = receipt
+        persistState()
         return receipt
     }
 
@@ -197,6 +282,20 @@ actor ClipStakesMockBackend {
 
     func latestNotification(for clipId: String) async -> ClipStakesNotificationEvent? {
         latestPushByClipID[clipId]
+    }
+
+    func getRewards(deviceID: String) async -> ClipStakesRewardsSnapshot {
+        let account = ensureRewardAccount(for: deviceID)
+
+        return ClipStakesRewardsSnapshot(
+            walletCode: account.walletCode,
+            passURL: account.passURL,
+            availableBalanceCents: account.availableBalanceCents,
+            availableBalanceDisplay: account.availableBalanceCents.clipStakesCurrencyDisplay,
+            lifetimeEarnedCents: account.lifetimeEarnedCents,
+            lifetimeEarnedDisplay: account.lifetimeEarnedCents.clipStakesCurrencyDisplay,
+            transactions: Array(account.transactions.prefix(20))
+        )
     }
 
     func prepareDemoCatalog(with products: [ClipStakesProduct]) {
@@ -252,6 +351,7 @@ actor ClipStakesMockBackend {
             clipCreated: false,
             createdAt: Date().addingTimeInterval(-2400)
         )
+        persistState()
     }
 
     // MARK: - Seed Data
@@ -278,7 +378,7 @@ actor ClipStakesMockBackend {
                 position: .bottom,
                 conversions: 4,
                 minutesAgo: 70,
-                creatorToken: "token-seed-1"
+                creatorDeviceID: "seed-device-1"
             ),
             Self.makeSeedClip(
                 clipId: "clip_seed_2",
@@ -288,7 +388,7 @@ actor ClipStakesMockBackend {
                 position: .top,
                 conversions: 2,
                 minutesAgo: 20,
-                creatorToken: nil
+                creatorDeviceID: "seed-device-2"
             ),
             Self.makeSeedClip(
                 clipId: "clip_seed_3",
@@ -298,7 +398,7 @@ actor ClipStakesMockBackend {
                 position: .center,
                 conversions: 1,
                 minutesAgo: 35,
-                creatorToken: "token-seed-3"
+                creatorDeviceID: "seed-device-3"
             ),
         ]
 
@@ -317,23 +417,23 @@ actor ClipStakesMockBackend {
         position: ClipStakesTextPosition,
         conversions: Int,
         minutesAgo: Int,
-        creatorToken: String?
+        creatorDeviceID: String
     ) -> ClipStakesClip {
         let created = Date().addingTimeInterval(TimeInterval(-60 * minutesAgo))
 
         return ClipStakesClip(
             id: clipId,
             receiptID: receiptId,
-            deviceToken: creatorToken,
+            creatorDeviceID: creatorDeviceID,
             productID: productId,
-            videoURL: URL(string: "https://r2.clipstakes.app/seeds/\(clipId).mp4")!,
+            videoURL: fallbackPlayableVideoURL(seed: clipId),
             textOverlay: text,
             textPosition: position,
             durationSeconds: 9,
-            couponCode: Self.generateCoupon(prefix: "CLIP"),
+            couponCode: Self.generateWalletCode(),
             couponRedeemed: false,
             conversions: conversions,
-            bonusCouponCode: conversions > 0 ? Self.generateCoupon(prefix: "BONUS") : nil,
+            bonusCouponCode: nil,
             bonusPushed: false,
             bonusRedeemed: false,
             isActive: true,
@@ -342,8 +442,123 @@ actor ClipStakesMockBackend {
         )
     }
 
-    private static func generateCoupon(prefix: String) -> String {
+    private func ensureRewardAccount(for deviceID: String) -> RewardAccount {
+        if let existing = rewardAccountsByDeviceID[deviceID] {
+            return existing
+        }
+
+        let walletCode = Self.generateWalletCode()
+        let passURL = URL(string: "https://clipstakes.skilled5041.workers.dev/wallet/\(walletCode)/pass")!
+        let account = RewardAccount(
+            walletCode: walletCode,
+            passURL: passURL,
+            availableBalanceCents: 0,
+            lifetimeEarnedCents: 0,
+            transactions: []
+        )
+        rewardAccountsByDeviceID[deviceID] = account
+        return account
+    }
+
+    private func credit(
+        account: RewardAccount,
+        deviceID: String,
+        amountCents: Int,
+        kind: ClipStakesRewardTransaction.Kind,
+        clipID: String,
+        orderID: String?
+    ) -> RewardAccount {
+        var updated = account
+        updated.availableBalanceCents += amountCents
+        updated.lifetimeEarnedCents += amountCents
+
+        let transaction = ClipStakesRewardTransaction(
+            id: UUID().uuidString.lowercased(),
+            kind: kind,
+            amountCents: amountCents,
+            amountDisplay: amountCents.clipStakesCurrencyDisplay,
+            clipID: clipID,
+            orderID: orderID,
+            createdAt: Date()
+        )
+        updated.transactions.insert(transaction, at: 0)
+        rewardAccountsByDeviceID[deviceID] = updated
+        return updated
+    }
+
+    private static func generateWalletCode() -> String {
         let stamp = String(Int(Date().timeIntervalSince1970), radix: 36).uppercased()
-        return "\(prefix)-\(stamp)-\(Int.random(in: 100...999))"
+        return "CLIP-\(stamp)-\(Int.random(in: 100...999))"
+    }
+
+    private static func makePersistenceURL() -> URL {
+        let fileManager = FileManager.default
+        let baseDirectory = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
+            ?? fileManager.temporaryDirectory
+        let stateDirectory = baseDirectory.appendingPathComponent("clipstakes", isDirectory: true)
+        try? fileManager.createDirectory(at: stateDirectory, withIntermediateDirectories: true)
+        return stateDirectory.appendingPathComponent("mock-backend-state.json")
+    }
+
+    private func migrateLegacyVideoHosts() -> Bool {
+        var didChange = false
+
+        for (clipID, clip) in clips {
+            guard clip.videoURL.host?.lowercased() == "r2.clipstakes.app" else { continue }
+            let replacement = Self.fallbackPlayableVideoURL(seed: clipID)
+            guard replacement != clip.videoURL else { continue }
+
+            clips[clipID] = Self.copy(clip: clip, replacingVideoURLWith: replacement)
+            didChange = true
+        }
+
+        return didChange
+    }
+
+    private static func copy(clip: ClipStakesClip, replacingVideoURLWith videoURL: URL) -> ClipStakesClip {
+        ClipStakesClip(
+            id: clip.id,
+            receiptID: clip.receiptID,
+            creatorDeviceID: clip.creatorDeviceID,
+            productID: clip.productID,
+            videoURL: videoURL,
+            textOverlay: clip.textOverlay,
+            textPosition: clip.textPosition,
+            durationSeconds: clip.durationSeconds,
+            couponCode: clip.couponCode,
+            couponRedeemed: clip.couponRedeemed,
+            conversions: clip.conversions,
+            bonusCouponCode: clip.bonusCouponCode,
+            bonusPushed: clip.bonusPushed,
+            bonusRedeemed: clip.bonusRedeemed,
+            isActive: clip.isActive,
+            createdAt: clip.createdAt,
+            expiresAt: clip.expiresAt
+        )
+    }
+
+    private static func fallbackPlayableVideoURL(seed: String) -> URL {
+        let score = seed.unicodeScalars.reduce(into: 0) { partialResult, scalar in
+            partialResult += Int(scalar.value)
+        }
+        let index = score % fallbackVideoCatalog.count
+        return fallbackVideoCatalog[index]
+    }
+
+    private static func loadPersistedState(from url: URL) -> PersistedState? {
+        guard let data = try? Data(contentsOf: url) else { return nil }
+        return try? JSONDecoder().decode(PersistedState.self, from: data)
+    }
+
+    private func persistState() {
+        let snapshot = PersistedState(
+            clips: Array(clips.values),
+            receipts: Array(receipts.values),
+            orderCounter: orderCounter,
+            demoSeedKey: demoSeedKey
+        )
+
+        guard let data = try? JSONEncoder().encode(snapshot) else { return }
+        try? data.write(to: persistenceURL, options: [.atomic])
     }
 }

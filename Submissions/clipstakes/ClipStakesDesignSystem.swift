@@ -7,8 +7,9 @@ enum ClipStakesPalette {
     static let neonOrange = Color(red: 1.00, green: 0.55, blue: 0.20)
     static let neonBlue = Color(red: 0.26, green: 0.69, blue: 1.00)
     static let mint = Color(red: 0.31, green: 0.92, blue: 0.78)
-    static let cardBase = Color.white.opacity(0.08)
-    static let cardBorder = Color.white.opacity(0.22)
+    static let cardBase = Color.white.opacity(0.07)
+    static let cardBorder = Color.white.opacity(0.14)
+    static let surfaceElevated = Color.white.opacity(0.10)
 
     static let primaryGradient = LinearGradient(
         colors: [neonPink, neonOrange],
@@ -18,6 +19,12 @@ enum ClipStakesPalette {
 
     static let accentGradient = LinearGradient(
         colors: [neonBlue, mint],
+        startPoint: .topLeading,
+        endPoint: .bottomTrailing
+    )
+
+    static let subtleGradient = LinearGradient(
+        colors: [Color.white.opacity(0.08), Color.white.opacity(0.02)],
         startPoint: .topLeading,
         endPoint: .bottomTrailing
     )
@@ -33,33 +40,22 @@ struct ClipStakesStageBackground: View {
             )
 
             Circle()
-                .fill(ClipStakesPalette.neonPink.opacity(0.35))
-                .blur(radius: 80)
-                .frame(width: 260, height: 260)
-                .offset(x: 120, y: -240)
-
-            Circle()
-                .fill(ClipStakesPalette.neonBlue.opacity(0.25))
-                .blur(radius: 90)
-                .frame(width: 280, height: 280)
-                .offset(x: -120, y: -80)
-
-            Circle()
-                .fill(ClipStakesPalette.neonOrange.opacity(0.24))
+                .fill(ClipStakesPalette.neonPink.opacity(0.22))
                 .blur(radius: 100)
-                .frame(width: 290, height: 290)
-                .offset(x: 80, y: 280)
+                .frame(width: 220, height: 220)
+                .offset(x: 120, y: -260)
 
-            VStack(spacing: 0) {
-                ForEach(0..<16, id: \.self) { _ in
-                    Rectangle()
-                        .fill(Color.white.opacity(0.015))
-                        .frame(height: 1)
-                        .padding(.horizontal, 24)
-                    Spacer()
-                }
-            }
-            .padding(.vertical, 12)
+            Circle()
+                .fill(ClipStakesPalette.neonBlue.opacity(0.16))
+                .blur(radius: 110)
+                .frame(width: 240, height: 240)
+                .offset(x: -130, y: -60)
+
+            Circle()
+                .fill(ClipStakesPalette.neonOrange.opacity(0.14))
+                .blur(radius: 120)
+                .frame(width: 250, height: 250)
+                .offset(x: 80, y: 300)
         }
         .ignoresSafeArea()
     }
@@ -76,9 +72,9 @@ struct ClipStakesGlassCardModifier: ViewModifier {
             )
             .overlay(
                 RoundedRectangle(cornerRadius: cornerRadius)
-                    .stroke(ClipStakesPalette.cardBorder, lineWidth: 1)
+                    .stroke(ClipStakesPalette.cardBorder, lineWidth: 0.5)
             )
-            .shadow(color: .black.opacity(0.28), radius: 18, y: 10)
+            .shadow(color: .black.opacity(0.22), radius: 12, y: 6)
     }
 }
 
@@ -94,15 +90,17 @@ struct ClipStakesInfoChip: View {
     var tint: Color = .white
 
     var body: some View {
-        HStack(spacing: 6) {
+        HStack(spacing: 5) {
             Image(systemName: icon)
+                .font(.system(size: 9, weight: .bold))
             Text(title)
+                .font(.system(size: 10, weight: .bold, design: .rounded))
         }
-        .font(.system(size: 11, weight: .bold, design: .rounded))
         .foregroundStyle(tint)
-        .padding(.horizontal, 10)
-        .padding(.vertical, 6)
-        .clipStakesGlassCard(cornerRadius: 999)
+        .padding(.horizontal, 8)
+        .padding(.vertical, 5)
+        .background(tint.opacity(0.12), in: Capsule())
+        .overlay(Capsule().stroke(tint.opacity(0.25), lineWidth: 0.5))
     }
 }
 
@@ -111,37 +109,43 @@ struct ClipStakesPrimaryButtonStyle: ButtonStyle {
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(.system(size: 16, weight: .bold, design: .rounded))
+            .font(.system(size: 15, weight: .bold, design: .rounded))
             .foregroundStyle(.white)
             .frame(maxWidth: .infinity)
-            .padding(.vertical, 15)
+            .padding(.vertical, 14)
             .background(
-                RoundedRectangle(cornerRadius: 16)
+                RoundedRectangle(cornerRadius: 14)
                     .fill(
                         disabled
-                            ? AnyShapeStyle(Color.gray.opacity(0.35))
+                            ? AnyShapeStyle(Color.gray.opacity(0.3))
                             : AnyShapeStyle(ClipStakesPalette.primaryGradient)
                     )
             )
             .overlay(
-                RoundedRectangle(cornerRadius: 16)
-                    .stroke(Color.white.opacity(0.28), lineWidth: 1)
+                RoundedRectangle(cornerRadius: 14)
+                    .stroke(Color.white.opacity(disabled ? 0.1 : 0.2), lineWidth: 0.5)
             )
-            .scaleEffect(configuration.isPressed ? 0.985 : 1)
-            .opacity(configuration.isPressed ? 0.9 : 1)
+            .scaleEffect(configuration.isPressed ? 0.97 : 1)
+            .opacity(configuration.isPressed ? 0.85 : 1)
+            .animation(.easeOut(duration: 0.15), value: configuration.isPressed)
     }
 }
 
 struct ClipStakesSecondaryButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(.system(size: 15, weight: .semibold, design: .rounded))
-            .foregroundStyle(.white)
+            .font(.system(size: 14, weight: .semibold, design: .rounded))
+            .foregroundStyle(.white.opacity(0.9))
             .frame(maxWidth: .infinity)
-            .padding(.vertical, 13)
-            .clipStakesGlassCard(cornerRadius: 14)
-            .scaleEffect(configuration.isPressed ? 0.99 : 1)
-            .opacity(configuration.isPressed ? 0.9 : 1)
+            .padding(.vertical, 12)
+            .background(Color.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 12))
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(Color.white.opacity(0.15), lineWidth: 0.5)
+            )
+            .scaleEffect(configuration.isPressed ? 0.97 : 1)
+            .opacity(configuration.isPressed ? 0.85 : 1)
+            .animation(.easeOut(duration: 0.15), value: configuration.isPressed)
     }
 }
 
@@ -151,17 +155,14 @@ struct ClipStakesStepPill: View {
 
     var body: some View {
         Text(label)
-            .font(.system(size: 11, weight: .bold, design: .rounded))
-            .foregroundStyle(isActive ? Color.black : Color.white.opacity(0.85))
+            .font(.system(size: 10, weight: .bold, design: .rounded))
+            .foregroundStyle(isActive ? Color.black : Color.white.opacity(0.6))
             .padding(.horizontal, 10)
-            .padding(.vertical, 6)
+            .padding(.vertical, 5)
             .background(
                 Capsule()
-                    .fill(isActive ? AnyShapeStyle(ClipStakesPalette.accentGradient) : AnyShapeStyle(Color.white.opacity(0.1)))
+                    .fill(isActive ? AnyShapeStyle(ClipStakesPalette.accentGradient) : AnyShapeStyle(Color.white.opacity(0.08)))
             )
-            .overlay(
-                Capsule()
-                    .stroke(Color.white.opacity(isActive ? 0.0 : 0.2), lineWidth: 1)
-            )
+            .animation(.easeInOut(duration: 0.25), value: isActive)
     }
 }

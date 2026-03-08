@@ -77,7 +77,7 @@ import UIKit
 struct ClipStakesCreatorExperience: ClipExperience {
     static let urlPattern = "clip.clipstakes.app/c/:receiptId"
     static let clipName = "ClipStakes Creator"
-    static let clipDescription = "Create a clip, get $5 now, and earn bonus when it converts."
+    static let clipDescription = "Create a clip, get $5 now, and grow wallet balance on every conversion."
     static let teamName = "ClipStakes"
     static let touchpoint: JourneyTouchpoint = .purchase
     static let invocationSource: InvocationSource = .qrCode
@@ -105,27 +105,56 @@ struct ClipStakesCreatorExperience: ClipExperience {
     @State private var validationMessage = ""
     @State private var isUploading = false
     @State private var reward: ClipStakesCreateClipResponse?
-    @State private var createdClipID: String?
-    @State private var bonusEvent: ClipStakesNotificationEvent?
+    @State private var rewardsSnapshot: ClipStakesRewardsSnapshot?
 
     @State private var walletAdded = false
     @State private var showShareSheet = false
-    @State private var copiedCoupon = false
+    @State private var copiedWalletCode = false
 
     @State private var errorMessage: String?
-    @State private var catalogStatusMessage: String?
+    @State private var walletStatusMessage: String?
+    @State private var blockedStatusMessage: String?
 
     @State private var pulseHero = false
     @State private var pulseReward = false
+    @State private var demoAliasReceiptID = ClipStakesCreatorExperience.makeDemoAliasReceiptID()
 
-    private let deviceToken = "clipstakes-device-token"
+    private let deviceID = "clipstakes-device-id"
 
     private var receiptID: String {
-        context.pathParameters["receiptId"] ?? "order_demo_hoodie"
+        let raw = context.pathParameters["receiptId"] ?? "order_demo_hoodie"
+        let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return "order_demo_hoodie" }
+        if trimmed.caseInsensitiveCompare("demo") == .orderedSame {
+            return demoAliasReceiptID
+        }
+        return trimmed
     }
 
     private var storeDomainOverride: String? {
         context.queryParameters["store"]
+    }
+
+    private var apiBaseOverride: String? {
+        context.queryParameters["api"] ?? context.queryParameters["api_base"]
+    }
+
+    private var apiBaseURL: URL {
+        ClipStakesRemoteBackend.resolveAPIBaseURL(override: apiBaseOverride)
+    }
+
+    private var firstProductIDForViewer: String {
+        if let first = products.first?.id {
+            return first
+        }
+
+        if receiptID.contains("hoodie") {
+            return "prod_hoodie"
+        }
+        if receiptID.contains("vinyl") {
+            return "prod_vinyl"
+        }
+        return "prod_hoodie"
     }
 
     private var trimmedTextOverlay: String {
@@ -154,32 +183,32 @@ struct ClipStakesCreatorExperience: ClipExperience {
             ClipStakesStageBackground()
 
             ScrollView {
-                VStack(spacing: 16) {
-                    hero
-
-                    if let catalogStatusMessage {
-                        Text(catalogStatusMessage)
-                            .font(.system(size: 12, weight: .medium, design: .rounded))
-                            .foregroundStyle(.white.opacity(0.72))
-                            .multilineTextAlignment(.center)
-                            .padding(.horizontal, 20)
-                    }
+                VStack(spacing: 12) {
+                    compactHeader
 
                     content
 
                     if let errorMessage {
-                        Text(errorMessage)
-                            .font(.system(size: 13, weight: .semibold, design: .rounded))
-                            .foregroundStyle(ClipStakesPalette.neonOrange)
-                            .multilineTextAlignment(.center)
-                            .padding(.horizontal, 18)
+                        HStack(spacing: 6) {
+                            Image(systemName: "exclamationmark.triangle.fill")
+                                .font(.system(size: 11))
+                            Text(errorMessage)
+                                .font(.system(size: 12, weight: .medium, design: .rounded))
+                        }
+                        .foregroundStyle(ClipStakesPalette.neonOrange)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 8)
+                        .frame(maxWidth: .infinity)
+                        .background(ClipStakesPalette.neonOrange.opacity(0.1), in: RoundedRectangle(cornerRadius: 10))
                     }
                 }
-                .padding(.horizontal, 14)
-                .padding(.top, 14)
-                .padding(.bottom, 24)
+                .padding(.horizontal, 12)
+                .padding(.top, 8)
+                .padding(.bottom, 20)
             }
             .scrollIndicators(.hidden)
+            .scrollDismissesKeyboard(.interactively)
         }
         .onAppear {
             withAnimation(.easeInOut(duration: 1.6).repeatForever(autoreverses: true)) {
@@ -195,283 +224,311 @@ struct ClipStakesCreatorExperience: ClipExperience {
         }
     }
 
-    private var hero: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                ClipStakesInfoChip(title: "CREATOR FLOW", icon: "camera.aperture", tint: ClipStakesPalette.neonPink)
+    // MARK: - Compact Header (replaces old giant hero)
+
+    private var compactHeader: some View {
+        VStack(spacing: 7) {
+            HStack(spacing: 6) {
+                Image(systemName: "camera.aperture")
+                    .font(.system(size: 10, weight: .bold))
+                    .foregroundStyle(ClipStakesPalette.neonPink)
+                Text("CREATOR")
+                    .font(.system(size: 10, weight: .black, design: .rounded))
+                    .tracking(1.2)
+                    .foregroundStyle(ClipStakesPalette.neonPink)
+
                 Spacer()
-                Text("Receipt: \(receiptID)")
-                    .font(.system(size: 11, weight: .bold, design: .monospaced))
-                    .foregroundStyle(.white.opacity(0.75))
-                    .lineLimit(1)
             }
 
-            Text("TURN RECEIPT\nINTO REACH")
-                .font(.system(size: 34, weight: .black, design: .serif))
-                .foregroundStyle(.white)
-                .lineSpacing(-3)
-
-            Text("One real clip. One instant reward. Bonus unlocks on first conversion.")
-                .font(.system(size: 13, weight: .medium, design: .rounded))
-                .foregroundStyle(.white.opacity(0.78))
-
-            VStack(spacing: 10) {
-                GeometryReader { geometry in
-                    ZStack(alignment: .leading) {
-                        RoundedRectangle(cornerRadius: 8)
-                            .fill(Color.white.opacity(0.12))
-                        RoundedRectangle(cornerRadius: 8)
-                            .fill(ClipStakesPalette.accentGradient)
-                            .frame(width: max(14, geometry.size.width * progressValue))
-                            .shadow(color: ClipStakesPalette.neonBlue.opacity(pulseHero ? 0.5 : 0.2), radius: pulseHero ? 16 : 8)
-                    }
+            // Progress bar
+            GeometryReader { geometry in
+                ZStack(alignment: .leading) {
+                    RoundedRectangle(cornerRadius: 3)
+                        .fill(Color.white.opacity(0.08))
+                    RoundedRectangle(cornerRadius: 3)
+                        .fill(ClipStakesPalette.accentGradient)
+                        .frame(width: max(8, geometry.size.width * progressValue))
+                        .shadow(color: ClipStakesPalette.neonBlue.opacity(pulseHero ? 0.4 : 0.15), radius: pulseHero ? 10 : 4)
                 }
-                .frame(height: 8)
+            }
+            .frame(height: 4)
+            .animation(.easeInOut(duration: 0.4), value: progressValue)
 
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 8) {
-                        ForEach(stepTimeline, id: \.1) { item in
-                            ClipStakesStepPill(label: item.1, isActive: isStepActive(item.0))
-                        }
-                    }
+            if let rewardsSnapshot {
+                HStack {
+                    Text("Wallet \(rewardsSnapshot.availableBalanceDisplay)")
+                        .font(.system(size: 10, weight: .bold, design: .monospaced))
+                        .foregroundStyle(ClipStakesPalette.mint)
+                    Spacer()
                 }
             }
         }
-        .padding(18)
-        .clipStakesGlassCard(cornerRadius: 24)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 9)
+        .clipStakesGlassCard(cornerRadius: 16)
     }
+
+    // MARK: - Content
 
     @ViewBuilder
     private var content: some View {
         switch step {
         case .loading:
             loadingState
-
         case .selectProduct:
             productSelection
-
         case .record:
             recordingStep
-
         case .aiValidating:
             validatingStep
-
         case .addText:
             addTextStep
-
         case .confirm:
             confirmStep
-
         case .success:
             successStep
-
         case .blocked:
             blockedState
-
         case .failure:
             failureState
         }
     }
 
+    // MARK: - Loading
+
     private var loadingState: some View {
-        VStack(spacing: 14) {
+        VStack(spacing: 12) {
             ZStack {
                 Circle()
-                    .stroke(Color.white.opacity(0.2), lineWidth: 10)
-                    .frame(width: 86, height: 86)
+                    .stroke(Color.white.opacity(0.1), lineWidth: 6)
+                    .frame(width: 56, height: 56)
                 Circle()
-                    .trim(from: 0, to: 0.72)
-                    .stroke(ClipStakesPalette.primaryGradient, style: StrokeStyle(lineWidth: 10, lineCap: .round))
-                    .frame(width: 86, height: 86)
+                    .trim(from: 0, to: 0.7)
+                    .stroke(ClipStakesPalette.accentGradient, style: StrokeStyle(lineWidth: 6, lineCap: .round))
+                    .frame(width: 56, height: 56)
                     .rotationEffect(.degrees(pulseHero ? 240 : -30))
-                ProgressView()
-                    .tint(.white)
-                    .scaleEffect(1.15)
             }
 
             Text("SYNCING RECEIPT")
-                .font(.system(size: 13, weight: .black, design: .rounded))
+                .font(.system(size: 11, weight: .black, design: .rounded))
                 .tracking(1.0)
-                .foregroundStyle(.white.opacity(0.8))
+                .foregroundStyle(.white.opacity(0.7))
 
-            Text("Checking eligible products and stake status")
-                .font(.system(size: 12, weight: .medium, design: .rounded))
-                .foregroundStyle(.white.opacity(0.68))
+            Text("Checking eligible products")
+                .font(.system(size: 11, weight: .medium, design: .rounded))
+                .foregroundStyle(.white.opacity(0.45))
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, 36)
-        .clipStakesGlassCard(cornerRadius: 22)
+        .padding(.vertical, 28)
+        .clipStakesGlassCard(cornerRadius: 18)
     }
 
+    // MARK: - Product Selection
+
     private var productSelection: some View {
-        VStack(spacing: 10) {
+        VStack(spacing: 8) {
             HStack {
-                Text("Pick one product from this receipt")
-                    .font(.system(size: 14, weight: .medium, design: .rounded))
-                    .foregroundStyle(.white.opacity(0.75))
+                Text("Select a product")
+                    .font(.system(size: 15, weight: .bold, design: .rounded))
+                    .foregroundStyle(.white)
                 Spacer()
                 Text("\(products.count) eligible")
-                    .font(.system(size: 11, weight: .bold, design: .monospaced))
+                    .font(.system(size: 10, weight: .bold, design: .monospaced))
                     .foregroundStyle(ClipStakesPalette.mint)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 3)
+                    .background(ClipStakesPalette.mint.opacity(0.12), in: Capsule())
             }
+            .padding(.horizontal, 4)
 
             if products.isEmpty {
-                Text("No eligible products found in this receipt.")
-                    .font(.system(size: 13, weight: .medium, design: .rounded))
-                    .foregroundStyle(.white.opacity(0.75))
-                    .padding(.vertical, 24)
-                    .frame(maxWidth: .infinity)
-                    .clipStakesGlassCard(cornerRadius: 16)
+                VStack(spacing: 8) {
+                    Image(systemName: "shippingbox")
+                        .font(.system(size: 28))
+                        .foregroundStyle(.white.opacity(0.3))
+                    Text("No eligible products found.")
+                        .font(.system(size: 13, weight: .medium, design: .rounded))
+                        .foregroundStyle(.white.opacity(0.5))
+                }
+                .padding(.vertical, 24)
+                .frame(maxWidth: .infinity)
+                .clipStakesGlassCard(cornerRadius: 14)
             }
 
-            ForEach(products) { product in
-                Button {
-                    selectedProduct = product
-                    recordedVideo = nil
-                    textOverlay = ""
-                    textPosition = .bottom
-                    step = .record
-                } label: {
-                    HStack(spacing: 12) {
-                        productThumb(product)
-
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(product.name)
-                                .font(.system(size: 17, weight: .black, design: .rounded))
-                                .foregroundStyle(.white)
-                            HStack(spacing: 6) {
-                                Text(product.formattedPrice)
-                                    .font(.system(size: 13, weight: .bold, design: .monospaced))
-                                    .foregroundStyle(ClipStakesPalette.mint)
-                                Text("stake-ready")
-                                    .font(.system(size: 11, weight: .black, design: .rounded))
-                                    .tracking(0.8)
-                                    .foregroundStyle(.black)
-                                    .padding(.horizontal, 8)
-                                    .padding(.vertical, 4)
-                                    .background(productAccent(product), in: Capsule())
-                            }
-                        }
-
-                        Spacer()
-
-                        Image(systemName: "arrow.up.right.circle.fill")
-                            .font(.system(size: 21, weight: .bold))
-                            .foregroundStyle(ClipStakesPalette.neonBlue)
-                    }
-                    .padding(14)
-                    .background(
-                        LinearGradient(
-                            colors: [Color.white.opacity(0.12), Color.clear],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-                    .clipStakesGlassCard(cornerRadius: 18)
-                }
-                .buttonStyle(.plain)
+            ForEach(products.indices, id: \.self) { index in
+                productSelectionRow(products[index])
             }
         }
     }
 
-    private var recordingStep: some View {
-        VStack(spacing: 14) {
-            if let selectedProduct {
-                HStack(spacing: 10) {
-                    productThumb(selectedProduct)
-                        .frame(width: 52, height: 52)
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text("Recording clip for")
-                            .font(.system(size: 11, weight: .black, design: .rounded))
-                            .tracking(1.0)
-                            .foregroundStyle(.white.opacity(0.72))
-                        Text(selectedProduct.name.uppercased())
-                            .font(.system(size: 18, weight: .black, design: .rounded))
-                            .foregroundStyle(.white)
+    private func productSelectionRow(_ product: ClipStakesProduct) -> some View {
+        Button {
+            beginRecording(for: product)
+        } label: {
+            HStack(spacing: 12) {
+                productThumb(product)
+
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(product.name)
+                        .font(.system(size: 15, weight: .bold, design: .rounded))
+                        .foregroundStyle(.white)
+                    HStack(spacing: 6) {
+                        Text(product.formattedPrice)
+                            .font(.system(size: 12, weight: .bold, design: .monospaced))
+                            .foregroundStyle(ClipStakesPalette.mint)
+                        Text("STAKE-READY")
+                            .font(.system(size: 9, weight: .black, design: .rounded))
+                            .tracking(0.6)
+                            .foregroundStyle(.black)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 3)
+                            .background(productAccent(product), in: Capsule())
                     }
-                    Spacer()
                 }
-                .padding(12)
-                .clipStakesGlassCard(cornerRadius: 16)
+
+                Spacer()
+
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(.white.opacity(0.4))
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .contentShape(Rectangle())
+            .padding(12)
+            .clipStakesGlassCard(cornerRadius: 14)
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func beginRecording(for product: ClipStakesProduct) {
+        selectedProduct = product
+        recordedVideo = nil
+        textOverlay = ""
+        textPosition = .bottom
+        step = .record
+    }
+
+    // MARK: - Recording
+
+    private var recordingStep: some View {
+        VStack(spacing: 10) {
+            HStack(spacing: 10) {
+                if let selectedProduct {
+                    productThumb(selectedProduct)
+                        .frame(width: 34, height: 34)
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text("Recording")
+                            .font(.system(size: 10, weight: .medium, design: .rounded))
+                            .foregroundStyle(.white.opacity(0.5))
+                        Text(selectedProduct.name)
+                            .font(.system(size: 13, weight: .bold, design: .rounded))
+                            .foregroundStyle(.white)
+                            .lineLimit(1)
+                    }
+                }
+
+                Spacer()
+
+                Button("Change Product") {
+                    step = .selectProduct
+                }
+                .font(.system(size: 11, weight: .bold, design: .rounded))
+                .foregroundStyle(.white)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 6)
+                .background(.white.opacity(0.14), in: Capsule())
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .clipStakesGlassCard(cornerRadius: 12)
 
             ClipStakesVideoRecorder(minDuration: 5, maxDuration: 15) { result in
                 recordedVideo = result
                 step = .aiValidating
                 Task { await runValidation() }
             }
-            .clipStakesGlassCard(cornerRadius: 24)
+            .frame(minHeight: max(420, UIScreen.main.bounds.height * 0.62))
+            .clipStakesGlassCard(cornerRadius: 18)
 
             HStack(spacing: 8) {
-                ClipStakesInfoChip(title: "5-15 sec", icon: "timer", tint: ClipStakesPalette.mint)
-                ClipStakesInfoChip(title: "Vertical", icon: "rectangle.portrait", tint: ClipStakesPalette.neonBlue)
-                ClipStakesInfoChip(title: "One take", icon: "bolt.fill", tint: ClipStakesPalette.neonOrange)
+                Text("Record one clean take, then tap Stop.")
+                    .font(.system(size: 11, weight: .medium, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.55))
                 Spacer()
             }
+            .padding(.horizontal, 2)
 
-            HStack(spacing: 10) {
-                Button("Back") {
-                    step = .selectProduct
+            if recordedVideo != nil {
+                Button("Use Last Recording") {
+                    step = .aiValidating
+                    Task { await runValidation() }
                 }
-                .buttonStyle(ClipStakesSecondaryButtonStyle())
-
-                if recordedVideo != nil {
-                    Button("Use Last Recording") {
-                        step = .aiValidating
-                        Task { await runValidation() }
-                    }
-                    .buttonStyle(ClipStakesPrimaryButtonStyle())
-                }
+                .buttonStyle(ClipStakesPrimaryButtonStyle())
             }
         }
+        .padding(.bottom, 6)
     }
 
+    // MARK: - Validating
+
     private var validatingStep: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: 14) {
             ZStack {
                 Circle()
-                    .stroke(ClipStakesPalette.neonBlue.opacity(0.25), lineWidth: 10)
-                    .frame(width: 88, height: 88)
+                    .stroke(ClipStakesPalette.neonBlue.opacity(0.15), lineWidth: 6)
+                    .frame(width: 56, height: 56)
                 Circle()
-                    .trim(from: 0, to: 0.58)
-                    .stroke(ClipStakesPalette.accentGradient, style: StrokeStyle(lineWidth: 10, lineCap: .round))
-                    .frame(width: 88, height: 88)
+                    .trim(from: 0, to: 0.6)
+                    .stroke(ClipStakesPalette.accentGradient, style: StrokeStyle(lineWidth: 6, lineCap: .round))
+                    .frame(width: 56, height: 56)
                     .rotationEffect(.degrees(pulseHero ? 210 : -70))
-                ProgressView()
-                    .scaleEffect(1.45)
-                    .tint(.white)
+                Image(systemName: "brain")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundStyle(.white.opacity(0.7))
             }
 
-            Text("ON-DEVICE AI REVIEW")
-                .font(.system(size: 14, weight: .black, design: .rounded))
+            Text("AI REVIEW")
+                .font(.system(size: 11, weight: .black, design: .rounded))
                 .tracking(1.0)
-                .foregroundStyle(.white)
+                .foregroundStyle(.white.opacity(0.8))
 
-            Text(validationMessage.isEmpty ? "Checking visibility, framing, and retail-safe content." : validationMessage)
-                .font(.system(size: 13, weight: .medium, design: .rounded))
-                .foregroundStyle(.white.opacity(0.74))
+            Text(validationMessage.isEmpty ? "Checking visibility, framing, and content" : validationMessage)
+                .font(.system(size: 12, weight: .medium, design: .rounded))
+                .foregroundStyle(.white.opacity(0.5))
                 .multilineTextAlignment(.center)
-                .padding(.horizontal, 24)
+                .padding(.horizontal, 20)
         }
         .padding(.vertical, 24)
         .frame(maxWidth: .infinity)
-        .clipStakesGlassCard(cornerRadius: 22)
+        .clipStakesGlassCard(cornerRadius: 18)
     }
 
-    private var addTextStep: some View {
-        VStack(spacing: 14) {
-            Text("Add text energy (optional)")
-                .font(.system(size: 21, weight: .black, design: .rounded))
-                .foregroundStyle(.white)
+    // MARK: - Add Text
 
-            VStack(alignment: .leading, spacing: 10) {
+    private var addTextStep: some View {
+        VStack(spacing: 12) {
+            HStack {
+                Text("Add overlay text")
+                    .font(.system(size: 16, weight: .bold, design: .rounded))
+                    .foregroundStyle(.white)
+                Spacer()
+                Text("Optional")
+                    .font(.system(size: 10, weight: .medium, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.4))
+            }
+
+            VStack(spacing: 10) {
                 TextField("OBSESSED", text: $textOverlay)
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
-                    .font(.system(size: 16, weight: .bold, design: .rounded))
+                    .font(.system(size: 15, weight: .bold, design: .rounded))
                     .foregroundStyle(.white)
-                    .padding(12)
-                    .background(Color.white.opacity(0.12), in: RoundedRectangle(cornerRadius: 12))
+                    .padding(11)
+                    .background(Color.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 10))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 10)
+                            .stroke(Color.white.opacity(0.1), lineWidth: 0.5)
+                    )
 
                 Picker("Text Position", selection: $textPosition) {
                     ForEach(ClipStakesTextPosition.allCases) { position in
@@ -484,33 +541,33 @@ struct ClipStakesCreatorExperience: ClipExperience {
                 textPreviewCard
             }
 
-            HStack(spacing: 10) {
+            HStack(spacing: 8) {
                 Button("Back") {
-                    step = .record
+                    withAnimation(.easeOut(duration: 0.2)) { step = .record }
                 }
                 .buttonStyle(ClipStakesSecondaryButtonStyle())
 
                 Button("Continue") {
-                    step = .confirm
+                    withAnimation(.easeOut(duration: 0.25)) { step = .confirm }
                 }
                 .buttonStyle(ClipStakesPrimaryButtonStyle())
             }
         }
-        .padding(16)
-        .clipStakesGlassCard(cornerRadius: 22)
+        .padding(14)
+        .clipStakesGlassCard(cornerRadius: 18)
     }
 
     private var textPreviewCard: some View {
         ZStack {
-            RoundedRectangle(cornerRadius: 16)
+            RoundedRectangle(cornerRadius: 12)
                 .fill(
                     LinearGradient(
-                        colors: [Color.black.opacity(0.5), ClipStakesPalette.neonBlue.opacity(0.45)],
+                        colors: [Color.black.opacity(0.5), ClipStakesPalette.neonBlue.opacity(0.3)],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
                     )
                 )
-                .frame(height: 146)
+                .frame(height: 110)
 
             VStack {
                 switch textPosition {
@@ -526,75 +583,87 @@ struct ClipStakesCreatorExperience: ClipExperience {
                     overlayPreviewText
                 }
             }
-            .padding(12)
+            .padding(10)
         }
         .overlay(
-            RoundedRectangle(cornerRadius: 16)
-                .stroke(Color.white.opacity(0.2), lineWidth: 1)
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(Color.white.opacity(0.1), lineWidth: 0.5)
         )
     }
 
     private var overlayPreviewText: some View {
         Text(trimmedTextOverlay.isEmpty ? "YOUR OVERLAY" : trimmedTextOverlay.uppercased())
-            .font(.system(size: 17, weight: .black, design: .rounded))
+            .font(.system(size: 15, weight: .black, design: .rounded))
             .foregroundStyle(.white)
             .shadow(color: .black.opacity(0.45), radius: 4)
             .lineLimit(2)
             .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    private var confirmStep: some View {
-        VStack(spacing: 14) {
-            Text("Final review")
-                .font(.system(size: 22, weight: .black, design: .rounded))
-                .foregroundStyle(.white)
+    // MARK: - Confirm
 
-            VStack(spacing: 10) {
+    private var confirmStep: some View {
+        VStack(spacing: 12) {
+            HStack {
+                Text("Final Review")
+                    .font(.system(size: 17, weight: .bold, design: .rounded))
+                    .foregroundStyle(.white)
+                Spacer()
+            }
+
+            VStack(spacing: 1) {
                 confirmRow(label: "Product", value: selectedProduct?.name ?? "-")
                 confirmRow(label: "Duration", value: "\(recordedVideo?.durationSeconds ?? 0)s")
                 confirmRow(label: "Overlay", value: trimmedTextOverlay.isEmpty ? "None" : trimmedTextOverlay)
                 confirmRow(label: "Position", value: textPosition.rawValue.capitalized)
             }
-            .padding(14)
-            .clipStakesGlassCard(cornerRadius: 16)
+            .clipShape(RoundedRectangle(cornerRadius: 12))
 
+            // Reward preview
             HStack(spacing: 10) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("INSTANT UNLOCK")
-                        .font(.system(size: 11, weight: .black, design: .rounded))
-                        .tracking(1)
-                        .foregroundStyle(.white.opacity(0.78))
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("INSTANT REWARD")
+                        .font(.system(size: 9, weight: .black, design: .rounded))
+                        .tracking(0.8)
+                        .foregroundStyle(.white.opacity(0.6))
                     Text("$5 Coupon")
-                        .font(.system(size: 24, weight: .black, design: .rounded))
+                        .font(.system(size: 20, weight: .black, design: .rounded))
                         .foregroundStyle(.white)
                 }
                 Spacer()
                 Image(systemName: "ticket.fill")
-                    .font(.system(size: 30, weight: .bold))
+                    .font(.system(size: 24, weight: .bold))
                     .foregroundStyle(ClipStakesPalette.neonOrange)
             }
-            .padding(14)
+            .padding(12)
             .background(
                 LinearGradient(
-                    colors: [ClipStakesPalette.neonPink.opacity(0.42), ClipStakesPalette.neonOrange.opacity(0.35)],
+                    colors: [ClipStakesPalette.neonPink.opacity(0.25), ClipStakesPalette.neonOrange.opacity(0.2)],
                     startPoint: .topLeading,
                     endPoint: .bottomTrailing
                 ),
-                in: RoundedRectangle(cornerRadius: 16)
+                in: RoundedRectangle(cornerRadius: 12)
             )
             .overlay(
-                RoundedRectangle(cornerRadius: 16)
-                    .stroke(Color.white.opacity(0.24), lineWidth: 1)
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(Color.white.opacity(0.15), lineWidth: 0.5)
             )
 
             if isUploading {
-                ProgressView("Uploading + minting reward...")
-                    .tint(ClipStakesPalette.neonPink)
+                HStack(spacing: 8) {
+                    ProgressView()
+                        .tint(ClipStakesPalette.neonPink)
+                        .scaleEffect(0.8)
+                    Text("Uploading + minting reward...")
+                        .font(.system(size: 12, weight: .medium, design: .rounded))
+                        .foregroundStyle(.white.opacity(0.6))
+                }
+                .padding(.vertical, 4)
             }
 
-            HStack(spacing: 10) {
+            HStack(spacing: 8) {
                 Button("Back") {
-                    step = .addText
+                    withAnimation(.easeOut(duration: 0.2)) { step = .addText }
                 }
                 .buttonStyle(ClipStakesSecondaryButtonStyle())
                 .disabled(isUploading)
@@ -606,81 +675,121 @@ struct ClipStakesCreatorExperience: ClipExperience {
                 .disabled(isUploading)
             }
         }
-        .padding(16)
-        .clipStakesGlassCard(cornerRadius: 22)
+        .padding(14)
+        .clipStakesGlassCard(cornerRadius: 18)
     }
 
+    // MARK: - Success
+
     private var successStep: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: 14) {
             if let reward {
-                VStack(spacing: 8) {
+                let displayedBalance = rewardsSnapshot?.availableBalanceDisplay ?? reward.availableBalanceDisplay
+                let walletCode = rewardsSnapshot?.walletCode ?? reward.walletCode
+                let passURL = rewardsSnapshot?.passURL ?? reward.passURL
+                let transactions = rewardsSnapshot?.transactions ?? []
+
+                // Header
+                VStack(spacing: 4) {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 32, weight: .bold))
+                        .foregroundStyle(ClipStakesPalette.mint)
+
                     Text("CLIP IS LIVE")
-                        .font(.system(size: 12, weight: .black, design: .rounded))
-                        .tracking(1.1)
-                        .foregroundStyle(.white.opacity(0.78))
-                    Text("INSTANT CREATOR REWARD")
-                        .font(.system(size: 24, weight: .black, design: .serif))
-                        .foregroundStyle(.white)
+                        .font(.system(size: 10, weight: .black, design: .rounded))
+                        .tracking(1.2)
+                        .foregroundStyle(.white.opacity(0.6))
                 }
 
-                VStack(spacing: 14) {
-                    Text(reward.couponValue)
-                        .font(.system(size: 56, weight: .black, design: .rounded))
+                // Reward card
+                VStack(spacing: 10) {
+                    Text("+\(reward.instantCreditDisplay)")
+                        .font(.system(size: 44, weight: .black, design: .rounded))
                         .foregroundStyle(.white)
 
-                    Text("OFF YOUR NEXT PURCHASE")
-                        .font(.system(size: 11, weight: .black, design: .rounded))
-                        .tracking(1.4)
-                        .foregroundStyle(.white.opacity(0.9))
+                    Text("ADDED TO YOUR WALLET BALANCE")
+                        .font(.system(size: 9, weight: .black, design: .rounded))
+                        .tracking(1.2)
+                        .foregroundStyle(.white.opacity(0.8))
 
-                    HStack(spacing: 10) {
-                        Text(reward.couponCode)
-                            .font(.system(size: 17, weight: .bold, design: .monospaced))
+                    HStack(spacing: 8) {
+                        Text(displayedBalance)
+                            .font(.system(size: 14, weight: .bold, design: .monospaced))
                             .foregroundStyle(.white)
 
-                        Button(copiedCoupon ? "Copied" : "Copy") {
+                        Button(copiedWalletCode ? "Copied" : "Copy Wallet Code") {
                             Task { @MainActor in
-                                ClipStakesClipboard.copy(reward.couponCode)
-                                copiedCoupon = true
+                                ClipStakesClipboard.copy(walletCode)
+                                copiedWalletCode = true
                             }
                         }
-                        .buttonStyle(.bordered)
-                        .tint(.white)
+                        .font(.system(size: 11, weight: .bold, design: .rounded))
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 5)
+                        .background(Color.white.opacity(0.15), in: Capsule())
                     }
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 8)
-                    .background(.white.opacity(0.18), in: RoundedRectangle(cornerRadius: 12))
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .background(.white.opacity(0.1), in: RoundedRectangle(cornerRadius: 10))
                 }
                 .frame(maxWidth: .infinity)
-                .padding(24)
+                .padding(20)
                 .background(
                     LinearGradient(
                         colors: [ClipStakesPalette.neonPink, ClipStakesPalette.neonBlue],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
                     ),
-                    in: RoundedRectangle(cornerRadius: 24)
+                    in: RoundedRectangle(cornerRadius: 18)
                 )
                 .overlay(
-                    RoundedRectangle(cornerRadius: 24)
-                        .stroke(Color.white.opacity(0.24), lineWidth: 1)
+                    RoundedRectangle(cornerRadius: 18)
+                        .stroke(Color.white.opacity(0.2), lineWidth: 0.5)
                 )
-                .shadow(color: ClipStakesPalette.neonPink.opacity(pulseReward ? 0.48 : 0.24), radius: pulseReward ? 24 : 14, y: 8)
+                .shadow(color: ClipStakesPalette.neonPink.opacity(pulseReward ? 0.35 : 0.15), radius: pulseReward ? 20 : 10, y: 6)
 
-                VStack(spacing: 10) {
+                // Actions
+                VStack(spacing: 8) {
                     Button {
-                        walletAdded = true
                         Task { @MainActor in
-                            ClipStakesClipboard.copy(reward.couponCode)
+                            let fallbackPassURL = ClipStakesRemoteBackend.fallbackWalletPassURL(
+                                apiBaseURL: apiBaseURL,
+                                walletCode: walletCode
+                            )
+                            let passURLReachable = await ClipStakesURLLauncher.isReachable(passURL)
+                            if passURLReachable, await ClipStakesURLLauncher.open(passURL) {
+                                walletAdded = true
+                                walletStatusMessage = "Wallet pass opened."
+                                return
+                            }
+
+                            if passURL != fallbackPassURL {
+                                let fallbackReachable = await ClipStakesURLLauncher.isReachable(fallbackPassURL)
+                                if fallbackReachable, await ClipStakesURLLauncher.open(fallbackPassURL) {
+                                    walletAdded = true
+                                    walletStatusMessage = "Wallet pass opened."
+                                    return
+                                }
+                            }
+
+                            ClipStakesClipboard.copy(walletCode)
+                            walletStatusMessage = "Wallet pass link is unavailable. Wallet code copied."
                         }
                     } label: {
                         Label(
-                            walletAdded ? "Wallet Fallback Ready" : "Add to Apple Wallet (Fallback)",
+                            walletAdded ? "Wallet Pass Ready" : "Add to Apple Wallet",
                             systemImage: walletAdded ? "checkmark.circle.fill" : "wallet.pass"
                         )
                     }
-                    .buttonStyle(ClipStakesPrimaryButtonStyle(disabled: walletAdded))
-                    .disabled(walletAdded)
+                    .buttonStyle(ClipStakesPrimaryButtonStyle())
+
+                    Button {
+                        Task { await openViewerForSuccess(clipID: reward.clipID) }
+                    } label: {
+                        Label("Watch My Clip", systemImage: "play.rectangle.fill")
+                    }
+                    .buttonStyle(ClipStakesSecondaryButtonStyle())
 
                     Button {
                         showShareSheet = true
@@ -689,104 +798,151 @@ struct ClipStakesCreatorExperience: ClipExperience {
                     }
                     .buttonStyle(ClipStakesSecondaryButtonStyle())
 
-                    if let createdClipID {
-                        Button("Check Bonus Status") {
-                            Task { await refreshBonusStatus(clipID: createdClipID) }
-                        }
-                        .font(.system(size: 13, weight: .bold, design: .rounded))
-                        .foregroundStyle(ClipStakesPalette.mint)
+                    Button("Refresh Balance") {
+                        Task { await refreshRewards() }
                     }
+                    .font(.system(size: 12, weight: .bold, design: .rounded))
+                    .foregroundStyle(ClipStakesPalette.mint)
+                    .padding(.top, 2)
                 }
 
-                if let bonusEvent {
-                    VStack(alignment: .leading, spacing: 6) {
-                        Label(bonusEvent.title, systemImage: "bell.badge.fill")
-                            .font(.system(size: 14, weight: .bold, design: .rounded))
-                            .foregroundStyle(ClipStakesPalette.neonOrange)
-
-                        Text(bonusEvent.body)
-                            .font(.system(size: 13, weight: .medium, design: .rounded))
-                            .foregroundStyle(.white.opacity(0.75))
-                    }
-                    .padding(12)
-                    .clipStakesGlassCard(cornerRadius: 14)
-                } else {
-                    Text("If your clip converts within 8 hours, you unlock another $5 bonus.")
-                        .font(.system(size: 12, weight: .medium, design: .rounded))
-                        .foregroundStyle(.white.opacity(0.75))
+                if let walletStatusMessage {
+                    Text(walletStatusMessage)
+                        .font(.system(size: 11, weight: .medium, design: .rounded))
+                        .foregroundStyle(.white.opacity(0.6))
                         .multilineTextAlignment(.center)
-                        .padding(.horizontal, 10)
+                }
+
+                if !transactions.isEmpty {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Recent Earnings")
+                            .font(.system(size: 12, weight: .bold, design: .rounded))
+                            .foregroundStyle(.white.opacity(0.82))
+
+                        ForEach(transactions.prefix(3)) { item in
+                            HStack(spacing: 8) {
+                                Image(systemName: item.kind == .conversion ? "cart.fill.badge.plus" : "video.badge.plus")
+                                    .font(.system(size: 11, weight: .bold))
+                                    .foregroundStyle(ClipStakesPalette.mint)
+                                Text(item.kind == .conversion ? "Conversion reward" : "Clip published")
+                                    .font(.system(size: 11, weight: .medium, design: .rounded))
+                                    .foregroundStyle(.white.opacity(0.74))
+                                Spacer()
+                                Text("+\(item.amountDisplay)")
+                                    .font(.system(size: 11, weight: .bold, design: .monospaced))
+                                    .foregroundStyle(.white)
+                            }
+                        }
+                    }
+                    .padding(10)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .clipStakesGlassCard(cornerRadius: 12)
                 }
             }
         }
-        .padding(16)
-        .clipStakesGlassCard(cornerRadius: 22)
+        .padding(14)
+        .clipStakesGlassCard(cornerRadius: 18)
     }
 
+    // MARK: - Blocked / Failure
+
     private var blockedState: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: 10) {
             Image(systemName: "lock.trianglebadge.exclamationmark")
-                .font(.system(size: 46, weight: .black))
+                .font(.system(size: 36, weight: .bold))
                 .foregroundStyle(ClipStakesPalette.neonOrange)
 
-            Text("Receipt already used")
-                .font(.system(size: 22, weight: .black, design: .rounded))
+            Text("Receipt Already Used")
+                .font(.system(size: 18, weight: .bold, design: .rounded))
                 .foregroundStyle(.white)
 
             Text(errorMessage ?? "This receipt already created a clip.")
-                .font(.system(size: 13, weight: .medium, design: .rounded))
-                .foregroundStyle(.white.opacity(0.74))
+                .font(.system(size: 12, weight: .medium, design: .rounded))
+                .foregroundStyle(.white.opacity(0.5))
                 .multilineTextAlignment(.center)
-                .padding(.horizontal, 20)
+                .padding(.horizontal, 16)
+
+            if let rewardsSnapshot {
+                Text("Wallet balance: \(rewardsSnapshot.availableBalanceDisplay)")
+                    .font(.system(size: 12, weight: .bold, design: .monospaced))
+                    .foregroundStyle(ClipStakesPalette.mint)
+            }
+
+            VStack(spacing: 8) {
+                Button("View Existing Clips") {
+                    Task { await openViewerForBlockedReceipt() }
+                }
+                .buttonStyle(ClipStakesPrimaryButtonStyle())
+
+                Button("Use Fresh Demo Receipt") {
+                    Task { await openFreshDemoReceipt() }
+                }
+                .buttonStyle(ClipStakesSecondaryButtonStyle())
+            }
+            .padding(.horizontal, 18)
+
+            if let blockedStatusMessage {
+                Text(blockedStatusMessage)
+                    .font(.system(size: 11, weight: .medium, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.6))
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 16)
+            }
         }
-        .padding(.vertical, 30)
+        .padding(.vertical, 24)
         .frame(maxWidth: .infinity)
-        .clipStakesGlassCard(cornerRadius: 22)
+        .clipStakesGlassCard(cornerRadius: 18)
     }
 
     private var failureState: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: 10) {
             Image(systemName: "xmark.octagon.fill")
-                .font(.system(size: 44, weight: .black))
+                .font(.system(size: 36, weight: .bold))
                 .foregroundStyle(ClipStakesPalette.neonPink)
 
-            Text("Could not load receipt")
-                .font(.system(size: 22, weight: .black, design: .rounded))
+            Text("Could Not Load Receipt")
+                .font(.system(size: 18, weight: .bold, design: .rounded))
                 .foregroundStyle(.white)
 
             Text(errorMessage ?? "Try another receipt URL.")
-                .font(.system(size: 13, weight: .medium, design: .rounded))
-                .foregroundStyle(.white.opacity(0.74))
+                .font(.system(size: 12, weight: .medium, design: .rounded))
+                .foregroundStyle(.white.opacity(0.5))
                 .multilineTextAlignment(.center)
-                .padding(.horizontal, 20)
+                .padding(.horizontal, 16)
 
             Button("Retry") {
                 Task { await loadReceipt() }
             }
             .buttonStyle(ClipStakesPrimaryButtonStyle())
+            .padding(.horizontal, 20)
         }
-        .padding(.vertical, 30)
-        .padding(.horizontal, 16)
-        .clipStakesGlassCard(cornerRadius: 22)
+        .padding(.vertical, 24)
+        .padding(.horizontal, 14)
+        .clipStakesGlassCard(cornerRadius: 18)
     }
+
+    // MARK: - Helpers
 
     private func confirmRow(label: String, value: String) -> some View {
         HStack {
             Text(label)
-                .font(.system(size: 13, weight: .medium, design: .rounded))
-                .foregroundStyle(.white.opacity(0.7))
+                .font(.system(size: 12, weight: .medium, design: .rounded))
+                .foregroundStyle(.white.opacity(0.5))
             Spacer()
             Text(value)
-                .font(.system(size: 13, weight: .bold, design: .monospaced))
+                .font(.system(size: 12, weight: .bold, design: .monospaced))
                 .foregroundStyle(.white)
                 .lineLimit(1)
         }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .background(Color.white.opacity(0.04))
     }
 
     private func productThumb(_ product: ClipStakesProduct) -> some View {
         ZStack {
-            RoundedRectangle(cornerRadius: 10)
-                .fill(Color.white.opacity(0.12))
+            RoundedRectangle(cornerRadius: 8)
+                .fill(Color.white.opacity(0.08))
 
             if let imageURL = product.imageURL {
                 AsyncImage(url: imageURL) { phase in
@@ -797,18 +953,18 @@ struct ClipStakesCreatorExperience: ClipExperience {
                             .scaledToFill()
                     default:
                         Image(systemName: product.systemImage)
-                            .font(.system(size: 16, weight: .bold))
-                            .foregroundStyle(.white)
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundStyle(.white.opacity(0.5))
                     }
                 }
             } else {
                 Image(systemName: product.systemImage)
-                    .font(.system(size: 16, weight: .bold))
-                    .foregroundStyle(.white)
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(.white.opacity(0.5))
             }
         }
-        .frame(width: 44, height: 44)
-        .clipShape(RoundedRectangle(cornerRadius: 10))
+        .frame(width: 40, height: 40)
+        .clipShape(RoundedRectangle(cornerRadius: 8))
     }
 
     private func productAccent(_ product: ClipStakesProduct) -> LinearGradient {
@@ -821,10 +977,6 @@ struct ClipStakesCreatorExperience: ClipExperience {
         default:
             return LinearGradient(colors: [ClipStakesPalette.mint, ClipStakesPalette.neonBlue], startPoint: .topLeading, endPoint: .bottomTrailing)
         }
-    }
-
-    private func isStepActive(_ candidate: CreatorStep) -> Bool {
-        stepOrder(candidate) <= stepOrder(step)
     }
 
     private func stepOrder(_ value: CreatorStep) -> Int {
@@ -847,35 +999,40 @@ struct ClipStakesCreatorExperience: ClipExperience {
         }
 
         return [
-            "I just staked a clip on CLIPSTAKES and unlocked \(reward.couponCode).",
-            "Create a clip, get $5 instantly."
+            "I just staked a clip on CLIPSTAKES and grew my wallet balance.",
+            "Wallet code: \(reward.walletCode)"
         ]
     }
+
+    // MARK: - Backend
 
     private func loadReceipt() async {
         await MainActor.run {
             step = .loading
             errorMessage = nil
+            blockedStatusMessage = nil
         }
 
-        let catalogResult = await ClipStakesShopifyPublicCatalogService.shared.loadCatalog(
+        await refreshRewards()
+
+        _ = await ClipStakesShopifyPublicCatalogService.shared.loadCatalog(
             storeDomainOverride: storeDomainOverride
         )
 
-        await MainActor.run {
-            catalogStatusMessage = catalogResult.message
-        }
-
         do {
-            let receipt = try await ClipStakesMockBackend.shared.getReceipt(receiptId: receiptID)
+            let receipt = try await getReceipt()
             await MainActor.run {
                 products = receipt.products
                 step = .selectProduct
             }
         } catch {
+            let fallbackProducts = await productsForUsedReceipt()
             await MainActor.run {
                 errorMessage = error.localizedDescription
                 if let backendError = error as? ClipStakesBackendError, backendError == .receiptAlreadyUsed {
+                    if !fallbackProducts.isEmpty {
+                        products = fallbackProducts
+                    }
                     step = .blocked
                 } else {
                     step = .failure
@@ -932,24 +1089,28 @@ struct ClipStakesCreatorExperience: ClipExperience {
         }
 
         do {
-            let upload = await ClipStakesMockBackend.shared.createUploadURL(
-                receiptId: receiptID,
-                productId: selectedProduct.id
-            )
+            let upload = try await createUploadURL(productId: selectedProduct.id)
 
-            if let sourceURL = recordedVideo.fileURL, !trimmedTextOverlay.isEmpty {
-                _ = await ClipStakesVideoCompositor.addText(
+            var preparedVideoURL = recordedVideo.fileURL
+            if let sourceURL = preparedVideoURL, !trimmedTextOverlay.isEmpty {
+                let compositedURL = await ClipStakesVideoCompositor.addText(
                     to: sourceURL,
                     text: trimmedTextOverlay,
                     position: textPosition
                 )
+                preparedVideoURL = compositedURL ?? sourceURL
             }
 
-            let response = try await ClipStakesMockBackend.shared.createClip(
+            let publishedVideoURL = await ClipStakesVideoStorage.shared.publishVideo(
+                sourceURL: preparedVideoURL,
+                upload: upload
+            )
+
+            let response = try await createClip(
                 receiptId: receiptID,
-                deviceToken: deviceToken,
+                deviceID: deviceID,
                 productId: selectedProduct.id,
-                videoURL: upload.videoURL,
+                videoURL: publishedVideoURL,
                 textOverlay: trimmedTextOverlay.isEmpty ? nil : trimmedTextOverlay,
                 textPosition: textPosition,
                 durationSeconds: recordedVideo.durationSeconds
@@ -957,13 +1118,13 @@ struct ClipStakesCreatorExperience: ClipExperience {
 
             await MainActor.run {
                 reward = response
-                createdClipID = response.clipID
-                copiedCoupon = false
+                copiedWalletCode = false
                 walletAdded = false
+                walletStatusMessage = nil
                 step = .success
             }
 
-            await refreshBonusStatus(clipID: response.clipID)
+            await refreshRewards()
         } catch {
             await MainActor.run {
                 errorMessage = error.localizedDescription
@@ -972,11 +1133,202 @@ struct ClipStakesCreatorExperience: ClipExperience {
         }
     }
 
-    private func refreshBonusStatus(clipID: String) async {
-        let event = await ClipStakesMockBackend.shared.latestNotification(for: clipID)
+    private func refreshRewards() async {
+        guard let snapshot = await getRewards() else { return }
         await MainActor.run {
-            bonusEvent = event
+            rewardsSnapshot = snapshot
         }
+    }
+
+    private func getReceipt() async throws -> ClipStakesReceipt {
+        if receiptID.hasPrefix("order_demo_hoodie_demo_") {
+            return await ClipStakesMockBackend.shared.ensureDemoReceipt(receiptId: receiptID)
+        }
+
+        if receiptID.hasPrefix("order_demo_") {
+            return try await ClipStakesMockBackend.shared.getReceipt(receiptId: receiptID)
+        }
+
+        do {
+            return try await ClipStakesRemoteBackend.getReceipt(
+                receiptId: receiptID,
+                apiBaseURL: apiBaseURL,
+                deviceID: deviceID
+            )
+        } catch let error as ClipStakesBackendError where error == .receiptNotFound {
+            if receiptID.hasPrefix("order_demo_") {
+                return try await ClipStakesMockBackend.shared.getReceipt(receiptId: receiptID)
+            }
+            throw error
+        } catch let error as ClipStakesRemoteBackendError where error.isConnectivityIssue {
+            return try await ClipStakesMockBackend.shared.getReceipt(receiptId: receiptID)
+        }
+    }
+
+    private func createUploadURL(productId: String) async throws -> ClipStakesUploadURLResponse {
+        if receiptID.hasPrefix("order_demo_") {
+            return await ClipStakesMockBackend.shared.createUploadURL(
+                receiptId: receiptID,
+                productId: productId
+            )
+        }
+
+        do {
+            return try await ClipStakesRemoteBackend.createUploadURL(
+                receiptId: receiptID,
+                productId: productId,
+                apiBaseURL: apiBaseURL,
+                deviceID: deviceID
+            )
+        } catch let error as ClipStakesRemoteBackendError where error.isConnectivityIssue {
+            return await ClipStakesMockBackend.shared.createUploadURL(
+                receiptId: receiptID,
+                productId: productId
+            )
+        }
+    }
+
+    private func createClip(
+        receiptId: String,
+        deviceID: String,
+        productId: String,
+        videoURL: URL,
+        textOverlay: String?,
+        textPosition: ClipStakesTextPosition,
+        durationSeconds: Int
+    ) async throws -> ClipStakesCreateClipResponse {
+        if receiptId.hasPrefix("order_demo_") {
+            return try await ClipStakesMockBackend.shared.createClip(
+                receiptId: receiptId,
+                deviceID: deviceID,
+                productId: productId,
+                videoURL: videoURL,
+                textOverlay: textOverlay,
+                textPosition: textPosition,
+                durationSeconds: durationSeconds
+            )
+        }
+
+        do {
+            return try await ClipStakesRemoteBackend.createClip(
+                receiptId: receiptId,
+                deviceID: deviceID,
+                productId: productId,
+                videoURL: videoURL,
+                textOverlay: textOverlay,
+                textPosition: textPosition,
+                durationSeconds: durationSeconds,
+                apiBaseURL: apiBaseURL
+            )
+        } catch let error as ClipStakesRemoteBackendError where error.isConnectivityIssue {
+            return try await ClipStakesMockBackend.shared.createClip(
+                receiptId: receiptId,
+                deviceID: deviceID,
+                productId: productId,
+                videoURL: videoURL,
+                textOverlay: textOverlay,
+                textPosition: textPosition,
+                durationSeconds: durationSeconds
+            )
+        }
+    }
+
+    private func getRewards() async -> ClipStakesRewardsSnapshot? {
+        do {
+            return try await ClipStakesRemoteBackend.getRewards(
+                deviceID: deviceID,
+                apiBaseURL: apiBaseURL
+            )
+        } catch let error as ClipStakesRemoteBackendError where error.isConnectivityIssue {
+            return await ClipStakesMockBackend.shared.getRewards(deviceID: deviceID)
+        } catch {
+            return nil
+        }
+    }
+
+    private func productsForUsedReceipt() async -> [ClipStakesProduct] {
+        if receiptID.hasPrefix("order_demo_") {
+            if let receipt = try? await ClipStakesMockBackend.shared.getReceiptIncludingUsed(receiptId: receiptID) {
+                return receipt.products
+            }
+            return []
+        }
+
+        if let receipt = try? await ClipStakesRemoteBackend.getReceipt(
+            receiptId: receiptID,
+            apiBaseURL: apiBaseURL,
+            deviceID: deviceID
+        ) {
+            return receipt.products
+        }
+
+        return []
+    }
+
+    @MainActor
+    private func viewerLink(for productID: String, clipID: String?) -> URL {
+        var components = URLComponents(string: "https://clip.clipstakes.app/v/\(productID)")!
+        if let clipID, !clipID.isEmpty {
+            components.queryItems = [URLQueryItem(name: "clip", value: clipID)]
+        }
+        return components.url!
+    }
+
+    @MainActor
+    private func creatorDemoLink() -> URL {
+        URL(string: "https://clip.clipstakes.app/c/demo")!
+    }
+
+    private func openViewerForBlockedReceipt() async {
+        let target = await MainActor.run { viewerLink(for: firstProductIDForViewer, clipID: nil) }
+        if await ClipStakesURLLauncher.open(target) {
+            await MainActor.run {
+                blockedStatusMessage = "Opened viewer."
+            }
+            return
+        }
+
+        await MainActor.run {
+            ClipStakesClipboard.copy(target.absoluteString)
+            blockedStatusMessage = "Could not open viewer directly. Link copied."
+        }
+    }
+
+    private func openViewerForSuccess(clipID: String) async {
+        let productID = selectedProduct?.id ?? firstProductIDForViewer
+        let target = await MainActor.run { viewerLink(for: productID, clipID: clipID) }
+
+        if await ClipStakesURLLauncher.open(target) {
+            await MainActor.run {
+                walletStatusMessage = "Opened your clip in viewer."
+            }
+            return
+        }
+
+        await MainActor.run {
+            ClipStakesClipboard.copy(target.absoluteString)
+            walletStatusMessage = "Could not open viewer directly. Link copied."
+        }
+    }
+
+    private func openFreshDemoReceipt() async {
+        let target = await MainActor.run { creatorDemoLink() }
+        if await ClipStakesURLLauncher.open(target) {
+            await MainActor.run {
+                blockedStatusMessage = "Opened fresh demo receipt."
+            }
+            return
+        }
+
+        await MainActor.run {
+            ClipStakesClipboard.copy(target.absoluteString)
+            blockedStatusMessage = "Could not open demo link directly. Link copied."
+        }
+    }
+
+    nonisolated private static func makeDemoAliasReceiptID() -> String {
+        let token = String(UUID().uuidString.prefix(8)).lowercased()
+        return "order_demo_hoodie_demo_\(token)"
     }
 }
 
@@ -991,8 +1343,9 @@ enum ClipStakesPalette {
     static let neonOrange = Color(red: 1.00, green: 0.55, blue: 0.20)
     static let neonBlue = Color(red: 0.26, green: 0.69, blue: 1.00)
     static let mint = Color(red: 0.31, green: 0.92, blue: 0.78)
-    static let cardBase = Color.white.opacity(0.08)
-    static let cardBorder = Color.white.opacity(0.22)
+    static let cardBase = Color.white.opacity(0.07)
+    static let cardBorder = Color.white.opacity(0.14)
+    static let surfaceElevated = Color.white.opacity(0.10)
 
     static let primaryGradient = LinearGradient(
         colors: [neonPink, neonOrange],
@@ -1002,6 +1355,12 @@ enum ClipStakesPalette {
 
     static let accentGradient = LinearGradient(
         colors: [neonBlue, mint],
+        startPoint: .topLeading,
+        endPoint: .bottomTrailing
+    )
+
+    static let subtleGradient = LinearGradient(
+        colors: [Color.white.opacity(0.08), Color.white.opacity(0.02)],
         startPoint: .topLeading,
         endPoint: .bottomTrailing
     )
@@ -1017,33 +1376,22 @@ struct ClipStakesStageBackground: View {
             )
 
             Circle()
-                .fill(ClipStakesPalette.neonPink.opacity(0.35))
-                .blur(radius: 80)
-                .frame(width: 260, height: 260)
-                .offset(x: 120, y: -240)
-
-            Circle()
-                .fill(ClipStakesPalette.neonBlue.opacity(0.25))
-                .blur(radius: 90)
-                .frame(width: 280, height: 280)
-                .offset(x: -120, y: -80)
-
-            Circle()
-                .fill(ClipStakesPalette.neonOrange.opacity(0.24))
+                .fill(ClipStakesPalette.neonPink.opacity(0.22))
                 .blur(radius: 100)
-                .frame(width: 290, height: 290)
-                .offset(x: 80, y: 280)
+                .frame(width: 220, height: 220)
+                .offset(x: 120, y: -260)
 
-            VStack(spacing: 0) {
-                ForEach(0..<16, id: \.self) { _ in
-                    Rectangle()
-                        .fill(Color.white.opacity(0.015))
-                        .frame(height: 1)
-                        .padding(.horizontal, 24)
-                    Spacer()
-                }
-            }
-            .padding(.vertical, 12)
+            Circle()
+                .fill(ClipStakesPalette.neonBlue.opacity(0.16))
+                .blur(radius: 110)
+                .frame(width: 240, height: 240)
+                .offset(x: -130, y: -60)
+
+            Circle()
+                .fill(ClipStakesPalette.neonOrange.opacity(0.14))
+                .blur(radius: 120)
+                .frame(width: 250, height: 250)
+                .offset(x: 80, y: 300)
         }
         .ignoresSafeArea()
     }
@@ -1060,9 +1408,9 @@ struct ClipStakesGlassCardModifier: ViewModifier {
             )
             .overlay(
                 RoundedRectangle(cornerRadius: cornerRadius)
-                    .stroke(ClipStakesPalette.cardBorder, lineWidth: 1)
+                    .stroke(ClipStakesPalette.cardBorder, lineWidth: 0.5)
             )
-            .shadow(color: .black.opacity(0.28), radius: 18, y: 10)
+            .shadow(color: .black.opacity(0.22), radius: 12, y: 6)
     }
 }
 
@@ -1078,15 +1426,17 @@ struct ClipStakesInfoChip: View {
     var tint: Color = .white
 
     var body: some View {
-        HStack(spacing: 6) {
+        HStack(spacing: 5) {
             Image(systemName: icon)
+                .font(.system(size: 9, weight: .bold))
             Text(title)
+                .font(.system(size: 10, weight: .bold, design: .rounded))
         }
-        .font(.system(size: 11, weight: .bold, design: .rounded))
         .foregroundStyle(tint)
-        .padding(.horizontal, 10)
-        .padding(.vertical, 6)
-        .clipStakesGlassCard(cornerRadius: 999)
+        .padding(.horizontal, 8)
+        .padding(.vertical, 5)
+        .background(tint.opacity(0.12), in: Capsule())
+        .overlay(Capsule().stroke(tint.opacity(0.25), lineWidth: 0.5))
     }
 }
 
@@ -1095,37 +1445,43 @@ struct ClipStakesPrimaryButtonStyle: ButtonStyle {
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(.system(size: 16, weight: .bold, design: .rounded))
+            .font(.system(size: 15, weight: .bold, design: .rounded))
             .foregroundStyle(.white)
             .frame(maxWidth: .infinity)
-            .padding(.vertical, 15)
+            .padding(.vertical, 14)
             .background(
-                RoundedRectangle(cornerRadius: 16)
+                RoundedRectangle(cornerRadius: 14)
                     .fill(
                         disabled
-                            ? AnyShapeStyle(Color.gray.opacity(0.35))
+                            ? AnyShapeStyle(Color.gray.opacity(0.3))
                             : AnyShapeStyle(ClipStakesPalette.primaryGradient)
                     )
             )
             .overlay(
-                RoundedRectangle(cornerRadius: 16)
-                    .stroke(Color.white.opacity(0.28), lineWidth: 1)
+                RoundedRectangle(cornerRadius: 14)
+                    .stroke(Color.white.opacity(disabled ? 0.1 : 0.2), lineWidth: 0.5)
             )
-            .scaleEffect(configuration.isPressed ? 0.985 : 1)
-            .opacity(configuration.isPressed ? 0.9 : 1)
+            .scaleEffect(configuration.isPressed ? 0.97 : 1)
+            .opacity(configuration.isPressed ? 0.85 : 1)
+            .animation(.easeOut(duration: 0.15), value: configuration.isPressed)
     }
 }
 
 struct ClipStakesSecondaryButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(.system(size: 15, weight: .semibold, design: .rounded))
-            .foregroundStyle(.white)
+            .font(.system(size: 14, weight: .semibold, design: .rounded))
+            .foregroundStyle(.white.opacity(0.9))
             .frame(maxWidth: .infinity)
-            .padding(.vertical, 13)
-            .clipStakesGlassCard(cornerRadius: 14)
-            .scaleEffect(configuration.isPressed ? 0.99 : 1)
-            .opacity(configuration.isPressed ? 0.9 : 1)
+            .padding(.vertical, 12)
+            .background(Color.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 12))
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(Color.white.opacity(0.15), lineWidth: 0.5)
+            )
+            .scaleEffect(configuration.isPressed ? 0.97 : 1)
+            .opacity(configuration.isPressed ? 0.85 : 1)
+            .animation(.easeOut(duration: 0.15), value: configuration.isPressed)
     }
 }
 
@@ -1135,18 +1491,15 @@ struct ClipStakesStepPill: View {
 
     var body: some View {
         Text(label)
-            .font(.system(size: 11, weight: .bold, design: .rounded))
-            .foregroundStyle(isActive ? Color.black : Color.white.opacity(0.85))
+            .font(.system(size: 10, weight: .bold, design: .rounded))
+            .foregroundStyle(isActive ? Color.black : Color.white.opacity(0.6))
             .padding(.horizontal, 10)
-            .padding(.vertical, 6)
+            .padding(.vertical, 5)
             .background(
                 Capsule()
-                    .fill(isActive ? AnyShapeStyle(ClipStakesPalette.accentGradient) : AnyShapeStyle(Color.white.opacity(0.1)))
+                    .fill(isActive ? AnyShapeStyle(ClipStakesPalette.accentGradient) : AnyShapeStyle(Color.white.opacity(0.08)))
             )
-            .overlay(
-                Capsule()
-                    .stroke(Color.white.opacity(isActive ? 0.0 : 0.2), lineWidth: 1)
-            )
+            .animation(.easeInOut(duration: 0.25), value: isActive)
     }
 }
 
@@ -1157,20 +1510,57 @@ import Foundation
 actor ClipStakesMockBackend {
     static let shared = ClipStakesMockBackend()
 
+    private static let instantRewardCents = 500
+    private static let conversionRewardCents = 500
+    private static let fallbackVideoCatalog: [URL] = [
+        URL(string: "https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4")!,
+        URL(string: "https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4")!,
+        URL(string: "https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4")!,
+    ]
+
+    private struct RewardAccount {
+        var walletCode: String
+        var passURL: URL
+        var availableBalanceCents: Int
+        var lifetimeEarnedCents: Int
+        var transactions: [ClipStakesRewardTransaction]
+    }
+
+    private struct PersistedState: Codable {
+        let clips: [ClipStakesClip]
+        let receipts: [ClipStakesReceipt]
+        let orderCounter: Int
+        let demoSeedKey: String?
+    }
+
     private var clips: [String: ClipStakesClip] = [:]
     private var receipts: [String: ClipStakesReceipt] = [:]
     private var conversions: [ClipStakesConversion] = []
     private var latestPushByClipID: [String: ClipStakesNotificationEvent] = [:]
+    private var rewardAccountsByDeviceID: [String: RewardAccount] = [:]
     private var orderCounter = 1000
     private var demoSeedKey: String?
+    private var didRunLegacyMigration = false
+    private let persistenceURL: URL
 
     private init() {
+        persistenceURL = Self.makePersistenceURL()
         let seed = Self.makeSeedData()
-        clips = seed.clips
-        receipts = seed.receipts
+
+        if let persisted = Self.loadPersistedState(from: persistenceURL) {
+            clips = Dictionary(uniqueKeysWithValues: persisted.clips.map { ($0.id, $0) })
+            receipts = Dictionary(uniqueKeysWithValues: persisted.receipts.map { ($0.id, $0) })
+            orderCounter = persisted.orderCounter
+            demoSeedKey = persisted.demoSeedKey
+        } else {
+            clips = seed.clips
+            receipts = seed.receipts
+            persistState()
+        }
     }
 
     func getClips(productId: String) async -> [ClipStakesClip] {
+        runLegacyVideoMigrationIfNeeded()
         try? await Task.sleep(nanoseconds: 200_000_000)
 
         return clips.values
@@ -1181,6 +1571,14 @@ actor ClipStakesMockBackend {
                 }
                 return $0.conversions > $1.conversions
             }
+    }
+
+    private func runLegacyVideoMigrationIfNeeded() {
+        guard !didRunLegacyMigration else { return }
+        didRunLegacyMigration = true
+        if migrateLegacyVideoHosts() {
+            persistState()
+        }
     }
 
     func getReceipt(receiptId: String) async throws -> ClipStakesReceipt {
@@ -1197,11 +1595,37 @@ actor ClipStakesMockBackend {
         return receipt
     }
 
+    func getReceiptIncludingUsed(receiptId: String) async throws -> ClipStakesReceipt {
+        try? await Task.sleep(nanoseconds: 120_000_000)
+
+        guard let receipt = receipts[receiptId] else {
+            throw ClipStakesBackendError.receiptNotFound
+        }
+
+        return receipt
+    }
+
+    func ensureDemoReceipt(receiptId: String) -> ClipStakesReceipt {
+        if let existing = receipts[receiptId] {
+            return existing
+        }
+
+        let templateProducts = receipts["order_demo_hoodie"]?.productIDs ?? ["prod_hoodie", "prod_hat"]
+        let receipt = ClipStakesReceipt(
+            id: receiptId,
+            productIDs: templateProducts,
+            clipCreated: false,
+            createdAt: Date()
+        )
+        receipts[receiptId] = receipt
+        persistState()
+        return receipt
+    }
+
     func createUploadURL(receiptId: String, productId: String) async -> ClipStakesUploadURLResponse {
-        let timestamp = Int(Date().timeIntervalSince1970)
-        let key = "clips/\(receiptId)/\(productId)/\(timestamp).mp4"
-        let uploadURL = URL(string: "https://upload.clipstakes.app/\(key)")!
-        let videoURL = URL(string: "https://r2.clipstakes.app/\(key)")!
+        let key = "clips/\(UUID().uuidString.lowercased()).mp4"
+        let uploadURL = URL(string: "https://clipstakes.skilled5041.workers.dev/upload/\(key)")!
+        let videoURL = Self.fallbackPlayableVideoURL(seed: key)
 
         return ClipStakesUploadURLResponse(
             uploadURL: uploadURL,
@@ -1212,7 +1636,7 @@ actor ClipStakesMockBackend {
 
     func createClip(
         receiptId: String,
-        deviceToken: String?,
+        deviceID: String,
         productId: String,
         videoURL: URL,
         textOverlay: String?,
@@ -1232,18 +1656,18 @@ actor ClipStakesMockBackend {
         }
 
         let clipID = UUID().uuidString.lowercased()
-        let couponCode = Self.generateCoupon(prefix: "CLIP")
+        var account = ensureRewardAccount(for: deviceID)
 
         let clip = ClipStakesClip(
             id: clipID,
             receiptID: receiptId,
-            deviceToken: deviceToken,
+            creatorDeviceID: deviceID,
             productID: productId,
             videoURL: videoURL,
             textOverlay: textOverlay,
             textPosition: textPosition,
             durationSeconds: durationSeconds,
-            couponCode: couponCode,
+            couponCode: account.walletCode,
             couponRedeemed: false,
             conversions: 0,
             bonusCouponCode: nil,
@@ -1257,13 +1681,26 @@ actor ClipStakesMockBackend {
         clips[clipID] = clip
         receipt.clipCreated = true
         receipts[receiptId] = receipt
+        persistState()
+
+        account = credit(
+            account: account,
+            deviceID: deviceID,
+            amountCents: Self.instantRewardCents,
+            kind: .clipPublished,
+            clipID: clipID,
+            orderID: nil
+        )
 
         return ClipStakesCreateClipResponse(
             clipID: clipID,
-            couponCode: couponCode,
-            couponValue: "$5.00",
-            passURL: URL(string: "https://api.clipstakes.app/pass/\(clipID)")!,
-            message: "Your clip is live! Here's $5 off your next purchase."
+            walletCode: account.walletCode,
+            instantCreditCents: Self.instantRewardCents,
+            instantCreditDisplay: Self.instantRewardCents.clipStakesCurrencyDisplay,
+            passURL: account.passURL,
+            availableBalanceCents: account.availableBalanceCents,
+            availableBalanceDisplay: account.availableBalanceCents.clipStakesCurrencyDisplay,
+            message: "Clip is live. Credit added to your wallet balance."
         )
     }
 
@@ -1281,36 +1718,36 @@ actor ClipStakesMockBackend {
         conversions.append(conversion)
 
         clip.conversions += 1
-
-        var bonusCouponCode = clip.bonusCouponCode
-        if bonusCouponCode == nil {
-            bonusCouponCode = Self.generateCoupon(prefix: "BONUS")
-            clip.bonusCouponCode = bonusCouponCode
-        }
+        let account = credit(
+            account: ensureRewardAccount(for: clip.creatorDeviceID),
+            deviceID: clip.creatorDeviceID,
+            amountCents: Self.conversionRewardCents,
+            kind: .conversion,
+            clipID: clip.id,
+            orderID: orderId
+        )
 
         let withinPushWindow = Date() < clip.expiresAt
-        var pushSent = false
-
-        if withinPushWindow, !clip.bonusPushed, clip.deviceToken != nil {
-            clip.bonusPushed = true
-            pushSent = true
-
+        if withinPushWindow {
             latestPushByClipID[clip.id] = ClipStakesNotificationEvent(
                 clipID: clip.id,
-                title: "Your clip just sold!",
-                body: "Someone bought because of you. Here's $5 more.",
-                bonusPassURL: URL(string: "https://api.clipstakes.app/pass/\(clip.id)/bonus"),
+                title: "Conversion reward earned",
+                body: "\(Self.conversionRewardCents.clipStakesCurrencyDisplay) added to your wallet balance.",
+                passURL: account.passURL,
                 createdAt: Date()
             )
         }
 
         clips[clipId] = clip
+        persistState()
 
         return ClipStakesConversionResponse(
             success: true,
-            bonusCouponCode: bonusCouponCode,
-            bonusPassURL: URL(string: "https://api.clipstakes.app/pass/\(clipId)/bonus"),
-            pushSent: pushSent,
+            creditedCents: Self.conversionRewardCents,
+            creditedDisplay: Self.conversionRewardCents.clipStakesCurrencyDisplay,
+            availableBalanceCents: account.availableBalanceCents,
+            availableBalanceDisplay: account.availableBalanceCents.clipStakesCurrencyDisplay,
+            pushSent: withinPushWindow,
             withinPushWindow: withinPushWindow
         )
     }
@@ -1327,6 +1764,7 @@ actor ClipStakesMockBackend {
             createdAt: Date()
         )
         receipts[orderId] = receipt
+        persistState()
         return receipt
     }
 
@@ -1351,6 +1789,20 @@ actor ClipStakesMockBackend {
 
     func latestNotification(for clipId: String) async -> ClipStakesNotificationEvent? {
         latestPushByClipID[clipId]
+    }
+
+    func getRewards(deviceID: String) async -> ClipStakesRewardsSnapshot {
+        let account = ensureRewardAccount(for: deviceID)
+
+        return ClipStakesRewardsSnapshot(
+            walletCode: account.walletCode,
+            passURL: account.passURL,
+            availableBalanceCents: account.availableBalanceCents,
+            availableBalanceDisplay: account.availableBalanceCents.clipStakesCurrencyDisplay,
+            lifetimeEarnedCents: account.lifetimeEarnedCents,
+            lifetimeEarnedDisplay: account.lifetimeEarnedCents.clipStakesCurrencyDisplay,
+            transactions: Array(account.transactions.prefix(20))
+        )
     }
 
     func prepareDemoCatalog(with products: [ClipStakesProduct]) {
@@ -1406,6 +1858,7 @@ actor ClipStakesMockBackend {
             clipCreated: false,
             createdAt: Date().addingTimeInterval(-2400)
         )
+        persistState()
     }
 
     // MARK: - Seed Data
@@ -1432,7 +1885,7 @@ actor ClipStakesMockBackend {
                 position: .bottom,
                 conversions: 4,
                 minutesAgo: 70,
-                creatorToken: "token-seed-1"
+                creatorDeviceID: "seed-device-1"
             ),
             Self.makeSeedClip(
                 clipId: "clip_seed_2",
@@ -1442,7 +1895,7 @@ actor ClipStakesMockBackend {
                 position: .top,
                 conversions: 2,
                 minutesAgo: 20,
-                creatorToken: nil
+                creatorDeviceID: "seed-device-2"
             ),
             Self.makeSeedClip(
                 clipId: "clip_seed_3",
@@ -1452,7 +1905,7 @@ actor ClipStakesMockBackend {
                 position: .center,
                 conversions: 1,
                 minutesAgo: 35,
-                creatorToken: "token-seed-3"
+                creatorDeviceID: "seed-device-3"
             ),
         ]
 
@@ -1471,23 +1924,23 @@ actor ClipStakesMockBackend {
         position: ClipStakesTextPosition,
         conversions: Int,
         minutesAgo: Int,
-        creatorToken: String?
+        creatorDeviceID: String
     ) -> ClipStakesClip {
         let created = Date().addingTimeInterval(TimeInterval(-60 * minutesAgo))
 
         return ClipStakesClip(
             id: clipId,
             receiptID: receiptId,
-            deviceToken: creatorToken,
+            creatorDeviceID: creatorDeviceID,
             productID: productId,
-            videoURL: URL(string: "https://r2.clipstakes.app/seeds/\(clipId).mp4")!,
+            videoURL: fallbackPlayableVideoURL(seed: clipId),
             textOverlay: text,
             textPosition: position,
             durationSeconds: 9,
-            couponCode: Self.generateCoupon(prefix: "CLIP"),
+            couponCode: Self.generateWalletCode(),
             couponRedeemed: false,
             conversions: conversions,
-            bonusCouponCode: conversions > 0 ? Self.generateCoupon(prefix: "BONUS") : nil,
+            bonusCouponCode: nil,
             bonusPushed: false,
             bonusRedeemed: false,
             isActive: true,
@@ -1496,9 +1949,124 @@ actor ClipStakesMockBackend {
         )
     }
 
-    private static func generateCoupon(prefix: String) -> String {
+    private func ensureRewardAccount(for deviceID: String) -> RewardAccount {
+        if let existing = rewardAccountsByDeviceID[deviceID] {
+            return existing
+        }
+
+        let walletCode = Self.generateWalletCode()
+        let passURL = URL(string: "https://clipstakes.skilled5041.workers.dev/wallet/\(walletCode)/pass")!
+        let account = RewardAccount(
+            walletCode: walletCode,
+            passURL: passURL,
+            availableBalanceCents: 0,
+            lifetimeEarnedCents: 0,
+            transactions: []
+        )
+        rewardAccountsByDeviceID[deviceID] = account
+        return account
+    }
+
+    private func credit(
+        account: RewardAccount,
+        deviceID: String,
+        amountCents: Int,
+        kind: ClipStakesRewardTransaction.Kind,
+        clipID: String,
+        orderID: String?
+    ) -> RewardAccount {
+        var updated = account
+        updated.availableBalanceCents += amountCents
+        updated.lifetimeEarnedCents += amountCents
+
+        let transaction = ClipStakesRewardTransaction(
+            id: UUID().uuidString.lowercased(),
+            kind: kind,
+            amountCents: amountCents,
+            amountDisplay: amountCents.clipStakesCurrencyDisplay,
+            clipID: clipID,
+            orderID: orderID,
+            createdAt: Date()
+        )
+        updated.transactions.insert(transaction, at: 0)
+        rewardAccountsByDeviceID[deviceID] = updated
+        return updated
+    }
+
+    private static func generateWalletCode() -> String {
         let stamp = String(Int(Date().timeIntervalSince1970), radix: 36).uppercased()
-        return "\(prefix)-\(stamp)-\(Int.random(in: 100...999))"
+        return "CLIP-\(stamp)-\(Int.random(in: 100...999))"
+    }
+
+    private static func makePersistenceURL() -> URL {
+        let fileManager = FileManager.default
+        let baseDirectory = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
+            ?? fileManager.temporaryDirectory
+        let stateDirectory = baseDirectory.appendingPathComponent("clipstakes", isDirectory: true)
+        try? fileManager.createDirectory(at: stateDirectory, withIntermediateDirectories: true)
+        return stateDirectory.appendingPathComponent("mock-backend-state.json")
+    }
+
+    private func migrateLegacyVideoHosts() -> Bool {
+        var didChange = false
+
+        for (clipID, clip) in clips {
+            guard clip.videoURL.host?.lowercased() == "r2.clipstakes.app" else { continue }
+            let replacement = Self.fallbackPlayableVideoURL(seed: clipID)
+            guard replacement != clip.videoURL else { continue }
+
+            clips[clipID] = Self.copy(clip: clip, replacingVideoURLWith: replacement)
+            didChange = true
+        }
+
+        return didChange
+    }
+
+    private static func copy(clip: ClipStakesClip, replacingVideoURLWith videoURL: URL) -> ClipStakesClip {
+        ClipStakesClip(
+            id: clip.id,
+            receiptID: clip.receiptID,
+            creatorDeviceID: clip.creatorDeviceID,
+            productID: clip.productID,
+            videoURL: videoURL,
+            textOverlay: clip.textOverlay,
+            textPosition: clip.textPosition,
+            durationSeconds: clip.durationSeconds,
+            couponCode: clip.couponCode,
+            couponRedeemed: clip.couponRedeemed,
+            conversions: clip.conversions,
+            bonusCouponCode: clip.bonusCouponCode,
+            bonusPushed: clip.bonusPushed,
+            bonusRedeemed: clip.bonusRedeemed,
+            isActive: clip.isActive,
+            createdAt: clip.createdAt,
+            expiresAt: clip.expiresAt
+        )
+    }
+
+    private static func fallbackPlayableVideoURL(seed: String) -> URL {
+        let score = seed.unicodeScalars.reduce(into: 0) { partialResult, scalar in
+            partialResult += Int(scalar.value)
+        }
+        let index = score % fallbackVideoCatalog.count
+        return fallbackVideoCatalog[index]
+    }
+
+    private static func loadPersistedState(from url: URL) -> PersistedState? {
+        guard let data = try? Data(contentsOf: url) else { return nil }
+        return try? JSONDecoder().decode(PersistedState.self, from: data)
+    }
+
+    private func persistState() {
+        let snapshot = PersistedState(
+            clips: Array(clips.values),
+            receipts: Array(receipts.values),
+            orderCounter: orderCounter,
+            demoSeedKey: demoSeedKey
+        )
+
+        guard let data = try? JSONEncoder().encode(snapshot) else { return }
+        try? data.write(to: persistenceURL, options: [.atomic])
     }
 }
 
@@ -1602,7 +2170,7 @@ enum ClipStakesCatalog {
 struct ClipStakesClip: Identifiable, Codable, Hashable {
     let id: String
     let receiptID: String
-    let deviceToken: String?
+    let creatorDeviceID: String
     var productID: String
     let videoURL: URL
     let textOverlay: String?
@@ -1649,16 +2217,21 @@ struct ClipStakesUploadURLResponse: Hashable {
 
 struct ClipStakesCreateClipResponse: Hashable {
     let clipID: String
-    let couponCode: String
-    let couponValue: String
+    let walletCode: String
+    let instantCreditCents: Int
+    let instantCreditDisplay: String
     let passURL: URL
+    let availableBalanceCents: Int
+    let availableBalanceDisplay: String
     let message: String
 }
 
 struct ClipStakesConversionResponse: Hashable {
     let success: Bool
-    let bonusCouponCode: String?
-    let bonusPassURL: URL?
+    let creditedCents: Int
+    let creditedDisplay: String
+    let availableBalanceCents: Int
+    let availableBalanceDisplay: String
     let pushSent: Bool
     let withinPushWindow: Bool
 }
@@ -1680,8 +2253,33 @@ struct ClipStakesNotificationEvent: Hashable {
     let clipID: String
     let title: String
     let body: String
-    let bonusPassURL: URL?
+    let passURL: URL?
     let createdAt: Date
+}
+
+struct ClipStakesRewardTransaction: Identifiable, Hashable {
+    enum Kind: String, Hashable {
+        case clipPublished
+        case conversion
+    }
+
+    let id: String
+    let kind: Kind
+    let amountCents: Int
+    let amountDisplay: String
+    let clipID: String
+    let orderID: String?
+    let createdAt: Date
+}
+
+struct ClipStakesRewardsSnapshot: Hashable {
+    let walletCode: String
+    let passURL: URL
+    let availableBalanceCents: Int
+    let availableBalanceDisplay: String
+    let lifetimeEarnedCents: Int
+    let lifetimeEarnedDisplay: String
+    let transactions: [ClipStakesRewardTransaction]
 }
 
 enum ClipStakesBackendError: LocalizedError {
@@ -1708,10 +2306,597 @@ enum ClipStakesBackendError: LocalizedError {
 }
 
 extension Date {
-    func clipStakesRelativeDescription(reference: Date = Date()) -> String {
+    nonisolated func clipStakesRelativeDescription(reference: Date = Date()) -> String {
         let formatter = RelativeDateTimeFormatter()
         formatter.unitsStyle = .abbreviated
         return formatter.localizedString(for: self, relativeTo: reference)
+    }
+}
+
+extension Int {
+    nonisolated var clipStakesCurrencyDisplay: String {
+        String(format: "$%.2f", Double(self) / 100.0)
+    }
+}
+
+// MARK: - From Submissions/clipstakes/ClipStakesRemoteBackend.swift
+
+import Foundation
+
+enum ClipStakesRemoteBackendError: LocalizedError {
+    case network(URLError)
+    case requestFailed(statusCode: Int, message: String)
+    case invalidResponse(String)
+
+    var isConnectivityIssue: Bool {
+        switch self {
+        case .network(let error):
+            switch error.code {
+            case .cannotFindHost,
+                 .cannotConnectToHost,
+                 .dnsLookupFailed,
+                 .networkConnectionLost,
+                 .notConnectedToInternet,
+                 .timedOut:
+                return true
+            default:
+                return false
+            }
+        case .requestFailed, .invalidResponse:
+            return false
+        }
+    }
+
+    var errorDescription: String? {
+        switch self {
+        case .network(let error):
+            return error.localizedDescription
+        case .requestFailed(_, let message):
+            return message
+        case .invalidResponse(let message):
+            return message
+        }
+    }
+}
+
+enum ClipStakesRemoteBackend {
+    nonisolated static let defaultAPIBaseURL = URL(string: "https://clipstakes.skilled5041.workers.dev")!
+
+    private static let session: URLSession = {
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.timeoutIntervalForRequest = 15
+        configuration.timeoutIntervalForResource = 25
+        return URLSession(configuration: configuration)
+    }()
+
+    nonisolated static func resolveAPIBaseURL(override: String?) -> URL {
+        if let override, let url = normalizedURL(from: override) {
+            return url
+        }
+
+        if let persisted = UserDefaults.standard.string(forKey: "clipstakes.api_base_url"),
+           let url = normalizedURL(from: persisted) {
+            return url
+        }
+
+        return defaultAPIBaseURL
+    }
+
+    nonisolated static func fallbackWalletPassURL(apiBaseURL: URL, walletCode: String) -> URL {
+        apiBaseURL
+            .appendingPathComponent("wallet")
+            .appendingPathComponent(walletCode)
+            .appendingPathComponent("pass")
+    }
+
+    static func getReceipt(
+        receiptId: String,
+        apiBaseURL: URL,
+        deviceID: String
+    ) async throws -> ClipStakesReceipt {
+        do {
+            let response = try await requestJSON(
+                apiBaseURL: apiBaseURL,
+                paths: ["/receipt/\(receiptId)"],
+                method: "GET",
+                deviceID: deviceID,
+                body: nil
+            )
+            let payload = payloadDict(from: response)
+
+            let productIDs = productIDsFromReceiptPayload(payload)
+            let clipCreated = boolValue(for: ["clip_created", "clipCreated"], in: payload) ?? false
+            let createdAt = dateValue(for: ["created_at", "createdAt"], in: payload) ?? Date()
+
+            guard !productIDs.isEmpty else {
+                throw ClipStakesRemoteBackendError.invalidResponse("Receipt response did not include product IDs.")
+            }
+
+            return ClipStakesReceipt(
+                id: receiptId,
+                productIDs: productIDs,
+                clipCreated: clipCreated,
+                createdAt: createdAt
+            )
+        } catch let error as ClipStakesRemoteBackendError {
+            if case .requestFailed(let statusCode, _) = error {
+                if statusCode == 404 { throw ClipStakesBackendError.receiptNotFound }
+                if statusCode == 409 || statusCode == 422 { throw ClipStakesBackendError.receiptAlreadyUsed }
+            }
+            throw error
+        }
+    }
+
+    static func createUploadURL(
+        receiptId: String,
+        productId: String,
+        apiBaseURL: URL,
+        deviceID: String
+    ) async throws -> ClipStakesUploadURLResponse {
+        let requestBody: [String: Any] = [
+            "receipt_id": receiptId,
+            "product_id": productId
+        ]
+
+        let response = try await requestJSON(
+            apiBaseURL: apiBaseURL,
+            paths: ["/upload", "/upload-url"],
+            method: "POST",
+            deviceID: deviceID,
+            body: requestBody
+        )
+
+        let payload = payloadDict(from: response)
+        guard let uploadURLString = stringValue(for: ["upload_url", "uploadURL"], in: payload),
+              let videoURLString = stringValue(for: ["video_url", "videoURL"], in: payload),
+              let uploadURL = makeURL(from: uploadURLString, apiBaseURL: apiBaseURL),
+              let videoURL = makeURL(from: videoURLString, apiBaseURL: apiBaseURL)
+        else {
+            throw ClipStakesRemoteBackendError.invalidResponse("Upload response missing upload_url or video_url.")
+        }
+
+        let key = stringValue(for: ["key"], in: payload)
+            ?? videoURL.path.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+
+        return ClipStakesUploadURLResponse(
+            uploadURL: uploadURL,
+            videoURL: videoURL,
+            key: key
+        )
+    }
+
+    static func createClip(
+        receiptId: String,
+        deviceID: String,
+        productId: String,
+        videoURL: URL,
+        textOverlay: String?,
+        textPosition: ClipStakesTextPosition,
+        durationSeconds: Int,
+        apiBaseURL: URL
+    ) async throws -> ClipStakesCreateClipResponse {
+        var requestBody: [String: Any] = [
+            "receipt_id": receiptId,
+            "product_id": productId,
+            "video_url": videoURL.absoluteString,
+            "text_position": textPosition.rawValue,
+            "duration_seconds": durationSeconds
+        ]
+        if let textOverlay, !textOverlay.isEmpty {
+            requestBody["text_overlay"] = textOverlay
+        }
+
+        do {
+            let response = try await requestJSON(
+                apiBaseURL: apiBaseURL,
+                paths: ["/clips"],
+                method: "POST",
+                deviceID: deviceID,
+                body: requestBody
+            )
+            let payload = payloadDict(from: response)
+            let wallet = dictValue(for: ["wallet"], in: payload) ?? [:]
+
+            let clipID = stringValue(for: ["clip_id", "clipId", "id"], in: payload)
+                ?? UUID().uuidString.lowercased()
+
+            guard let walletCode = stringValue(
+                for: ["code", "wallet_code", "walletCode", "coupon_code", "couponCode"],
+                in: wallet,
+                fallback: payload
+            ) else {
+                throw ClipStakesRemoteBackendError.invalidResponse("Clip response missing wallet code.")
+            }
+
+            let backendPassURL = urlValue(
+                for: ["pass_url", "wallet_pass_url", "passURL", "url"],
+                in: wallet,
+                apiBaseURL: apiBaseURL
+            ) ?? urlValue(
+                for: ["pass_url", "wallet_pass_url", "passURL"],
+                in: payload,
+                apiBaseURL: apiBaseURL
+            )
+
+            let passURL = backendPassURL ?? fallbackWalletPassURL(apiBaseURL: apiBaseURL, walletCode: walletCode)
+
+            let instantCreditCents = intValue(
+                for: ["instant_credit_cents", "instantCreditCents", "credited_cents", "creditedCents"],
+                in: payload
+            ) ?? 0
+
+            let availableBalanceCents = intValue(
+                for: ["available_balance_cents", "availableBalanceCents", "balance_cents", "balanceCents"],
+                in: payload
+            ) ?? 0
+
+            let message = stringValue(for: ["message"], in: payload)
+                ?? "Clip created."
+
+            return ClipStakesCreateClipResponse(
+                clipID: clipID,
+                walletCode: walletCode,
+                instantCreditCents: instantCreditCents,
+                instantCreditDisplay: instantCreditCents.clipStakesCurrencyDisplay,
+                passURL: passURL,
+                availableBalanceCents: availableBalanceCents,
+                availableBalanceDisplay: availableBalanceCents.clipStakesCurrencyDisplay,
+                message: message
+            )
+        } catch let error as ClipStakesRemoteBackendError {
+            if case .requestFailed(let statusCode, _) = error, statusCode == 409 {
+                throw ClipStakesBackendError.receiptAlreadyUsed
+            }
+            throw error
+        }
+    }
+
+    static func getRewards(
+        deviceID: String,
+        apiBaseURL: URL
+    ) async throws -> ClipStakesRewardsSnapshot {
+        let response = try await requestJSON(
+            apiBaseURL: apiBaseURL,
+            paths: ["/rewards/me"],
+            method: "GET",
+            deviceID: deviceID,
+            body: nil
+        )
+
+        let payload = payloadDict(from: response)
+        let wallet = dictValue(for: ["wallet"], in: payload) ?? payload
+
+        guard let walletCode = stringValue(
+            for: ["code", "wallet_code", "walletCode", "coupon_code", "couponCode"],
+            in: wallet,
+            fallback: payload
+        ) else {
+            throw ClipStakesRemoteBackendError.invalidResponse("Rewards response missing wallet code.")
+        }
+
+        let passURL = urlValue(
+            for: ["pass_url", "wallet_pass_url", "passURL", "url"],
+            in: wallet,
+            apiBaseURL: apiBaseURL
+        ) ?? urlValue(
+            for: ["pass_url", "wallet_pass_url", "passURL"],
+            in: payload,
+            apiBaseURL: apiBaseURL
+        ) ?? fallbackWalletPassURL(apiBaseURL: apiBaseURL, walletCode: walletCode)
+
+        let availableBalanceCents = intValue(
+            for: ["available_balance_cents", "availableBalanceCents", "balance_cents", "balanceCents"],
+            in: wallet,
+            fallback: payload
+        ) ?? 0
+
+        let lifetimeEarnedCents = intValue(
+            for: ["lifetime_earned_cents", "lifetimeEarnedCents"],
+            in: wallet,
+            fallback: payload
+        ) ?? availableBalanceCents
+
+        let transactions = parseTransactions(
+            from: arrayValue(for: ["transactions"], in: payload)
+                ?? arrayValue(for: ["transactions"], in: wallet)
+                ?? []
+        )
+
+        return ClipStakesRewardsSnapshot(
+            walletCode: walletCode,
+            passURL: passURL,
+            availableBalanceCents: availableBalanceCents,
+            availableBalanceDisplay: availableBalanceCents.clipStakesCurrencyDisplay,
+            lifetimeEarnedCents: lifetimeEarnedCents,
+            lifetimeEarnedDisplay: lifetimeEarnedCents.clipStakesCurrencyDisplay,
+            transactions: transactions
+        )
+    }
+
+    // MARK: - Networking
+
+    private static func requestJSON(
+        apiBaseURL: URL,
+        paths: [String],
+        method: String,
+        deviceID: String,
+        body: [String: Any]?
+    ) async throws -> [String: Any] {
+        var lastError: Error?
+
+        for path in paths {
+            do {
+                return try await requestJSON(
+                    apiBaseURL: apiBaseURL,
+                    path: path,
+                    method: method,
+                    deviceID: deviceID,
+                    body: body
+                )
+            } catch let error as ClipStakesRemoteBackendError {
+                lastError = error
+                if case .requestFailed(let statusCode, _) = error, statusCode == 404 {
+                    continue
+                }
+                throw error
+            } catch {
+                lastError = error
+                throw error
+            }
+        }
+
+        throw (lastError as? ClipStakesRemoteBackendError)
+            ?? ClipStakesRemoteBackendError.invalidResponse("No valid backend endpoint found.")
+    }
+
+    private static func requestJSON(
+        apiBaseURL: URL,
+        path: String,
+        method: String,
+        deviceID: String,
+        body: [String: Any]?
+    ) async throws -> [String: Any] {
+        let url = urlForPath(path, apiBaseURL: apiBaseURL)
+        var request = URLRequest(url: url)
+        request.httpMethod = method
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+        request.setValue(deviceID, forHTTPHeaderField: "X-Device-ID")
+
+        if let body {
+            request.httpBody = try JSONSerialization.data(withJSONObject: body)
+            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        }
+
+        do {
+            let (data, response) = try await session.data(for: request)
+            guard let httpResponse = response as? HTTPURLResponse else {
+                throw ClipStakesRemoteBackendError.invalidResponse("Backend returned a non-HTTP response.")
+            }
+
+            let object = try jsonObject(from: data)
+            if (200 ... 299).contains(httpResponse.statusCode) {
+                return object
+            }
+
+            let payload = payloadDict(from: object)
+            let message = stringValue(for: ["message", "error", "detail"], in: payload)
+                ?? stringValue(for: ["message", "error", "detail"], in: object)
+                ?? HTTPURLResponse.localizedString(forStatusCode: httpResponse.statusCode)
+
+            throw ClipStakesRemoteBackendError.requestFailed(
+                statusCode: httpResponse.statusCode,
+                message: message
+            )
+        } catch let error as URLError {
+            throw ClipStakesRemoteBackendError.network(error)
+        } catch let error as ClipStakesRemoteBackendError {
+            throw error
+        } catch {
+            throw ClipStakesRemoteBackendError.invalidResponse(error.localizedDescription)
+        }
+    }
+
+    // MARK: - Parsing
+
+    private static func parseTransactions(from raw: [[String: Any]]) -> [ClipStakesRewardTransaction] {
+        raw.compactMap { item in
+            let amount = intValue(for: ["amount_cents", "amountCents", "amount"], in: item) ?? 0
+            let kindRaw = stringValue(for: ["kind", "type", "event"], in: item)?.lowercased() ?? ""
+            let kind: ClipStakesRewardTransaction.Kind = kindRaw.contains("conversion") ? .conversion : .clipPublished
+
+            return ClipStakesRewardTransaction(
+                id: stringValue(for: ["id"], in: item) ?? UUID().uuidString.lowercased(),
+                kind: kind,
+                amountCents: amount,
+                amountDisplay: amount.clipStakesCurrencyDisplay,
+                clipID: stringValue(for: ["clip_id", "clipId"], in: item) ?? "",
+                orderID: stringValue(for: ["order_id", "orderId"], in: item),
+                createdAt: dateValue(for: ["created_at", "createdAt"], in: item) ?? Date()
+            )
+        }
+    }
+
+    private static func productIDsFromReceiptPayload(_ payload: [String: Any]) -> [String] {
+        if let ids = stringArrayValue(for: ["product_ids", "productIds"], in: payload), !ids.isEmpty {
+            return ids
+        }
+
+        if let products = arrayValue(for: ["products"], in: payload) {
+            let ids = products.compactMap { stringValue(for: ["id", "product_id", "productId"], in: $0) }
+            if !ids.isEmpty { return ids }
+        }
+
+        if let items = arrayValue(for: ["items", "line_items", "lineItems"], in: payload) {
+            let ids = items.compactMap { stringValue(for: ["product_id", "productId", "id"], in: $0) }
+            if !ids.isEmpty { return ids }
+        }
+
+        return []
+    }
+
+    private static func payloadDict(from object: [String: Any]) -> [String: Any] {
+        if let data = object["data"] as? [String: Any] {
+            return data
+        }
+        return object
+    }
+
+    private static func jsonObject(from data: Data) throws -> [String: Any] {
+        guard !data.isEmpty else { return [:] }
+        let json = try JSONSerialization.jsonObject(with: data)
+        if let dict = json as? [String: Any] {
+            return dict
+        }
+        if let array = json as? [[String: Any]] {
+            return ["items": array]
+        }
+        return [:]
+    }
+
+    private static func urlForPath(_ path: String, apiBaseURL: URL) -> URL {
+        if let absolute = URL(string: path), absolute.scheme != nil {
+            return absolute
+        }
+        let trimmed = path.hasPrefix("/") ? String(path.dropFirst()) : path
+        return apiBaseURL.appendingPathComponent(trimmed)
+    }
+
+    private static func makeURL(from raw: String, apiBaseURL: URL) -> URL? {
+        if let absolute = URL(string: raw), absolute.scheme != nil {
+            return absolute
+        }
+        return urlForPath(raw, apiBaseURL: apiBaseURL)
+    }
+
+    private nonisolated static func normalizedURL(from raw: String) -> URL? {
+        let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty, let parsed = URL(string: trimmed),
+              let scheme = parsed.scheme?.lowercased(),
+              scheme == "https" || scheme == "http" else {
+            return nil
+        }
+
+        let path = parsed.path.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+        if path.isEmpty { return parsed }
+
+        var components = URLComponents(url: parsed, resolvingAgainstBaseURL: false)
+        components?.path = "/\(path)"
+        return components?.url ?? parsed
+    }
+
+    private static func value(for keys: [String], in object: [String: Any]) -> Any? {
+        for key in keys {
+            if let value = object[key] {
+                return value
+            }
+        }
+        return nil
+    }
+
+    private static func dictValue(for keys: [String], in object: [String: Any]) -> [String: Any]? {
+        value(for: keys, in: object) as? [String: Any]
+    }
+
+    private static func arrayValue(for keys: [String], in object: [String: Any]) -> [[String: Any]]? {
+        guard let raw = value(for: keys, in: object) as? [Any] else { return nil }
+        return raw.compactMap { $0 as? [String: Any] }
+    }
+
+    private static func stringArrayValue(for keys: [String], in object: [String: Any]) -> [String]? {
+        guard let raw = value(for: keys, in: object) as? [Any] else { return nil }
+        let values = raw.compactMap { item -> String? in
+            if let string = item as? String { return string }
+            if let number = item as? NSNumber { return number.stringValue }
+            return nil
+        }
+        return values.isEmpty ? nil : values
+    }
+
+    private static func stringValue(
+        for keys: [String],
+        in object: [String: Any],
+        fallback: [String: Any]? = nil
+    ) -> String? {
+        if let value = value(for: keys, in: object) {
+            if let string = value as? String { return string }
+            if let number = value as? NSNumber { return number.stringValue }
+        }
+
+        if let fallback {
+            return stringValue(for: keys, in: fallback)
+        }
+
+        return nil
+    }
+
+    private static func intValue(
+        for keys: [String],
+        in object: [String: Any],
+        fallback: [String: Any]? = nil
+    ) -> Int? {
+        if let value = value(for: keys, in: object) {
+            if let integer = value as? Int { return integer }
+            if let number = value as? NSNumber { return number.intValue }
+            if let string = value as? String { return Int(string) }
+        }
+
+        if let fallback {
+            return intValue(for: keys, in: fallback)
+        }
+
+        return nil
+    }
+
+    private static func boolValue(for keys: [String], in object: [String: Any]) -> Bool? {
+        if let value = value(for: keys, in: object) {
+            if let bool = value as? Bool { return bool }
+            if let number = value as? NSNumber { return number.boolValue }
+            if let string = value as? String {
+                switch string.lowercased() {
+                case "true", "1", "yes":
+                    return true
+                case "false", "0", "no":
+                    return false
+                default:
+                    return nil
+                }
+            }
+        }
+        return nil
+    }
+
+    private static func urlValue(for keys: [String], in object: [String: Any], apiBaseURL: URL) -> URL? {
+        guard let raw = stringValue(for: keys, in: object) else { return nil }
+        return makeURL(from: raw, apiBaseURL: apiBaseURL)
+    }
+
+    private static func dateValue(for keys: [String], in object: [String: Any]) -> Date? {
+        guard let raw = value(for: keys, in: object) else { return nil }
+
+        if let timestamp = raw as? TimeInterval {
+            return Date(timeIntervalSince1970: timestamp)
+        }
+        if let number = raw as? NSNumber {
+            return Date(timeIntervalSince1970: number.doubleValue)
+        }
+        if let string = raw as? String {
+            if let seconds = TimeInterval(string) {
+                return Date(timeIntervalSince1970: seconds)
+            }
+
+            let isoFormatter = ISO8601DateFormatter()
+            isoFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+            if let date = isoFormatter.date(from: string) {
+                return date
+            }
+
+            let plainFormatter = ISO8601DateFormatter()
+            if let date = plainFormatter.date(from: string) {
+                return date
+            }
+        }
+
+        return nil
     }
 }
 
@@ -1941,6 +3126,46 @@ enum ClipStakesClipboard {
     }
 }
 
+enum ClipStakesURLLauncher {
+    static func isReachable(_ url: URL, timeout: TimeInterval = 2.5) async -> Bool {
+        guard let scheme = url.scheme?.lowercased(), scheme == "http" || scheme == "https" else {
+            return true
+        }
+
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.timeoutIntervalForRequest = timeout
+        configuration.timeoutIntervalForResource = timeout
+        let session = URLSession(configuration: configuration)
+
+        var headRequest = URLRequest(url: url)
+        headRequest.httpMethod = "HEAD"
+
+        do {
+            let (_, response) = try await session.data(for: headRequest)
+            return response is HTTPURLResponse
+        } catch {
+            var rangeRequest = URLRequest(url: url)
+            rangeRequest.httpMethod = "GET"
+            rangeRequest.setValue("bytes=0-0", forHTTPHeaderField: "Range")
+            do {
+                let (_, response) = try await session.data(for: rangeRequest)
+                return response is HTTPURLResponse
+            } catch {
+                return false
+            }
+        }
+    }
+
+    @MainActor
+    static func open(_ url: URL) async -> Bool {
+        await withCheckedContinuation { continuation in
+            UIApplication.shared.open(url, options: [:]) { success in
+                continuation.resume(returning: success)
+            }
+        }
+    }
+}
+
 // MARK: - From Submissions/clipstakes/ClipStakesVideoCompositor.swift
 
 import AVFoundation
@@ -2081,6 +3306,7 @@ enum ClipStakesVideoCompositor {
 import AVFoundation
 internal import Combine
 import SwiftUI
+import UIKit
 
 struct ClipStakesVideoRecorder: View {
     let minDuration: TimeInterval
@@ -2094,8 +3320,13 @@ struct ClipStakesVideoRecorder: View {
 
     private let simulatorTicker = Timer.publish(every: 0.1, on: .main, in: .common).autoconnect()
 
+    private var recordingCanvasHeight: CGFloat {
+        let screenHeight = UIScreen.main.bounds.height
+        return max(360, min(560, screenHeight * 0.62))
+    }
+
     var body: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: 0) {
             if controller.useSimulatorFallback {
                 simulatorBody
             } else {
@@ -2103,11 +3334,20 @@ struct ClipStakesVideoRecorder: View {
             }
 
             if let message = controller.errorMessage ?? simulatorError {
-                Text(message)
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundStyle(.orange)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 20)
+                HStack(spacing: 5) {
+                    Image(systemName: "exclamationmark.circle.fill")
+                        .font(.system(size: 10))
+                    Text(message)
+                        .font(.system(size: 11, weight: .medium, design: .rounded))
+                }
+                .foregroundStyle(ClipStakesPalette.neonOrange)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+                .frame(maxWidth: .infinity)
+                .background(ClipStakesPalette.neonOrange.opacity(0.08), in: RoundedRectangle(cornerRadius: 10))
+                .padding(.horizontal, 12)
+                .padding(.bottom, 8)
             }
         }
         .onAppear {
@@ -2127,148 +3367,257 @@ struct ClipStakesVideoRecorder: View {
 
     private var cameraBody: some View {
         VStack(spacing: 14) {
-            ZStack {
+            ZStack(alignment: .topLeading) {
                 ClipStakesCameraPreview(session: controller.session)
-                    .frame(height: 330)
-                    .clipShape(RoundedRectangle(cornerRadius: 20))
+                    .frame(maxWidth: .infinity)
+                    .frame(height: recordingCanvasHeight)
+                    .background(Color.black)
+                    .clipShape(RoundedRectangle(cornerRadius: 18))
 
-                VStack {
-                    HStack {
-                        recordPill(elapsed: controller.elapsed, mode: .camera)
-                        Spacer()
-                    }
-                    .padding(12)
+                LinearGradient(
+                    colors: [Color.black.opacity(0.35), Color.clear, Color.black.opacity(0.45)],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+                .clipShape(RoundedRectangle(cornerRadius: 18))
+
+                HStack(spacing: 8) {
+                    recordPill(elapsed: controller.elapsed, mode: .camera)
                     Spacer()
-                }
-            }
-            .overlay {
-                if !controller.isSessionRunning {
-                    VStack(spacing: 8) {
-                        ProgressView()
-                        Text("Preparing camera...")
-                            .font(.system(size: 13))
-                            .foregroundStyle(.secondary)
-                    }
-                }
-            }
-            .padding(.horizontal, 16)
-
-            Button {
-                if controller.isRecording {
-                    controller.stopRecording()
-                } else {
-                    simulatorError = nil
-                    controller.startRecording()
-                }
-            } label: {
-                ZStack {
-                    Circle()
-                        .fill(controller.isRecording ? Color.red : Color.white)
-                        .frame(width: 74, height: 74)
-
                     if controller.isRecording {
-                        RoundedRectangle(cornerRadius: 8)
-                            .fill(.white)
-                            .frame(width: 24, height: 24)
-                    } else {
-                        Circle()
-                            .strokeBorder(Color.red, lineWidth: 6)
-                            .frame(width: 34, height: 34)
+                        Text("REC")
+                            .font(.system(size: 10, weight: .black, design: .rounded))
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(Color.red, in: Capsule())
                     }
                 }
-                .shadow(color: .black.opacity(0.2), radius: 8, y: 3)
-            }
-            .buttonStyle(.plain)
+                .padding(12)
 
-            Text("Record a real clip (5–15s) on device")
-                .font(.system(size: 12, weight: .medium))
-                .foregroundStyle(.secondary)
+                if !controller.isSessionRunning, controller.errorMessage == nil {
+                    VStack(spacing: 6) {
+                        ProgressView()
+                            .tint(.white)
+                        Text("Preparing camera...")
+                            .font(.system(size: 11, weight: .medium, design: .rounded))
+                            .foregroundStyle(.white.opacity(0.5))
+                    }
+                }
+
+                if controller.isFinalizing {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 18)
+                            .fill(Color.black.opacity(0.45))
+                        HStack(spacing: 8) {
+                            ProgressView()
+                                .tint(.white)
+                            Text("Finalizing clip...")
+                                .font(.system(size: 12, weight: .semibold, design: .rounded))
+                                .foregroundStyle(.white)
+                        }
+                    }
+                }
+            }
+            .overlay(
+                RoundedRectangle(cornerRadius: 18)
+                    .stroke(Color.white.opacity(0.1), lineWidth: 0.5)
+            )
+            .padding(.horizontal, 2)
+
+            if controller.isFinalizing {
+                HStack(spacing: 8) {
+                    ProgressView()
+                        .tint(ClipStakesPalette.neonBlue)
+                    Text("Saving your recording")
+                        .font(.system(size: 12, weight: .semibold, design: .rounded))
+                        .foregroundStyle(.white.opacity(0.8))
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 14)
+                .background(Color.white.opacity(0.12), in: RoundedRectangle(cornerRadius: 14))
+            } else {
+                let canStopRecording = controller.elapsed >= minDuration
+                recordButton(
+                    isRecording: controller.isRecording,
+                    canStop: canStopRecording,
+                    remainingSeconds: max(0, Int(ceil(minDuration - controller.elapsed))),
+                    onTap: {
+                        if controller.isRecording {
+                            guard canStopRecording else { return }
+                            controller.stopRecording()
+                        } else {
+                            simulatorError = nil
+                            controller.startRecording()
+                        }
+                    },
+                    accentColor: .red
+                )
+            }
+
+            recorderHint(
+                controller.isFinalizing
+                    ? "Please wait while the clip is saved."
+                    : (controller.isRecording
+                        ? "Recording live. Tap again to stop."
+                        : "Capture a vertical clip (5-15s).")
+            )
         }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 10)
     }
 
     private var simulatorBody: some View {
         VStack(spacing: 14) {
-            ZStack {
-                RoundedRectangle(cornerRadius: 20)
+            ZStack(alignment: .topLeading) {
+                RoundedRectangle(cornerRadius: 16)
                     .fill(
                         LinearGradient(
-                            colors: [Color.blue.opacity(0.35), Color.green.opacity(0.3)],
+                            colors: [
+                                ClipStakesPalette.neonBlue.opacity(0.15),
+                                ClipStakesPalette.mint.opacity(0.1)
+                            ],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
                         )
                     )
-                    .frame(height: 330)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: recordingCanvasHeight)
+                    .clipShape(RoundedRectangle(cornerRadius: 18))
 
-                VStack(spacing: 10) {
+                VStack(spacing: 8) {
                     Image(systemName: "iphone.gen3.radiowaves.left.and.right")
-                        .font(.system(size: 38))
-                        .foregroundStyle(.white)
-                    Text("Simulator Recording Mode")
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundStyle(.white)
-                    Text("Use a physical iPhone for camera capture")
-                        .font(.system(size: 12))
-                        .foregroundStyle(.white.opacity(0.85))
+                        .font(.system(size: 30, weight: .light))
+                        .foregroundStyle(.white.opacity(0.4))
+                    Text("Simulator Mode")
+                        .font(.system(size: 14, weight: .semibold, design: .rounded))
+                        .foregroundStyle(.white.opacity(0.6))
+                    Text("Use a physical iPhone for camera")
+                        .font(.system(size: 11, weight: .medium, design: .rounded))
+                        .foregroundStyle(.white.opacity(0.3))
                 }
 
-                VStack {
-                    HStack {
-                        recordPill(elapsed: simulatorElapsed, mode: .simulator)
-                        Spacer()
-                    }
-                    .padding(12)
+                HStack(spacing: 8) {
+                    recordPill(elapsed: simulatorElapsed, mode: .simulator)
                     Spacer()
-                }
-            }
-            .padding(.horizontal, 16)
-
-            Button {
-                if simulatorRecording {
-                    stopSimulatorRecording()
-                } else {
-                    startSimulatorRecording()
-                }
-            } label: {
-                ZStack {
-                    Circle()
-                        .fill(simulatorRecording ? Color.orange : Color.white)
-                        .frame(width: 74, height: 74)
-
                     if simulatorRecording {
-                        RoundedRectangle(cornerRadius: 8)
-                            .fill(.white)
-                            .frame(width: 24, height: 24)
-                    } else {
-                        Image(systemName: "video.fill")
-                            .font(.system(size: 24, weight: .bold))
-                            .foregroundStyle(.blue)
+                        Text("REC")
+                            .font(.system(size: 10, weight: .black, design: .rounded))
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(Color.red, in: Capsule())
                     }
                 }
-                .shadow(color: .black.opacity(0.2), radius: 8, y: 3)
+                .padding(12)
             }
-            .buttonStyle(.plain)
+            .overlay(
+                RoundedRectangle(cornerRadius: 18)
+                    .stroke(Color.white.opacity(0.1), lineWidth: 0.5)
+            )
+            .padding(.horizontal, 2)
 
-            Text("Fallback recording still enforces 5–15s")
-                .font(.system(size: 12, weight: .medium))
-                .foregroundStyle(.secondary)
+            let canStopRecording = simulatorElapsed >= minDuration
+            recordButton(
+                isRecording: simulatorRecording,
+                canStop: canStopRecording,
+                remainingSeconds: max(0, Int(ceil(minDuration - simulatorElapsed))),
+                onTap: {
+                    if simulatorRecording {
+                        guard canStopRecording else { return }
+                        stopSimulatorRecording()
+                    } else {
+                        startSimulatorRecording()
+                    }
+                },
+                accentColor: ClipStakesPalette.neonOrange
+            )
+
+            recorderHint(
+                simulatorRecording
+                    ? "Recording simulated clip. Tap again to stop."
+                    : "Simulator fallback still enforces 5-15 seconds."
+            )
         }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 10)
+    }
+
+    private func recordButton(
+        isRecording: Bool,
+        canStop: Bool,
+        remainingSeconds: Int,
+        onTap: @escaping () -> Void,
+        accentColor: Color
+    ) -> some View {
+        let stopDisabled = isRecording && !canStop
+        let title: String
+        if isRecording {
+            title = canStop ? "Stop Recording" : "Keep Recording \(remainingSeconds)s"
+        } else {
+            title = "Start Recording"
+        }
+
+        let iconName: String
+        if isRecording {
+            iconName = canStop ? "stop.fill" : "timer"
+        } else {
+            iconName = "record.circle.fill"
+        }
+
+        return Button(action: onTap) {
+            HStack(spacing: 10) {
+                Image(systemName: iconName)
+                    .font(.system(size: 16, weight: .black))
+
+                Text(title)
+                    .font(.system(size: 15, weight: .black, design: .rounded))
+            }
+            .foregroundStyle(stopDisabled ? .white.opacity(0.7) : .white)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 13)
+            .background(
+                RoundedRectangle(cornerRadius: 14)
+                    .fill(stopDisabled ? Color.white.opacity(0.25) : (isRecording ? Color.red : accentColor))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 14)
+                    .stroke(Color.white.opacity(0.2), lineWidth: 0.5)
+            )
+            .shadow(color: (isRecording ? Color.red : accentColor).opacity(0.32), radius: 12, y: 4)
+            .animation(.easeInOut(duration: 0.2), value: isRecording)
+        }
+        .buttonStyle(.plain)
+        .disabled(stopDisabled)
+        .accessibilityLabel(isRecording ? "Stop recording" : "Start recording")
+    }
+
+    private func recorderHint(_ text: String) -> some View {
+        Text(text)
+            .font(.system(size: 11, weight: .medium, design: .rounded))
+            .foregroundStyle(.white.opacity(0.55))
+            .multilineTextAlignment(.center)
+            .padding(.horizontal, 16)
+            .padding(.top, 2)
     }
 
     @ViewBuilder
     private func recordPill(elapsed: TimeInterval, mode: ClipStakesCaptureMode) -> some View {
-        HStack(spacing: 6) {
+        let isActive = (mode == .camera ? controller.isRecording : simulatorRecording)
+        HStack(spacing: 5) {
             Circle()
-                .fill((mode == .camera ? controller.isRecording : simulatorRecording) ? Color.red : Color.green)
-                .frame(width: 8, height: 8)
+                .fill(isActive ? Color.red : ClipStakesPalette.mint)
+                .frame(width: 6, height: 6)
             Text("\(Int(elapsed))s")
-                .font(.system(size: 12, weight: .semibold, design: .monospaced))
-            Text("\(Int(minDuration))–\(Int(maxDuration))s")
-                .font(.system(size: 11, weight: .medium, design: .monospaced))
-                .foregroundStyle(.secondary)
+                .font(.system(size: 11, weight: .bold, design: .monospaced))
+                .foregroundStyle(.white)
+            Text("\(Int(minDuration))-\(Int(maxDuration))s")
+                .font(.system(size: 10, weight: .medium, design: .monospaced))
+                .foregroundStyle(.white.opacity(0.5))
         }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 7)
-        .glassEffect(.regular.interactive(), in: Capsule())
+        .padding(.horizontal, 8)
+        .padding(.vertical, 5)
+        .background(.ultraThinMaterial, in: Capsule())
     }
 
     private func startSimulatorRecording() {
@@ -2301,6 +3650,7 @@ final class ClipStakesCameraController: NSObject, ObservableObject {
     @Published var errorMessage: String?
     @Published var isSessionRunning = false
     @Published var isRecording = false
+    @Published var isFinalizing = false
     @Published var elapsed: TimeInterval = 0
     @Published var useSimulatorFallback = false
 
@@ -2331,18 +3681,13 @@ final class ClipStakesCameraController: NSObject, ObservableObject {
 #else
         Task {
             let cameraGranted = await requestVideoAccessIfNeeded()
-            let micGranted = await requestMicrophoneAccessIfNeeded()
 
             guard cameraGranted else {
                 errorMessage = "Camera permission is required to record clips."
                 return
             }
 
-            if !micGranted {
-                errorMessage = "Microphone permission was denied. Recording will continue without audio."
-            }
-
-            configureSessionIfNeeded(includeAudio: micGranted)
+            configureSessionIfNeeded(includeAudio: false)
             startSession()
         }
 #endif
@@ -2350,9 +3695,15 @@ final class ClipStakesCameraController: NSObject, ObservableObject {
 
     func startRecording() {
         guard isConfigured else { return }
+        guard !isFinalizing else { return }
         guard !movieOutput.isRecording else { return }
+        guard isSessionRunning else {
+            errorMessage = "Camera is still preparing. Try again."
+            return
+        }
 
         errorMessage = nil
+        isFinalizing = false
         elapsed = 0
 
         let outputURL = Self.tempMovieURL()
@@ -2362,6 +3713,7 @@ final class ClipStakesCameraController: NSObject, ObservableObject {
 
     func stopRecording() {
         guard movieOutput.isRecording else { return }
+        isFinalizing = true
         movieOutput.stopRecording()
     }
 
@@ -2398,20 +3750,6 @@ final class ClipStakesCameraController: NSObject, ObservableObject {
         }
     }
 
-    private func requestMicrophoneAccessIfNeeded() async -> Bool {
-        let status = AVCaptureDevice.authorizationStatus(for: .audio)
-        switch status {
-        case .authorized:
-            return true
-        case .denied, .restricted:
-            return false
-        case .notDetermined:
-            return await requestAccess(for: .audio)
-        @unknown default:
-            return false
-        }
-    }
-
     private func requestAccess(for mediaType: AVMediaType) async -> Bool {
         await withCheckedContinuation { continuation in
             AVCaptureDevice.requestAccess(for: mediaType) { granted in
@@ -2427,6 +3765,7 @@ final class ClipStakesCameraController: NSObject, ObservableObject {
 
         session.beginConfiguration()
         session.sessionPreset = .high
+        session.automaticallyConfiguresApplicationAudioSession = false
 
         defer {
             session.commitConfiguration()
@@ -2468,7 +3807,11 @@ final class ClipStakesCameraController: NSObject, ObservableObject {
             }
             self.session.startRunning()
             Task { @MainActor in
-                self.isSessionRunning = self.session.isRunning
+                let didStart = self.session.isRunning
+                self.isSessionRunning = didStart
+                if !didStart, self.errorMessage == nil {
+                    self.errorMessage = "Camera did not start. Check permissions and try again."
+                }
             }
         }
     }
@@ -2492,14 +3835,23 @@ final class ClipStakesCameraController: NSObject, ObservableObject {
         timer?.invalidate()
         timer = nil
         isRecording = false
-
-        if let error {
-            errorMessage = error.localizedDescription
-            return
-        }
+        isFinalizing = false
 
         let asset = AVURLAsset(url: outputURL)
-        let duration = CMTimeGetSeconds(asset.duration)
+        let loadedDuration = CMTimeGetSeconds(asset.duration)
+        let measuredDuration = elapsed
+        let duration = if loadedDuration.isFinite, loadedDuration > 0 {
+            loadedDuration
+        } else {
+            measuredDuration
+        }
+        let hasFile = FileManager.default.fileExists(atPath: outputURL.path)
+        let hasUsableVideo = hasFile && duration.isFinite && duration > 0
+
+        if let error, !hasUsableVideo {
+            errorMessage = "Recording failed. \(error.localizedDescription)"
+            return
+        }
 
         guard duration.isFinite, duration >= minDuration else {
             errorMessage = "Clip must be at least \(Int(minDuration)) seconds."
@@ -2520,7 +3872,7 @@ final class ClipStakesCameraController: NSObject, ObservableObject {
 
     private static func tempMovieURL() -> URL {
         FileManager.default.temporaryDirectory
-            .appendingPathComponent("clipstakes-\(UUID().uuidString).mp4")
+            .appendingPathComponent("clipstakes-\(UUID().uuidString).mov")
     }
 }
 
@@ -2532,6 +3884,7 @@ extension ClipStakesCameraController: AVCaptureFileOutputRecordingDelegate {
     ) {
         Task { @MainActor in
             self.isRecording = true
+            self.isFinalizing = false
             self.elapsed = 0
             self.beginTimer()
         }
@@ -2574,9 +3927,116 @@ final class CameraPreviewView: UIView {
     }
 }
 
+// MARK: - From Submissions/clipstakes/ClipStakesVideoStorage.swift
+
+import Foundation
+
+actor ClipStakesVideoStorage {
+    static let shared = ClipStakesVideoStorage()
+
+    private let session: URLSession
+    private let localStorageRoot: URL
+
+    private init() {
+        let fileManager = FileManager.default
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.timeoutIntervalForRequest = 12
+        configuration.timeoutIntervalForResource = 20
+        session = URLSession(configuration: configuration)
+
+        let baseDirectory = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
+            ?? fileManager.temporaryDirectory
+
+        localStorageRoot = baseDirectory
+            .appendingPathComponent("clipstakes", isDirectory: true)
+            .appendingPathComponent("r2-fallback", isDirectory: true)
+
+        try? fileManager.createDirectory(at: localStorageRoot, withIntermediateDirectories: true)
+    }
+
+    func publishVideo(sourceURL: URL?, upload: ClipStakesUploadURLResponse) async -> URL {
+        guard let sourceURL else {
+            return upload.videoURL
+        }
+
+        if shouldAttemptRemoteUpload(to: upload.uploadURL),
+           await uploadToPresignedURL(sourceFileURL: sourceURL, destinationURL: upload.uploadURL) {
+            return upload.videoURL
+        }
+
+        if let localURL = copyIntoPersistentStorage(sourceURL: sourceURL, key: upload.key) {
+            return localURL
+        }
+
+        return sourceURL
+    }
+
+    private func shouldAttemptRemoteUpload(to uploadURL: URL) -> Bool {
+        guard let scheme = uploadURL.scheme?.lowercased() else { return false }
+        guard scheme == "https" || scheme == "http" else { return false }
+
+        if let host = uploadURL.host?.lowercased(),
+           host == "upload.clipstakes.app" {
+            // Mock backend placeholder: skip noisy failing network calls.
+            return false
+        }
+
+        return true
+    }
+
+    private func uploadToPresignedURL(sourceFileURL: URL, destinationURL: URL) async -> Bool {
+        var request = URLRequest(url: destinationURL)
+        request.httpMethod = "PUT"
+        let isQuickTime = sourceFileURL.pathExtension.lowercased() == "mov"
+        request.setValue(isQuickTime ? "video/quicktime" : "video/mp4", forHTTPHeaderField: "Content-Type")
+
+        do {
+            let (_, response) = try await session.upload(for: request, fromFile: sourceFileURL)
+            guard let httpResponse = response as? HTTPURLResponse else { return false }
+            return (200...299).contains(httpResponse.statusCode)
+        } catch {
+            return false
+        }
+    }
+
+    private func copyIntoPersistentStorage(sourceURL: URL, key: String) -> URL? {
+        let fileManager = FileManager.default
+        let sourceExtension = sourceURL.pathExtension
+        let keyExtension = URL(fileURLWithPath: key).pathExtension
+        let destinationKey: String
+        if !sourceExtension.isEmpty, sourceExtension.caseInsensitiveCompare(keyExtension) != .orderedSame {
+            destinationKey = (key as NSString).deletingPathExtension + ".\(sourceExtension)"
+        } else {
+            destinationKey = key
+        }
+
+        let destinationURL = localStorageRoot.appendingPathComponent(destinationKey, isDirectory: false)
+        let directoryURL = destinationURL.deletingLastPathComponent()
+
+        do {
+            try fileManager.createDirectory(at: directoryURL, withIntermediateDirectories: true)
+
+            if fileManager.fileExists(atPath: destinationURL.path) {
+                try fileManager.removeItem(at: destinationURL)
+            }
+
+            if sourceURL.standardizedFileURL == destinationURL.standardizedFileURL {
+                return destinationURL
+            }
+
+            try fileManager.copyItem(at: sourceURL, to: destinationURL)
+            return destinationURL
+        } catch {
+            return nil
+        }
+    }
+}
+
 // MARK: - From Submissions/clipstakes/ClipStakesViewerExperience.swift
 
+import AVFoundation
 import SwiftUI
+import UIKit
 
 struct ClipStakesViewerExperience: ClipExperience {
     static let urlPattern = "clip.clipstakes.app/v/:productId"
@@ -2596,7 +4056,6 @@ struct ClipStakesViewerExperience: ClipExperience {
     @State private var checkoutOutcome: ClipStakesCheckoutOutcome?
     @State private var errorMessage: String?
     @State private var copiedReceiptURL = false
-    @State private var catalogStatusMessage: String?
     @State private var pulseCTA = false
 
     private var productID: String {
@@ -2605,6 +4064,12 @@ struct ClipStakesViewerExperience: ClipExperience {
 
     private var storeDomainOverride: String? {
         context.queryParameters["store"]
+    }
+
+    private var preferredClipID: String? {
+        let raw = context.queryParameters["clip"]?.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let raw, !raw.isEmpty else { return nil }
+        return raw
     }
 
     private var product: ClipStakesProduct {
@@ -2619,25 +4084,8 @@ struct ClipStakesViewerExperience: ClipExperience {
         return clips.first
     }
 
-    private var currentIndex: Int {
-        guard let currentClip,
-              let index = clips.firstIndex(where: { $0.id == currentClip.id })
-        else { return 0 }
-        return index + 1
-    }
-
-    private var compactCatalogStatus: String? {
-        guard let catalogStatusMessage else { return nil }
-
-        let lowered = catalogStatusMessage.lowercased()
-        if lowered.contains("fallback catalog") {
-            return "Fallback catalog active"
-        }
-        if lowered.contains("public shopify catalog") {
-            return "Public Shopify catalog loaded"
-        }
-
-        return catalogStatusMessage
+    private var activeClipID: String? {
+        selectedClipID ?? clips.first?.id
     }
 
     var body: some View {
@@ -2659,17 +4107,16 @@ struct ClipStakesViewerExperience: ClipExperience {
                 pulseCTA = true
             }
         }
-        .task(id: productID + "|" + (storeDomainOverride ?? "")) {
+        .task(id: productID + "|" + (storeDomainOverride ?? "") + "|" + (preferredClipID ?? "")) {
             await loadClips()
         }
         .safeAreaInset(edge: .bottom, spacing: 0) {
             bottomOverlay
         }
         .sheet(isPresented: $showCheckout) {
-            if let clip = currentClip {
+            if currentClip != nil {
                 ClipStakesViewerCheckoutSheet(
                     product: product,
-                    clip: clip,
                     isProcessing: checkoutInFlight,
                     onCancel: { showCheckout = false },
                     onConfirm: { Task { await performCheckout() } }
@@ -2679,12 +4126,14 @@ struct ClipStakesViewerExperience: ClipExperience {
         }
     }
 
+    // MARK: - Reels Feed
+
     private var reelsFeed: some View {
         GeometryReader { proxy in
             ScrollView(.vertical) {
                 LazyVStack(spacing: 0) {
                     ForEach(clips) { clip in
-                        reelPage(for: clip)
+                        reelPage(for: clip, isActive: clip.id == activeClipID)
                             .frame(width: proxy.size.width, height: proxy.size.height)
                             .id(clip.id)
                     }
@@ -2703,56 +4152,35 @@ struct ClipStakesViewerExperience: ClipExperience {
         .ignoresSafeArea(edges: [.top, .bottom])
     }
 
+    // MARK: - Top HUD
+
     private var topHUD: some View {
         VStack(spacing: 8) {
-            HStack(spacing: 8) {
-                ClipStakesInfoChip(title: "LIVE REVIEWS", icon: "bolt.fill", tint: ClipStakesPalette.neonOrange)
-                ClipStakesInfoChip(title: "RANKED", icon: "chart.line.uptrend.xyaxis", tint: ClipStakesPalette.mint)
-
-                Spacer()
-
-                if !clips.isEmpty {
-                    Text("\(currentIndex)/\(clips.count)")
-                        .font(.system(size: 12, weight: .black, design: .monospaced))
-                        .foregroundStyle(.white)
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 6)
-                        .clipStakesGlassCard(cornerRadius: 999)
-                }
-            }
-
             HStack {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(product.name.uppercased())
-                        .font(.system(size: 16, weight: .black, design: .serif))
+                VStack(alignment: .leading, spacing: 1) {
+                    ClipStakesInfoChip(title: "REAL CLIPS", icon: "play.rectangle.fill", tint: ClipStakesPalette.neonOrange)
+
+                    Text(product.name)
+                        .font(.system(size: 17, weight: .black, design: .rounded))
                         .foregroundStyle(.white)
-                    Text("Swipe up for more customer clips")
-                        .font(.system(size: 12, weight: .medium, design: .rounded))
-                        .foregroundStyle(.white.opacity(0.76))
+                    if !clips.isEmpty {
+                        Text("Swipe for more")
+                            .font(.system(size: 10, weight: .medium, design: .rounded))
+                            .foregroundStyle(.white.opacity(0.5))
+                    }
                 }
                 Spacer()
-            }
-
-            if let compactCatalogStatus {
-                HStack {
-                    Label(compactCatalogStatus, systemImage: "shippingbox.fill")
-                        .font(.system(size: 11, weight: .bold, design: .rounded))
-                        .foregroundStyle(.white.opacity(0.74))
-                        .lineLimit(1)
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 6)
-                        .clipStakesGlassCard(cornerRadius: 999)
-                    Spacer()
-                }
             }
 
             if let errorMessage {
-                HStack {
+                HStack(spacing: 4) {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .font(.system(size: 9))
                     Text(errorMessage)
-                        .font(.system(size: 12, weight: .semibold, design: .rounded))
-                        .foregroundStyle(ClipStakesPalette.neonOrange)
-                    Spacer()
+                        .font(.system(size: 11, weight: .medium, design: .rounded))
                 }
+                .foregroundStyle(ClipStakesPalette.neonOrange)
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
 
             Spacer()
@@ -2762,10 +4190,12 @@ struct ClipStakesViewerExperience: ClipExperience {
         .allowsHitTesting(false)
     }
 
+    // MARK: - Bottom Overlay
+
     @ViewBuilder
     private var bottomOverlay: some View {
         if checkoutOutcome != nil || (!isLoading && !clips.isEmpty) {
-            VStack(spacing: 10) {
+            VStack(spacing: 8) {
                 if let outcome = checkoutOutcome {
                     receiptPanel(outcome: outcome)
                 }
@@ -2775,11 +4205,11 @@ struct ClipStakesViewerExperience: ClipExperience {
                 }
             }
             .padding(.horizontal, 12)
-            .padding(.top, 10)
-            .padding(.bottom, 8)
+            .padding(.top, 8)
+            .padding(.bottom, 6)
             .background(
                 LinearGradient(
-                    colors: [Color.clear, Color.black.opacity(0.42)],
+                    colors: [Color.clear, Color.black.opacity(0.5)],
                     startPoint: .top,
                     endPoint: .bottom
                 )
@@ -2791,89 +4221,84 @@ struct ClipStakesViewerExperience: ClipExperience {
         Button {
             showCheckout = true
         } label: {
-            ZStack {
+            HStack {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("BUY NOW")
+                        .font(.system(size: 9, weight: .black, design: .rounded))
+                        .tracking(0.8)
+                        .foregroundStyle(.white.opacity(0.7))
+
+                    Text(product.formattedPrice)
+                        .font(.system(size: 22, weight: .black, design: .rounded))
+                        .foregroundStyle(.white)
+
+                    Text("Fast checkout")
+                        .font(.system(size: 10, weight: .medium, design: .rounded))
+                        .foregroundStyle(.white.opacity(0.65))
+                }
+                Spacer()
+                Image(systemName: "cart.badge.plus")
+                    .font(.system(size: 26, weight: .bold))
+                    .foregroundStyle(.white)
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 14)
+            .background(
                 RoundedRectangle(cornerRadius: 16)
                     .fill(ClipStakesPalette.primaryGradient)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 16)
-                            .stroke(Color.white.opacity(0.24), lineWidth: 1)
-                    )
-                    .shadow(color: ClipStakesPalette.neonPink.opacity(pulseCTA ? 0.42 : 0.18), radius: pulseCTA ? 22 : 10)
-
-                HStack {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("BUY NOW")
-                            .font(.system(size: 11, weight: .black, design: .rounded))
-                            .tracking(1.0)
-                            .foregroundStyle(.white.opacity(0.84))
-
-                        Text(product.formattedPrice)
-                            .font(.system(size: 24, weight: .black, design: .rounded))
-                            .foregroundStyle(.white)
-
-                        if let currentClip {
-                            Text("\(currentClip.conversions) conversions • \(currentClip.createdAt.clipStakesRelativeDescription())")
-                                .font(.system(size: 10, weight: .bold, design: .rounded))
-                                .foregroundStyle(.white.opacity(0.8))
-                        }
-                    }
-                    Spacer()
-                    Image(systemName: "cart.badge.plus")
-                        .font(.system(size: 30, weight: .bold))
-                        .foregroundStyle(.white)
-                }
-                .padding(.horizontal, 18)
-            }
-            .frame(height: 84)
+                    .shadow(color: ClipStakesPalette.neonPink.opacity(pulseCTA ? 0.35 : 0.12), radius: pulseCTA ? 18 : 8)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 16)
+                    .stroke(Color.white.opacity(0.15), lineWidth: 0.5)
+            )
         }
         .buttonStyle(.plain)
         .disabled(currentClip == nil)
         .opacity(currentClip == nil ? 0.5 : 1)
-        .padding(12)
-        .clipStakesGlassCard(cornerRadius: 20)
     }
 
+    // MARK: - States
+
     private var loadingView: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: 10) {
             ProgressView()
-                .tint(ClipStakesPalette.neonPink)
-                .scaleEffect(1.4)
+                .tint(.white)
+                .scaleEffect(1.2)
 
             Text("PULLING LIVE CLIPS")
-                .font(.system(size: 12, weight: .black, design: .rounded))
-                .tracking(1.2)
-                .foregroundStyle(.white.opacity(0.8))
+                .font(.system(size: 11, weight: .black, design: .rounded))
+                .tracking(1.0)
+                .foregroundStyle(.white.opacity(0.6))
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     private var emptyState: some View {
-        VStack(spacing: 14) {
+        VStack(spacing: 12) {
             Image(systemName: "video.slash.fill")
-                .font(.system(size: 40, weight: .black))
-                .foregroundStyle(.white.opacity(0.65))
+                .font(.system(size: 34, weight: .bold))
+                .foregroundStyle(.white.opacity(0.3))
 
             Text("NO CLIPS YET")
-                .font(.system(size: 24, weight: .black, design: .rounded))
+                .font(.system(size: 20, weight: .black, design: .rounded))
                 .foregroundStyle(.white)
 
-            Text("Be first to create social proof for \(product.name). Stake a 5–15 second clip and unlock instant rewards.")
-                .font(.system(size: 13, weight: .medium, design: .rounded))
-                .foregroundStyle(.white.opacity(0.78))
+            Text("Be first to create social proof for \(product.name).\nStake a 5-15s clip and unlock instant rewards.")
+                .font(.system(size: 12, weight: .medium, design: .rounded))
+                .foregroundStyle(.white.opacity(0.5))
                 .multilineTextAlignment(.center)
-                .padding(.horizontal, 24)
+                .padding(.horizontal, 32)
         }
-        .padding(.bottom, 120)
+        .padding(.bottom, 100)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
-    private func reelPage(for clip: ClipStakesClip) -> some View {
+    // MARK: - Reel Page
+
+    private func reelPage(for clip: ClipStakesClip, isActive: Bool) -> some View {
         ZStack {
-            LinearGradient(
-                colors: gradientColors(for: clip),
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
+            ClipStakesLoopingVideoPlayer(videoURL: clip.videoURL, isActive: isActive)
 
             if let imageURL = clip.product.imageURL {
                 AsyncImage(url: imageURL) { phase in
@@ -2882,8 +4307,8 @@ struct ClipStakesViewerExperience: ClipExperience {
                         image
                             .resizable()
                             .scaledToFill()
-                            .opacity(0.35)
-                            .blur(radius: 5)
+                            .opacity(0.1)
+                            .blur(radius: 8)
                     default:
                         EmptyView()
                     }
@@ -2891,64 +4316,33 @@ struct ClipStakesViewerExperience: ClipExperience {
                 .clipped()
             }
 
+            // Vignette
             LinearGradient(
-                colors: [Color.black.opacity(0.32), Color.black.opacity(0.0), Color.black.opacity(0.56)],
+                colors: [Color.black.opacity(0.4), Color.black.opacity(0.0), Color.black.opacity(0.6)],
                 startPoint: .top,
                 endPoint: .bottom
             )
 
-            Image(systemName: "play.circle.fill")
-                .font(.system(size: 62, weight: .bold))
-                .foregroundStyle(.white.opacity(0.84))
-
-            HStack {
-                Spacer()
-                VStack(spacing: 10) {
-                    railMetric(value: "\(clip.conversions)", icon: "flame.fill", tint: ClipStakesPalette.neonOrange)
-                    railMetric(value: "\(clip.durationSeconds)s", icon: "timer", tint: ClipStakesPalette.mint)
-                    railMetric(value: "#\(clipRank(clip))", icon: "list.number", tint: .white)
-                }
-                .padding(.trailing, 12)
-                .padding(.bottom, 174)
-            }
-
             positionedCaption(for: clip)
-                .padding(.horizontal, 16)
+                .padding(.horizontal, 14)
                 .padding(.top, 120)
-                .padding(.bottom, 244)
+                .padding(.bottom, 220)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-    }
-
-    private func railMetric(value: String, icon: String, tint: Color) -> some View {
-        VStack(spacing: 4) {
-            Image(systemName: icon)
-                .font(.system(size: 14, weight: .bold))
-            Text(value)
-                .font(.system(size: 11, weight: .bold, design: .monospaced))
-        }
-        .foregroundStyle(tint)
-        .padding(.horizontal, 10)
-        .padding(.vertical, 8)
-        .clipStakesGlassCard(cornerRadius: 14)
     }
 
     @ViewBuilder
     private func positionedCaption(for clip: ClipStakesClip) -> some View {
         if let text = clip.textOverlay, !text.isEmpty {
             let caption = Text(text.uppercased())
-                .font(.system(size: 27, weight: .black, design: .rounded))
+                .font(.system(size: 24, weight: .black, design: .rounded))
                 .foregroundStyle(.white)
                 .shadow(color: .black.opacity(0.5), radius: 6)
                 .lineLimit(2)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 8)
-                .background(Color.black.opacity(0.22), in: RoundedRectangle(cornerRadius: 12))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .stroke(Color.white.opacity(0.12), lineWidth: 1)
-                )
+                .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 10))
 
             switch clip.textPosition {
             case .top:
@@ -2971,84 +4365,63 @@ struct ClipStakesViewerExperience: ClipExperience {
         } else {
             VStack {
                 Spacer(minLength: 0)
-                Text("\(clip.product.name) • Real buyer take")
-                    .font(.system(size: 13, weight: .semibold, design: .rounded))
-                    .foregroundStyle(.white.opacity(0.78))
+                Text(clip.product.name)
+                    .font(.system(size: 12, weight: .semibold, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.6))
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, 12)
-                    .padding(.vertical, 8)
-                    .background(Color.black.opacity(0.2), in: RoundedRectangle(cornerRadius: 12))
+                    .padding(.vertical, 6)
+                    .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 10))
             }
         }
     }
 
-    private func clipRank(_ clip: ClipStakesClip) -> Int {
-        (clips.firstIndex(where: { $0.id == clip.id }) ?? 0) + 1
-    }
+    // MARK: - Receipt Panel
 
     private func receiptPanel(outcome: ClipStakesCheckoutOutcome) -> some View {
         let creatorURL = "clip.clipstakes.app/c/\(outcome.receiptID)"
 
-        return VStack(alignment: .leading, spacing: 10) {
+        return VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Text("ORDER CONFIRMED")
-                    .font(.system(size: 13, weight: .black, design: .rounded))
-                    .foregroundStyle(ClipStakesPalette.mint)
+                HStack(spacing: 4) {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 11))
+                        .foregroundStyle(ClipStakesPalette.mint)
+                    Text("ORDER CONFIRMED")
+                        .font(.system(size: 11, weight: .black, design: .rounded))
+                        .foregroundStyle(ClipStakesPalette.mint)
+                }
                 Spacer()
-                Text(outcome.orderID)
-                    .font(.system(size: 11, weight: .bold, design: .monospaced))
-                    .foregroundStyle(.white.opacity(0.75))
             }
 
-            HStack(spacing: 8) {
-                Text(creatorURL)
-                    .font(.system(size: 11, weight: .medium, design: .monospaced))
-                    .lineLimit(1)
-                    .truncationMode(.middle)
-                    .foregroundStyle(.white.opacity(0.9))
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 8)
-                    .background(Color.white.opacity(0.09), in: RoundedRectangle(cornerRadius: 10))
+            Text("Your receipt is ready. Open creator flow to record and claim reward.")
+                .font(.system(size: 11, weight: .medium, design: .rounded))
+                .foregroundStyle(.white.opacity(0.65))
 
+            HStack(spacing: 8) {
                 Button(copiedReceiptURL ? "Copied" : "Copy") {
                     Task { @MainActor in
                         ClipStakesClipboard.copy(creatorURL)
                         copiedReceiptURL = true
                     }
                 }
-                .buttonStyle(.borderedProminent)
-                .tint(ClipStakesPalette.neonBlue)
-            }
+                .font(.system(size: 11, weight: .bold, design: .rounded))
+                .foregroundStyle(.white)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 6)
+                .background(ClipStakesPalette.neonBlue, in: RoundedRectangle(cornerRadius: 8))
 
-            if let conversion = outcome.conversion {
-                Text(conversion.pushSent
-                     ? "Bonus push simulated inside 8-hour window."
-                     : (conversion.withinPushWindow
-                        ? "Bonus created, no creator token available."
-                        : "Bonus created outside push window."))
+                Text("Creator link")
                     .font(.system(size: 11, weight: .medium, design: .rounded))
-                    .foregroundStyle(.white.opacity(0.74))
+                    .foregroundStyle(.white.opacity(0.5))
             }
+
         }
-        .padding(12)
-        .clipStakesGlassCard(cornerRadius: 18)
+        .padding(10)
+        .clipStakesGlassCard(cornerRadius: 14)
     }
 
-    private func gradientColors(for clip: ClipStakesClip) -> [Color] {
-        let seed = abs(clip.id.hashValue)
-        let index = seed % 4
-
-        switch index {
-        case 0:
-            return [Color(red: 0.95, green: 0.27, blue: 0.52), Color(red: 0.99, green: 0.56, blue: 0.27)]
-        case 1:
-            return [Color(red: 0.39, green: 0.44, blue: 0.97), Color(red: 0.23, green: 0.78, blue: 0.93)]
-        case 2:
-            return [Color(red: 0.16, green: 0.73, blue: 0.47), Color(red: 0.11, green: 0.43, blue: 0.66)]
-        default:
-            return [Color(red: 0.82, green: 0.31, blue: 0.88), Color(red: 0.29, green: 0.26, blue: 0.86)]
-        }
-    }
+    // MARK: - Backend
 
     private func loadClips() async {
         isLoading = true
@@ -3056,16 +4429,17 @@ struct ClipStakesViewerExperience: ClipExperience {
 
         let previousSelectedID = selectedClipID
 
-        let catalogResult = await ClipStakesShopifyPublicCatalogService.shared.loadCatalog(
+        _ = await ClipStakesShopifyPublicCatalogService.shared.loadCatalog(
             storeDomainOverride: storeDomainOverride
         )
-
-        catalogStatusMessage = catalogResult.message
 
         let loaded = await ClipStakesMockBackend.shared.getClips(productId: productID)
         clips = loaded
 
-        if let previousSelectedID,
+        if let preferredClipID,
+           loaded.contains(where: { $0.id == preferredClipID }) {
+            selectedClipID = preferredClipID
+        } else if let previousSelectedID,
            loaded.contains(where: { $0.id == previousSelectedID }) {
             selectedClipID = previousSelectedID
         } else {
@@ -3103,63 +4477,247 @@ struct ClipStakesViewerExperience: ClipExperience {
     }
 }
 
+// MARK: - Checkout Sheet
+
 private struct ClipStakesViewerCheckoutSheet: View {
     let product: ClipStakesProduct
-    let clip: ClipStakesClip
     let isProcessing: Bool
     let onCancel: () -> Void
     let onConfirm: () -> Void
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: 18) {
-                VStack(spacing: 8) {
-                    Text("CHECKOUT PREVIEW")
-                        .font(.system(size: 24, weight: .black, design: .rounded))
-                    Text("Simulated ClipKit checkout with conversion attribution.")
-                        .font(.system(size: 13, weight: .medium, design: .rounded))
-                        .foregroundStyle(.secondary)
-                        .multilineTextAlignment(.center)
+            ZStack {
+                ClipStakesPalette.ink.ignoresSafeArea()
+
+                VStack(spacing: 16) {
+                    VStack(spacing: 6) {
+                        Image(systemName: "creditcard.fill")
+                            .font(.system(size: 28, weight: .light))
+                            .foregroundStyle(ClipStakesPalette.neonBlue)
+
+                        Text("CHECKOUT")
+                            .font(.system(size: 20, weight: .black, design: .rounded))
+                            .foregroundStyle(.white)
+
+                        Text("Quick checkout preview")
+                            .font(.system(size: 12, weight: .medium, design: .rounded))
+                            .foregroundStyle(.white.opacity(0.45))
+                            .multilineTextAlignment(.center)
+                    }
+
+                    VStack(spacing: 1) {
+                        checkoutRow(label: "Product", value: product.name)
+                        checkoutRow(label: "Price", value: product.formattedPrice)
+                    }
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(Color.white.opacity(0.1), lineWidth: 0.5)
+                    )
+
+                    Spacer(minLength: 4)
+
+                    if isProcessing {
+                        HStack(spacing: 8) {
+                            ProgressView()
+                                .tint(ClipStakesPalette.neonPink)
+                                .scaleEffect(0.8)
+                            Text("Processing Apple Pay...")
+                                .font(.system(size: 12, weight: .medium, design: .rounded))
+                                .foregroundStyle(.white.opacity(0.6))
+                        }
+                    }
+
+                    HStack(spacing: 10) {
+                        Button("Cancel", action: onCancel)
+                            .buttonStyle(ClipStakesSecondaryButtonStyle())
+
+                        Button("Pay Now", action: onConfirm)
+                            .buttonStyle(ClipStakesPrimaryButtonStyle(disabled: isProcessing))
+                            .disabled(isProcessing)
+                    }
                 }
-
-                VStack(spacing: 10) {
-                    checkoutRow(label: "Product", value: product.name)
-                    checkoutRow(label: "Price", value: product.formattedPrice)
-                    checkoutRow(label: "Clip ID", value: String(clip.id.prefix(8)) + "…")
-                    checkoutRow(label: "Conversions", value: "\(clip.conversions)")
-                }
-                .padding(14)
-                .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 14))
-
-                Spacer(minLength: 6)
-
-                if isProcessing {
-                    ProgressView("Processing Apple Pay...")
-                }
-
-                HStack(spacing: 10) {
-                    Button("Cancel", action: onCancel)
-                        .buttonStyle(.bordered)
-
-                    Button("Pay Now", action: onConfirm)
-                        .buttonStyle(.borderedProminent)
-                        .disabled(isProcessing)
-                }
+                .padding(18)
             }
-            .padding(20)
         }
     }
 
     private func checkoutRow(label: String, value: String) -> some View {
         HStack {
             Text(label)
-                .font(.system(size: 13, weight: .medium, design: .rounded))
-                .foregroundStyle(.secondary)
+                .font(.system(size: 12, weight: .medium, design: .rounded))
+                .foregroundStyle(.white.opacity(0.5))
             Spacer()
             Text(value)
-                .font(.system(size: 13, weight: .semibold, design: .monospaced))
-                .foregroundStyle(.primary)
+                .font(.system(size: 12, weight: .bold, design: .monospaced))
+                .foregroundStyle(.white)
         }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 9)
+        .background(Color.white.opacity(0.04))
+    }
+}
+
+// MARK: - Video Playback
+
+private struct ClipStakesLoopingVideoPlayer: View {
+    let videoURL: URL
+    let isActive: Bool
+
+    @StateObject private var controller = ClipStakesLoopingVideoController()
+
+    var body: some View {
+        ZStack {
+            LinearGradient(
+                colors: [Color.black.opacity(0.9), Color.black.opacity(0.65)],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+
+            ClipStakesPlayerLayerView(player: controller.player)
+                .opacity(controller.isReady ? 1 : 0)
+
+            if !controller.isReady {
+                VStack(spacing: 8) {
+                    if controller.didFail {
+                        Image(systemName: "video.slash.fill")
+                            .font(.system(size: 26, weight: .semibold))
+                            .foregroundStyle(.white.opacity(0.55))
+                        Text("Video unavailable")
+                            .font(.system(size: 12, weight: .bold, design: .rounded))
+                            .foregroundStyle(.white.opacity(0.7))
+                    } else {
+                        ProgressView()
+                            .tint(.white)
+                        Text("Loading clip")
+                            .font(.system(size: 11, weight: .medium, design: .rounded))
+                            .foregroundStyle(.white.opacity(0.65))
+                    }
+                }
+                .padding(12)
+                .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 12))
+            }
+        }
+        .onAppear {
+            controller.configure(with: videoURL)
+            controller.setActive(isActive)
+        }
+        .onChange(of: videoURL) { _, newURL in
+            controller.configure(with: newURL)
+            controller.setActive(isActive)
+        }
+        .onChange(of: isActive) { _, active in
+            controller.setActive(active)
+        }
+        .onDisappear {
+            controller.setActive(false)
+        }
+    }
+}
+
+@MainActor
+private final class ClipStakesLoopingVideoController: ObservableObject {
+    let player = AVQueuePlayer()
+
+    @Published var isReady = false
+    @Published var didFail = false
+
+    private static let playbackLoadTimeoutSeconds: UInt64 = 8
+    private var configuredURL: URL?
+    private var looper: AVPlayerLooper?
+    private var statusObservation: NSKeyValueObservation?
+    private var loadTimeoutTask: Task<Void, Never>?
+    private var isActive = false
+
+    init() {
+        player.isMuted = true
+        player.automaticallyWaitsToMinimizeStalling = true
+        player.actionAtItemEnd = .none
+    }
+
+    func configure(with videoURL: URL) {
+        guard configuredURL != videoURL else { return }
+        configuredURL = videoURL
+        isReady = false
+        didFail = false
+
+        loadTimeoutTask?.cancel()
+        statusObservation = nil
+        looper = nil
+        player.pause()
+        player.removeAllItems()
+
+        let item = AVPlayerItem(url: videoURL)
+        statusObservation = item.observe(\.status, options: [.initial, .new]) { [weak self] item, _ in
+            guard let self else { return }
+            Task { @MainActor in
+                switch item.status {
+                case .readyToPlay:
+                    self.isReady = true
+                    self.didFail = false
+                    self.loadTimeoutTask?.cancel()
+                    self.loadTimeoutTask = nil
+                    if self.isActive {
+                        self.player.play()
+                    }
+                case .failed:
+                    self.isReady = false
+                    self.didFail = true
+                    self.loadTimeoutTask?.cancel()
+                    self.loadTimeoutTask = nil
+                default:
+                    break
+                }
+            }
+        }
+
+        looper = AVPlayerLooper(player: player, templateItem: item)
+        loadTimeoutTask = Task { [weak self] in
+            try? await Task.sleep(nanoseconds: Self.playbackLoadTimeoutSeconds * 1_000_000_000)
+            guard let self else { return }
+            guard !Task.isCancelled else { return }
+            guard !self.isReady else { return }
+            self.didFail = true
+        }
+    }
+
+    func setActive(_ active: Bool) {
+        isActive = active
+        if active, isReady {
+            player.play()
+        } else {
+            player.pause()
+        }
+    }
+
+    deinit {
+        loadTimeoutTask?.cancel()
+    }
+}
+
+private struct ClipStakesPlayerLayerView: UIViewRepresentable {
+    let player: AVQueuePlayer
+
+    func makeUIView(context: Context) -> ClipStakesPlayerContainerView {
+        let view = ClipStakesPlayerContainerView()
+        view.playerLayer.videoGravity = .resizeAspectFill
+        view.playerLayer.player = player
+        return view
+    }
+
+    func updateUIView(_ uiView: ClipStakesPlayerContainerView, context: Context) {
+        uiView.playerLayer.player = player
+    }
+}
+
+private final class ClipStakesPlayerContainerView: UIView {
+    override class var layerClass: AnyClass {
+        AVPlayerLayer.self
+    }
+
+    var playerLayer: AVPlayerLayer {
+        layer as! AVPlayerLayer
     }
 }
 

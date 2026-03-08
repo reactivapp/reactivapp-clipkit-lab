@@ -96,7 +96,7 @@ enum ClipStakesCatalog {
 struct ClipStakesClip: Identifiable, Codable, Hashable {
     let id: String
     let receiptID: String
-    let deviceToken: String?
+    let creatorDeviceID: String
     var productID: String
     let videoURL: URL
     let textOverlay: String?
@@ -143,16 +143,21 @@ struct ClipStakesUploadURLResponse: Hashable {
 
 struct ClipStakesCreateClipResponse: Hashable {
     let clipID: String
-    let couponCode: String
-    let couponValue: String
+    let walletCode: String
+    let instantCreditCents: Int
+    let instantCreditDisplay: String
     let passURL: URL
+    let availableBalanceCents: Int
+    let availableBalanceDisplay: String
     let message: String
 }
 
 struct ClipStakesConversionResponse: Hashable {
     let success: Bool
-    let bonusCouponCode: String?
-    let bonusPassURL: URL?
+    let creditedCents: Int
+    let creditedDisplay: String
+    let availableBalanceCents: Int
+    let availableBalanceDisplay: String
     let pushSent: Bool
     let withinPushWindow: Bool
 }
@@ -174,8 +179,33 @@ struct ClipStakesNotificationEvent: Hashable {
     let clipID: String
     let title: String
     let body: String
-    let bonusPassURL: URL?
+    let passURL: URL?
     let createdAt: Date
+}
+
+struct ClipStakesRewardTransaction: Identifiable, Hashable {
+    enum Kind: String, Hashable {
+        case clipPublished
+        case conversion
+    }
+
+    let id: String
+    let kind: Kind
+    let amountCents: Int
+    let amountDisplay: String
+    let clipID: String
+    let orderID: String?
+    let createdAt: Date
+}
+
+struct ClipStakesRewardsSnapshot: Hashable {
+    let walletCode: String
+    let passURL: URL
+    let availableBalanceCents: Int
+    let availableBalanceDisplay: String
+    let lifetimeEarnedCents: Int
+    let lifetimeEarnedDisplay: String
+    let transactions: [ClipStakesRewardTransaction]
 }
 
 enum ClipStakesBackendError: LocalizedError {
@@ -202,9 +232,15 @@ enum ClipStakesBackendError: LocalizedError {
 }
 
 extension Date {
-    func clipStakesRelativeDescription(reference: Date = Date()) -> String {
+    nonisolated func clipStakesRelativeDescription(reference: Date = Date()) -> String {
         let formatter = RelativeDateTimeFormatter()
         formatter.unitsStyle = .abbreviated
         return formatter.localizedString(for: self, relativeTo: reference)
+    }
+}
+
+extension Int {
+    nonisolated var clipStakesCurrencyDisplay: String {
+        String(format: "$%.2f", Double(self) / 100.0)
     }
 }

@@ -1,4 +1,6 @@
+import AVFoundation
 import SwiftUI
+import UIKit
 
 struct ClipStakesViewerExperience: ClipExperience {
     static let urlPattern = "clip.clipstakes.app/v/:productId"
@@ -18,7 +20,6 @@ struct ClipStakesViewerExperience: ClipExperience {
     @State private var checkoutOutcome: ClipStakesCheckoutOutcome?
     @State private var errorMessage: String?
     @State private var copiedReceiptURL = false
-    @State private var catalogStatusMessage: String?
     @State private var pulseCTA = false
 
     private var productID: String {
@@ -27,6 +28,12 @@ struct ClipStakesViewerExperience: ClipExperience {
 
     private var storeDomainOverride: String? {
         context.queryParameters["store"]
+    }
+
+    private var preferredClipID: String? {
+        let raw = context.queryParameters["clip"]?.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let raw, !raw.isEmpty else { return nil }
+        return raw
     }
 
     private var product: ClipStakesProduct {
@@ -41,25 +48,8 @@ struct ClipStakesViewerExperience: ClipExperience {
         return clips.first
     }
 
-    private var currentIndex: Int {
-        guard let currentClip,
-              let index = clips.firstIndex(where: { $0.id == currentClip.id })
-        else { return 0 }
-        return index + 1
-    }
-
-    private var compactCatalogStatus: String? {
-        guard let catalogStatusMessage else { return nil }
-
-        let lowered = catalogStatusMessage.lowercased()
-        if lowered.contains("fallback catalog") {
-            return "Fallback catalog active"
-        }
-        if lowered.contains("public shopify catalog") {
-            return "Public Shopify catalog loaded"
-        }
-
-        return catalogStatusMessage
+    private var activeClipID: String? {
+        selectedClipID ?? clips.first?.id
     }
 
     var body: some View {
@@ -81,17 +71,16 @@ struct ClipStakesViewerExperience: ClipExperience {
                 pulseCTA = true
             }
         }
-        .task(id: productID + "|" + (storeDomainOverride ?? "")) {
+        .task(id: productID + "|" + (storeDomainOverride ?? "") + "|" + (preferredClipID ?? "")) {
             await loadClips()
         }
         .safeAreaInset(edge: .bottom, spacing: 0) {
             bottomOverlay
         }
         .sheet(isPresented: $showCheckout) {
-            if let clip = currentClip {
+            if currentClip != nil {
                 ClipStakesViewerCheckoutSheet(
                     product: product,
-                    clip: clip,
                     isProcessing: checkoutInFlight,
                     onCancel: { showCheckout = false },
                     onConfirm: { Task { await performCheckout() } }
@@ -101,12 +90,14 @@ struct ClipStakesViewerExperience: ClipExperience {
         }
     }
 
+    // MARK: - Reels Feed
+
     private var reelsFeed: some View {
         GeometryReader { proxy in
             ScrollView(.vertical) {
                 LazyVStack(spacing: 0) {
                     ForEach(clips) { clip in
-                        reelPage(for: clip)
+                        reelPage(for: clip, isActive: clip.id == activeClipID)
                             .frame(width: proxy.size.width, height: proxy.size.height)
                             .id(clip.id)
                     }
@@ -125,56 +116,35 @@ struct ClipStakesViewerExperience: ClipExperience {
         .ignoresSafeArea(edges: [.top, .bottom])
     }
 
+    // MARK: - Top HUD
+
     private var topHUD: some View {
         VStack(spacing: 8) {
-            HStack(spacing: 8) {
-                ClipStakesInfoChip(title: "LIVE REVIEWS", icon: "bolt.fill", tint: ClipStakesPalette.neonOrange)
-                ClipStakesInfoChip(title: "RANKED", icon: "chart.line.uptrend.xyaxis", tint: ClipStakesPalette.mint)
-
-                Spacer()
-
-                if !clips.isEmpty {
-                    Text("\(currentIndex)/\(clips.count)")
-                        .font(.system(size: 12, weight: .black, design: .monospaced))
-                        .foregroundStyle(.white)
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 6)
-                        .clipStakesGlassCard(cornerRadius: 999)
-                }
-            }
-
             HStack {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(product.name.uppercased())
-                        .font(.system(size: 16, weight: .black, design: .serif))
+                VStack(alignment: .leading, spacing: 1) {
+                    ClipStakesInfoChip(title: "REAL CLIPS", icon: "play.rectangle.fill", tint: ClipStakesPalette.neonOrange)
+
+                    Text(product.name)
+                        .font(.system(size: 17, weight: .black, design: .rounded))
                         .foregroundStyle(.white)
-                    Text("Swipe up for more customer clips")
-                        .font(.system(size: 12, weight: .medium, design: .rounded))
-                        .foregroundStyle(.white.opacity(0.76))
+                    if !clips.isEmpty {
+                        Text("Swipe for more")
+                            .font(.system(size: 10, weight: .medium, design: .rounded))
+                            .foregroundStyle(.white.opacity(0.5))
+                    }
                 }
                 Spacer()
-            }
-
-            if let compactCatalogStatus {
-                HStack {
-                    Label(compactCatalogStatus, systemImage: "shippingbox.fill")
-                        .font(.system(size: 11, weight: .bold, design: .rounded))
-                        .foregroundStyle(.white.opacity(0.74))
-                        .lineLimit(1)
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 6)
-                        .clipStakesGlassCard(cornerRadius: 999)
-                    Spacer()
-                }
             }
 
             if let errorMessage {
-                HStack {
+                HStack(spacing: 4) {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .font(.system(size: 9))
                     Text(errorMessage)
-                        .font(.system(size: 12, weight: .semibold, design: .rounded))
-                        .foregroundStyle(ClipStakesPalette.neonOrange)
-                    Spacer()
+                        .font(.system(size: 11, weight: .medium, design: .rounded))
                 }
+                .foregroundStyle(ClipStakesPalette.neonOrange)
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
 
             Spacer()
@@ -184,10 +154,12 @@ struct ClipStakesViewerExperience: ClipExperience {
         .allowsHitTesting(false)
     }
 
+    // MARK: - Bottom Overlay
+
     @ViewBuilder
     private var bottomOverlay: some View {
         if checkoutOutcome != nil || (!isLoading && !clips.isEmpty) {
-            VStack(spacing: 10) {
+            VStack(spacing: 8) {
                 if let outcome = checkoutOutcome {
                     receiptPanel(outcome: outcome)
                 }
@@ -197,11 +169,11 @@ struct ClipStakesViewerExperience: ClipExperience {
                 }
             }
             .padding(.horizontal, 12)
-            .padding(.top, 10)
-            .padding(.bottom, 8)
+            .padding(.top, 8)
+            .padding(.bottom, 6)
             .background(
                 LinearGradient(
-                    colors: [Color.clear, Color.black.opacity(0.42)],
+                    colors: [Color.clear, Color.black.opacity(0.5)],
                     startPoint: .top,
                     endPoint: .bottom
                 )
@@ -213,89 +185,84 @@ struct ClipStakesViewerExperience: ClipExperience {
         Button {
             showCheckout = true
         } label: {
-            ZStack {
+            HStack {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("BUY NOW")
+                        .font(.system(size: 9, weight: .black, design: .rounded))
+                        .tracking(0.8)
+                        .foregroundStyle(.white.opacity(0.7))
+
+                    Text(product.formattedPrice)
+                        .font(.system(size: 22, weight: .black, design: .rounded))
+                        .foregroundStyle(.white)
+
+                    Text("Fast checkout")
+                        .font(.system(size: 10, weight: .medium, design: .rounded))
+                        .foregroundStyle(.white.opacity(0.65))
+                }
+                Spacer()
+                Image(systemName: "cart.badge.plus")
+                    .font(.system(size: 26, weight: .bold))
+                    .foregroundStyle(.white)
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 14)
+            .background(
                 RoundedRectangle(cornerRadius: 16)
                     .fill(ClipStakesPalette.primaryGradient)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 16)
-                            .stroke(Color.white.opacity(0.24), lineWidth: 1)
-                    )
-                    .shadow(color: ClipStakesPalette.neonPink.opacity(pulseCTA ? 0.42 : 0.18), radius: pulseCTA ? 22 : 10)
-
-                HStack {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("BUY NOW")
-                            .font(.system(size: 11, weight: .black, design: .rounded))
-                            .tracking(1.0)
-                            .foregroundStyle(.white.opacity(0.84))
-
-                        Text(product.formattedPrice)
-                            .font(.system(size: 24, weight: .black, design: .rounded))
-                            .foregroundStyle(.white)
-
-                        if let currentClip {
-                            Text("\(currentClip.conversions) conversions • \(currentClip.createdAt.clipStakesRelativeDescription())")
-                                .font(.system(size: 10, weight: .bold, design: .rounded))
-                                .foregroundStyle(.white.opacity(0.8))
-                        }
-                    }
-                    Spacer()
-                    Image(systemName: "cart.badge.plus")
-                        .font(.system(size: 30, weight: .bold))
-                        .foregroundStyle(.white)
-                }
-                .padding(.horizontal, 18)
-            }
-            .frame(height: 84)
+                    .shadow(color: ClipStakesPalette.neonPink.opacity(pulseCTA ? 0.35 : 0.12), radius: pulseCTA ? 18 : 8)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 16)
+                    .stroke(Color.white.opacity(0.15), lineWidth: 0.5)
+            )
         }
         .buttonStyle(.plain)
         .disabled(currentClip == nil)
         .opacity(currentClip == nil ? 0.5 : 1)
-        .padding(12)
-        .clipStakesGlassCard(cornerRadius: 20)
     }
 
+    // MARK: - States
+
     private var loadingView: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: 10) {
             ProgressView()
-                .tint(ClipStakesPalette.neonPink)
-                .scaleEffect(1.4)
+                .tint(.white)
+                .scaleEffect(1.2)
 
             Text("PULLING LIVE CLIPS")
-                .font(.system(size: 12, weight: .black, design: .rounded))
-                .tracking(1.2)
-                .foregroundStyle(.white.opacity(0.8))
+                .font(.system(size: 11, weight: .black, design: .rounded))
+                .tracking(1.0)
+                .foregroundStyle(.white.opacity(0.6))
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     private var emptyState: some View {
-        VStack(spacing: 14) {
+        VStack(spacing: 12) {
             Image(systemName: "video.slash.fill")
-                .font(.system(size: 40, weight: .black))
-                .foregroundStyle(.white.opacity(0.65))
+                .font(.system(size: 34, weight: .bold))
+                .foregroundStyle(.white.opacity(0.3))
 
             Text("NO CLIPS YET")
-                .font(.system(size: 24, weight: .black, design: .rounded))
+                .font(.system(size: 20, weight: .black, design: .rounded))
                 .foregroundStyle(.white)
 
-            Text("Be first to create social proof for \(product.name). Stake a 5–15 second clip and unlock instant rewards.")
-                .font(.system(size: 13, weight: .medium, design: .rounded))
-                .foregroundStyle(.white.opacity(0.78))
+            Text("Be first to create social proof for \(product.name).\nStake a 5-15s clip and unlock instant rewards.")
+                .font(.system(size: 12, weight: .medium, design: .rounded))
+                .foregroundStyle(.white.opacity(0.5))
                 .multilineTextAlignment(.center)
-                .padding(.horizontal, 24)
+                .padding(.horizontal, 32)
         }
-        .padding(.bottom, 120)
+        .padding(.bottom, 100)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
-    private func reelPage(for clip: ClipStakesClip) -> some View {
+    // MARK: - Reel Page
+
+    private func reelPage(for clip: ClipStakesClip, isActive: Bool) -> some View {
         ZStack {
-            LinearGradient(
-                colors: gradientColors(for: clip),
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
+            ClipStakesLoopingVideoPlayer(videoURL: clip.videoURL, isActive: isActive)
 
             if let imageURL = clip.product.imageURL {
                 AsyncImage(url: imageURL) { phase in
@@ -304,8 +271,8 @@ struct ClipStakesViewerExperience: ClipExperience {
                         image
                             .resizable()
                             .scaledToFill()
-                            .opacity(0.35)
-                            .blur(radius: 5)
+                            .opacity(0.1)
+                            .blur(radius: 8)
                     default:
                         EmptyView()
                     }
@@ -313,64 +280,33 @@ struct ClipStakesViewerExperience: ClipExperience {
                 .clipped()
             }
 
+            // Vignette
             LinearGradient(
-                colors: [Color.black.opacity(0.32), Color.black.opacity(0.0), Color.black.opacity(0.56)],
+                colors: [Color.black.opacity(0.4), Color.black.opacity(0.0), Color.black.opacity(0.6)],
                 startPoint: .top,
                 endPoint: .bottom
             )
 
-            Image(systemName: "play.circle.fill")
-                .font(.system(size: 62, weight: .bold))
-                .foregroundStyle(.white.opacity(0.84))
-
-            HStack {
-                Spacer()
-                VStack(spacing: 10) {
-                    railMetric(value: "\(clip.conversions)", icon: "flame.fill", tint: ClipStakesPalette.neonOrange)
-                    railMetric(value: "\(clip.durationSeconds)s", icon: "timer", tint: ClipStakesPalette.mint)
-                    railMetric(value: "#\(clipRank(clip))", icon: "list.number", tint: .white)
-                }
-                .padding(.trailing, 12)
-                .padding(.bottom, 174)
-            }
-
             positionedCaption(for: clip)
-                .padding(.horizontal, 16)
+                .padding(.horizontal, 14)
                 .padding(.top, 120)
-                .padding(.bottom, 244)
+                .padding(.bottom, 220)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-    }
-
-    private func railMetric(value: String, icon: String, tint: Color) -> some View {
-        VStack(spacing: 4) {
-            Image(systemName: icon)
-                .font(.system(size: 14, weight: .bold))
-            Text(value)
-                .font(.system(size: 11, weight: .bold, design: .monospaced))
-        }
-        .foregroundStyle(tint)
-        .padding(.horizontal, 10)
-        .padding(.vertical, 8)
-        .clipStakesGlassCard(cornerRadius: 14)
     }
 
     @ViewBuilder
     private func positionedCaption(for clip: ClipStakesClip) -> some View {
         if let text = clip.textOverlay, !text.isEmpty {
             let caption = Text(text.uppercased())
-                .font(.system(size: 27, weight: .black, design: .rounded))
+                .font(.system(size: 24, weight: .black, design: .rounded))
                 .foregroundStyle(.white)
                 .shadow(color: .black.opacity(0.5), radius: 6)
                 .lineLimit(2)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 8)
-                .background(Color.black.opacity(0.22), in: RoundedRectangle(cornerRadius: 12))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .stroke(Color.white.opacity(0.12), lineWidth: 1)
-                )
+                .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 10))
 
             switch clip.textPosition {
             case .top:
@@ -393,84 +329,63 @@ struct ClipStakesViewerExperience: ClipExperience {
         } else {
             VStack {
                 Spacer(minLength: 0)
-                Text("\(clip.product.name) • Real buyer take")
-                    .font(.system(size: 13, weight: .semibold, design: .rounded))
-                    .foregroundStyle(.white.opacity(0.78))
+                Text(clip.product.name)
+                    .font(.system(size: 12, weight: .semibold, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.6))
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, 12)
-                    .padding(.vertical, 8)
-                    .background(Color.black.opacity(0.2), in: RoundedRectangle(cornerRadius: 12))
+                    .padding(.vertical, 6)
+                    .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 10))
             }
         }
     }
 
-    private func clipRank(_ clip: ClipStakesClip) -> Int {
-        (clips.firstIndex(where: { $0.id == clip.id }) ?? 0) + 1
-    }
+    // MARK: - Receipt Panel
 
     private func receiptPanel(outcome: ClipStakesCheckoutOutcome) -> some View {
         let creatorURL = "clip.clipstakes.app/c/\(outcome.receiptID)"
 
-        return VStack(alignment: .leading, spacing: 10) {
+        return VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Text("ORDER CONFIRMED")
-                    .font(.system(size: 13, weight: .black, design: .rounded))
-                    .foregroundStyle(ClipStakesPalette.mint)
+                HStack(spacing: 4) {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 11))
+                        .foregroundStyle(ClipStakesPalette.mint)
+                    Text("ORDER CONFIRMED")
+                        .font(.system(size: 11, weight: .black, design: .rounded))
+                        .foregroundStyle(ClipStakesPalette.mint)
+                }
                 Spacer()
-                Text(outcome.orderID)
-                    .font(.system(size: 11, weight: .bold, design: .monospaced))
-                    .foregroundStyle(.white.opacity(0.75))
             }
 
-            HStack(spacing: 8) {
-                Text(creatorURL)
-                    .font(.system(size: 11, weight: .medium, design: .monospaced))
-                    .lineLimit(1)
-                    .truncationMode(.middle)
-                    .foregroundStyle(.white.opacity(0.9))
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 8)
-                    .background(Color.white.opacity(0.09), in: RoundedRectangle(cornerRadius: 10))
+            Text("Your receipt is ready. Open creator flow to record and claim reward.")
+                .font(.system(size: 11, weight: .medium, design: .rounded))
+                .foregroundStyle(.white.opacity(0.65))
 
+            HStack(spacing: 8) {
                 Button(copiedReceiptURL ? "Copied" : "Copy") {
                     Task { @MainActor in
                         ClipStakesClipboard.copy(creatorURL)
                         copiedReceiptURL = true
                     }
                 }
-                .buttonStyle(.borderedProminent)
-                .tint(ClipStakesPalette.neonBlue)
-            }
+                .font(.system(size: 11, weight: .bold, design: .rounded))
+                .foregroundStyle(.white)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 6)
+                .background(ClipStakesPalette.neonBlue, in: RoundedRectangle(cornerRadius: 8))
 
-            if let conversion = outcome.conversion {
-                Text(conversion.pushSent
-                     ? "Bonus push simulated inside 8-hour window."
-                     : (conversion.withinPushWindow
-                        ? "Bonus created, no creator token available."
-                        : "Bonus created outside push window."))
+                Text("Creator link")
                     .font(.system(size: 11, weight: .medium, design: .rounded))
-                    .foregroundStyle(.white.opacity(0.74))
+                    .foregroundStyle(.white.opacity(0.5))
             }
+
         }
-        .padding(12)
-        .clipStakesGlassCard(cornerRadius: 18)
+        .padding(10)
+        .clipStakesGlassCard(cornerRadius: 14)
     }
 
-    private func gradientColors(for clip: ClipStakesClip) -> [Color] {
-        let seed = abs(clip.id.hashValue)
-        let index = seed % 4
-
-        switch index {
-        case 0:
-            return [Color(red: 0.95, green: 0.27, blue: 0.52), Color(red: 0.99, green: 0.56, blue: 0.27)]
-        case 1:
-            return [Color(red: 0.39, green: 0.44, blue: 0.97), Color(red: 0.23, green: 0.78, blue: 0.93)]
-        case 2:
-            return [Color(red: 0.16, green: 0.73, blue: 0.47), Color(red: 0.11, green: 0.43, blue: 0.66)]
-        default:
-            return [Color(red: 0.82, green: 0.31, blue: 0.88), Color(red: 0.29, green: 0.26, blue: 0.86)]
-        }
-    }
+    // MARK: - Backend
 
     private func loadClips() async {
         isLoading = true
@@ -478,16 +393,17 @@ struct ClipStakesViewerExperience: ClipExperience {
 
         let previousSelectedID = selectedClipID
 
-        let catalogResult = await ClipStakesShopifyPublicCatalogService.shared.loadCatalog(
+        _ = await ClipStakesShopifyPublicCatalogService.shared.loadCatalog(
             storeDomainOverride: storeDomainOverride
         )
-
-        catalogStatusMessage = catalogResult.message
 
         let loaded = await ClipStakesMockBackend.shared.getClips(productId: productID)
         clips = loaded
 
-        if let previousSelectedID,
+        if let preferredClipID,
+           loaded.contains(where: { $0.id == preferredClipID }) {
+            selectedClipID = preferredClipID
+        } else if let previousSelectedID,
            loaded.contains(where: { $0.id == previousSelectedID }) {
             selectedClipID = previousSelectedID
         } else {
@@ -525,62 +441,246 @@ struct ClipStakesViewerExperience: ClipExperience {
     }
 }
 
+// MARK: - Checkout Sheet
+
 private struct ClipStakesViewerCheckoutSheet: View {
     let product: ClipStakesProduct
-    let clip: ClipStakesClip
     let isProcessing: Bool
     let onCancel: () -> Void
     let onConfirm: () -> Void
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: 18) {
-                VStack(spacing: 8) {
-                    Text("CHECKOUT PREVIEW")
-                        .font(.system(size: 24, weight: .black, design: .rounded))
-                    Text("Simulated ClipKit checkout with conversion attribution.")
-                        .font(.system(size: 13, weight: .medium, design: .rounded))
-                        .foregroundStyle(.secondary)
-                        .multilineTextAlignment(.center)
+            ZStack {
+                ClipStakesPalette.ink.ignoresSafeArea()
+
+                VStack(spacing: 16) {
+                    VStack(spacing: 6) {
+                        Image(systemName: "creditcard.fill")
+                            .font(.system(size: 28, weight: .light))
+                            .foregroundStyle(ClipStakesPalette.neonBlue)
+
+                        Text("CHECKOUT")
+                            .font(.system(size: 20, weight: .black, design: .rounded))
+                            .foregroundStyle(.white)
+
+                        Text("Quick checkout preview")
+                            .font(.system(size: 12, weight: .medium, design: .rounded))
+                            .foregroundStyle(.white.opacity(0.45))
+                            .multilineTextAlignment(.center)
+                    }
+
+                    VStack(spacing: 1) {
+                        checkoutRow(label: "Product", value: product.name)
+                        checkoutRow(label: "Price", value: product.formattedPrice)
+                    }
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(Color.white.opacity(0.1), lineWidth: 0.5)
+                    )
+
+                    Spacer(minLength: 4)
+
+                    if isProcessing {
+                        HStack(spacing: 8) {
+                            ProgressView()
+                                .tint(ClipStakesPalette.neonPink)
+                                .scaleEffect(0.8)
+                            Text("Processing Apple Pay...")
+                                .font(.system(size: 12, weight: .medium, design: .rounded))
+                                .foregroundStyle(.white.opacity(0.6))
+                        }
+                    }
+
+                    HStack(spacing: 10) {
+                        Button("Cancel", action: onCancel)
+                            .buttonStyle(ClipStakesSecondaryButtonStyle())
+
+                        Button("Pay Now", action: onConfirm)
+                            .buttonStyle(ClipStakesPrimaryButtonStyle(disabled: isProcessing))
+                            .disabled(isProcessing)
+                    }
                 }
-
-                VStack(spacing: 10) {
-                    checkoutRow(label: "Product", value: product.name)
-                    checkoutRow(label: "Price", value: product.formattedPrice)
-                    checkoutRow(label: "Clip ID", value: String(clip.id.prefix(8)) + "…")
-                    checkoutRow(label: "Conversions", value: "\(clip.conversions)")
-                }
-                .padding(14)
-                .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 14))
-
-                Spacer(minLength: 6)
-
-                if isProcessing {
-                    ProgressView("Processing Apple Pay...")
-                }
-
-                HStack(spacing: 10) {
-                    Button("Cancel", action: onCancel)
-                        .buttonStyle(.bordered)
-
-                    Button("Pay Now", action: onConfirm)
-                        .buttonStyle(.borderedProminent)
-                        .disabled(isProcessing)
-                }
+                .padding(18)
             }
-            .padding(20)
         }
     }
 
     private func checkoutRow(label: String, value: String) -> some View {
         HStack {
             Text(label)
-                .font(.system(size: 13, weight: .medium, design: .rounded))
-                .foregroundStyle(.secondary)
+                .font(.system(size: 12, weight: .medium, design: .rounded))
+                .foregroundStyle(.white.opacity(0.5))
             Spacer()
             Text(value)
-                .font(.system(size: 13, weight: .semibold, design: .monospaced))
-                .foregroundStyle(.primary)
+                .font(.system(size: 12, weight: .bold, design: .monospaced))
+                .foregroundStyle(.white)
         }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 9)
+        .background(Color.white.opacity(0.04))
+    }
+}
+
+// MARK: - Video Playback
+
+private struct ClipStakesLoopingVideoPlayer: View {
+    let videoURL: URL
+    let isActive: Bool
+
+    @StateObject private var controller = ClipStakesLoopingVideoController()
+
+    var body: some View {
+        ZStack {
+            LinearGradient(
+                colors: [Color.black.opacity(0.9), Color.black.opacity(0.65)],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+
+            ClipStakesPlayerLayerView(player: controller.player)
+                .opacity(controller.isReady ? 1 : 0)
+
+            if !controller.isReady {
+                VStack(spacing: 8) {
+                    if controller.didFail {
+                        Image(systemName: "video.slash.fill")
+                            .font(.system(size: 26, weight: .semibold))
+                            .foregroundStyle(.white.opacity(0.55))
+                        Text("Video unavailable")
+                            .font(.system(size: 12, weight: .bold, design: .rounded))
+                            .foregroundStyle(.white.opacity(0.7))
+                    } else {
+                        ProgressView()
+                            .tint(.white)
+                        Text("Loading clip")
+                            .font(.system(size: 11, weight: .medium, design: .rounded))
+                            .foregroundStyle(.white.opacity(0.65))
+                    }
+                }
+                .padding(12)
+                .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 12))
+            }
+        }
+        .onAppear {
+            controller.configure(with: videoURL)
+            controller.setActive(isActive)
+        }
+        .onChange(of: videoURL) { _, newURL in
+            controller.configure(with: newURL)
+            controller.setActive(isActive)
+        }
+        .onChange(of: isActive) { _, active in
+            controller.setActive(active)
+        }
+        .onDisappear {
+            controller.setActive(false)
+        }
+    }
+}
+
+@MainActor
+private final class ClipStakesLoopingVideoController: ObservableObject {
+    let player = AVQueuePlayer()
+
+    @Published var isReady = false
+    @Published var didFail = false
+
+    private static let playbackLoadTimeoutSeconds: UInt64 = 8
+    private var configuredURL: URL?
+    private var looper: AVPlayerLooper?
+    private var statusObservation: NSKeyValueObservation?
+    private var loadTimeoutTask: Task<Void, Never>?
+    private var isActive = false
+
+    init() {
+        player.isMuted = true
+        player.automaticallyWaitsToMinimizeStalling = true
+        player.actionAtItemEnd = .none
+    }
+
+    func configure(with videoURL: URL) {
+        guard configuredURL != videoURL else { return }
+        configuredURL = videoURL
+        isReady = false
+        didFail = false
+
+        loadTimeoutTask?.cancel()
+        statusObservation = nil
+        looper = nil
+        player.pause()
+        player.removeAllItems()
+
+        let item = AVPlayerItem(url: videoURL)
+        statusObservation = item.observe(\.status, options: [.initial, .new]) { [weak self] item, _ in
+            guard let self else { return }
+            Task { @MainActor in
+                switch item.status {
+                case .readyToPlay:
+                    self.isReady = true
+                    self.didFail = false
+                    self.loadTimeoutTask?.cancel()
+                    self.loadTimeoutTask = nil
+                    if self.isActive {
+                        self.player.play()
+                    }
+                case .failed:
+                    self.isReady = false
+                    self.didFail = true
+                    self.loadTimeoutTask?.cancel()
+                    self.loadTimeoutTask = nil
+                default:
+                    break
+                }
+            }
+        }
+
+        looper = AVPlayerLooper(player: player, templateItem: item)
+        loadTimeoutTask = Task { [weak self] in
+            try? await Task.sleep(nanoseconds: Self.playbackLoadTimeoutSeconds * 1_000_000_000)
+            guard let self else { return }
+            guard !Task.isCancelled else { return }
+            guard !self.isReady else { return }
+            self.didFail = true
+        }
+    }
+
+    func setActive(_ active: Bool) {
+        isActive = active
+        if active, isReady {
+            player.play()
+        } else {
+            player.pause()
+        }
+    }
+
+    deinit {
+        loadTimeoutTask?.cancel()
+    }
+}
+
+private struct ClipStakesPlayerLayerView: UIViewRepresentable {
+    let player: AVQueuePlayer
+
+    func makeUIView(context: Context) -> ClipStakesPlayerContainerView {
+        let view = ClipStakesPlayerContainerView()
+        view.playerLayer.videoGravity = .resizeAspectFill
+        view.playerLayer.player = player
+        return view
+    }
+
+    func updateUIView(_ uiView: ClipStakesPlayerContainerView, context: Context) {
+        uiView.playerLayer.player = player
+    }
+}
+
+private final class ClipStakesPlayerContainerView: UIView {
+    override class var layerClass: AnyClass {
+        AVPlayerLayer.self
+    }
+
+    var playerLayer: AVPlayerLayer {
+        layer as! AVPlayerLayer
     }
 }

@@ -290,6 +290,8 @@
 					"../Submissions/_template/**/*.swift",
 				);
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSCameraUsageDescription = "ClipStakes uses the camera so you can record product videos.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "ClipStakes uses the microphone so your recorded videos include audio.";
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
@@ -341,6 +343,8 @@
 					"../Submissions/_template/**/*.swift",
 				);
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSCameraUsageDescription = "ClipStakes uses the camera so you can record product videos.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "ClipStakes uses the microphone so your recorded videos include audio.";
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;

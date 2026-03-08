@@ -1,6 +1,7 @@
 import AVFoundation
 internal import Combine
 import SwiftUI
+import UIKit
 
 struct ClipStakesVideoRecorder: View {
     let minDuration: TimeInterval
@@ -14,8 +15,13 @@ struct ClipStakesVideoRecorder: View {
 
     private let simulatorTicker = Timer.publish(every: 0.1, on: .main, in: .common).autoconnect()
 
+    private var recordingCanvasHeight: CGFloat {
+        let screenHeight = UIScreen.main.bounds.height
+        return max(360, min(560, screenHeight * 0.62))
+    }
+
     var body: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: 0) {
             if controller.useSimulatorFallback {
                 simulatorBody
             } else {
@@ -23,11 +29,20 @@ struct ClipStakesVideoRecorder: View {
             }
 
             if let message = controller.errorMessage ?? simulatorError {
-                Text(message)
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundStyle(.orange)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 20)
+                HStack(spacing: 5) {
+                    Image(systemName: "exclamationmark.circle.fill")
+                        .font(.system(size: 10))
+                    Text(message)
+                        .font(.system(size: 11, weight: .medium, design: .rounded))
+                }
+                .foregroundStyle(ClipStakesPalette.neonOrange)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+                .frame(maxWidth: .infinity)
+                .background(ClipStakesPalette.neonOrange.opacity(0.08), in: RoundedRectangle(cornerRadius: 10))
+                .padding(.horizontal, 12)
+                .padding(.bottom, 8)
             }
         }
         .onAppear {
@@ -47,148 +62,257 @@ struct ClipStakesVideoRecorder: View {
 
     private var cameraBody: some View {
         VStack(spacing: 14) {
-            ZStack {
+            ZStack(alignment: .topLeading) {
                 ClipStakesCameraPreview(session: controller.session)
-                    .frame(height: 330)
-                    .clipShape(RoundedRectangle(cornerRadius: 20))
+                    .frame(maxWidth: .infinity)
+                    .frame(height: recordingCanvasHeight)
+                    .background(Color.black)
+                    .clipShape(RoundedRectangle(cornerRadius: 18))
 
-                VStack {
-                    HStack {
-                        recordPill(elapsed: controller.elapsed, mode: .camera)
-                        Spacer()
-                    }
-                    .padding(12)
+                LinearGradient(
+                    colors: [Color.black.opacity(0.35), Color.clear, Color.black.opacity(0.45)],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+                .clipShape(RoundedRectangle(cornerRadius: 18))
+
+                HStack(spacing: 8) {
+                    recordPill(elapsed: controller.elapsed, mode: .camera)
                     Spacer()
-                }
-            }
-            .overlay {
-                if !controller.isSessionRunning {
-                    VStack(spacing: 8) {
-                        ProgressView()
-                        Text("Preparing camera...")
-                            .font(.system(size: 13))
-                            .foregroundStyle(.secondary)
-                    }
-                }
-            }
-            .padding(.horizontal, 16)
-
-            Button {
-                if controller.isRecording {
-                    controller.stopRecording()
-                } else {
-                    simulatorError = nil
-                    controller.startRecording()
-                }
-            } label: {
-                ZStack {
-                    Circle()
-                        .fill(controller.isRecording ? Color.red : Color.white)
-                        .frame(width: 74, height: 74)
-
                     if controller.isRecording {
-                        RoundedRectangle(cornerRadius: 8)
-                            .fill(.white)
-                            .frame(width: 24, height: 24)
-                    } else {
-                        Circle()
-                            .strokeBorder(Color.red, lineWidth: 6)
-                            .frame(width: 34, height: 34)
+                        Text("REC")
+                            .font(.system(size: 10, weight: .black, design: .rounded))
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(Color.red, in: Capsule())
                     }
                 }
-                .shadow(color: .black.opacity(0.2), radius: 8, y: 3)
-            }
-            .buttonStyle(.plain)
+                .padding(12)
 
-            Text("Record a real clip (5–15s) on device")
-                .font(.system(size: 12, weight: .medium))
-                .foregroundStyle(.secondary)
+                if !controller.isSessionRunning, controller.errorMessage == nil {
+                    VStack(spacing: 6) {
+                        ProgressView()
+                            .tint(.white)
+                        Text("Preparing camera...")
+                            .font(.system(size: 11, weight: .medium, design: .rounded))
+                            .foregroundStyle(.white.opacity(0.5))
+                    }
+                }
+
+                if controller.isFinalizing {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 18)
+                            .fill(Color.black.opacity(0.45))
+                        HStack(spacing: 8) {
+                            ProgressView()
+                                .tint(.white)
+                            Text("Finalizing clip...")
+                                .font(.system(size: 12, weight: .semibold, design: .rounded))
+                                .foregroundStyle(.white)
+                        }
+                    }
+                }
+            }
+            .overlay(
+                RoundedRectangle(cornerRadius: 18)
+                    .stroke(Color.white.opacity(0.1), lineWidth: 0.5)
+            )
+            .padding(.horizontal, 2)
+
+            if controller.isFinalizing {
+                HStack(spacing: 8) {
+                    ProgressView()
+                        .tint(ClipStakesPalette.neonBlue)
+                    Text("Saving your recording")
+                        .font(.system(size: 12, weight: .semibold, design: .rounded))
+                        .foregroundStyle(.white.opacity(0.8))
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 14)
+                .background(Color.white.opacity(0.12), in: RoundedRectangle(cornerRadius: 14))
+            } else {
+                let canStopRecording = controller.elapsed >= minDuration
+                recordButton(
+                    isRecording: controller.isRecording,
+                    canStop: canStopRecording,
+                    remainingSeconds: max(0, Int(ceil(minDuration - controller.elapsed))),
+                    onTap: {
+                        if controller.isRecording {
+                            guard canStopRecording else { return }
+                            controller.stopRecording()
+                        } else {
+                            simulatorError = nil
+                            controller.startRecording()
+                        }
+                    },
+                    accentColor: .red
+                )
+            }
+
+            recorderHint(
+                controller.isFinalizing
+                    ? "Please wait while the clip is saved."
+                    : (controller.isRecording
+                        ? "Recording live. Tap again to stop."
+                        : "Capture a vertical clip (5-15s).")
+            )
         }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 10)
     }
 
     private var simulatorBody: some View {
         VStack(spacing: 14) {
-            ZStack {
-                RoundedRectangle(cornerRadius: 20)
+            ZStack(alignment: .topLeading) {
+                RoundedRectangle(cornerRadius: 16)
                     .fill(
                         LinearGradient(
-                            colors: [Color.blue.opacity(0.35), Color.green.opacity(0.3)],
+                            colors: [
+                                ClipStakesPalette.neonBlue.opacity(0.15),
+                                ClipStakesPalette.mint.opacity(0.1)
+                            ],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
                         )
                     )
-                    .frame(height: 330)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: recordingCanvasHeight)
+                    .clipShape(RoundedRectangle(cornerRadius: 18))
 
-                VStack(spacing: 10) {
+                VStack(spacing: 8) {
                     Image(systemName: "iphone.gen3.radiowaves.left.and.right")
-                        .font(.system(size: 38))
-                        .foregroundStyle(.white)
-                    Text("Simulator Recording Mode")
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundStyle(.white)
-                    Text("Use a physical iPhone for camera capture")
-                        .font(.system(size: 12))
-                        .foregroundStyle(.white.opacity(0.85))
+                        .font(.system(size: 30, weight: .light))
+                        .foregroundStyle(.white.opacity(0.4))
+                    Text("Simulator Mode")
+                        .font(.system(size: 14, weight: .semibold, design: .rounded))
+                        .foregroundStyle(.white.opacity(0.6))
+                    Text("Use a physical iPhone for camera")
+                        .font(.system(size: 11, weight: .medium, design: .rounded))
+                        .foregroundStyle(.white.opacity(0.3))
                 }
 
-                VStack {
-                    HStack {
-                        recordPill(elapsed: simulatorElapsed, mode: .simulator)
-                        Spacer()
-                    }
-                    .padding(12)
+                HStack(spacing: 8) {
+                    recordPill(elapsed: simulatorElapsed, mode: .simulator)
                     Spacer()
-                }
-            }
-            .padding(.horizontal, 16)
-
-            Button {
-                if simulatorRecording {
-                    stopSimulatorRecording()
-                } else {
-                    startSimulatorRecording()
-                }
-            } label: {
-                ZStack {
-                    Circle()
-                        .fill(simulatorRecording ? Color.orange : Color.white)
-                        .frame(width: 74, height: 74)
-
                     if simulatorRecording {
-                        RoundedRectangle(cornerRadius: 8)
-                            .fill(.white)
-                            .frame(width: 24, height: 24)
-                    } else {
-                        Image(systemName: "video.fill")
-                            .font(.system(size: 24, weight: .bold))
-                            .foregroundStyle(.blue)
+                        Text("REC")
+                            .font(.system(size: 10, weight: .black, design: .rounded))
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(Color.red, in: Capsule())
                     }
                 }
-                .shadow(color: .black.opacity(0.2), radius: 8, y: 3)
+                .padding(12)
             }
-            .buttonStyle(.plain)
+            .overlay(
+                RoundedRectangle(cornerRadius: 18)
+                    .stroke(Color.white.opacity(0.1), lineWidth: 0.5)
+            )
+            .padding(.horizontal, 2)
 
-            Text("Fallback recording still enforces 5–15s")
-                .font(.system(size: 12, weight: .medium))
-                .foregroundStyle(.secondary)
+            let canStopRecording = simulatorElapsed >= minDuration
+            recordButton(
+                isRecording: simulatorRecording,
+                canStop: canStopRecording,
+                remainingSeconds: max(0, Int(ceil(minDuration - simulatorElapsed))),
+                onTap: {
+                    if simulatorRecording {
+                        guard canStopRecording else { return }
+                        stopSimulatorRecording()
+                    } else {
+                        startSimulatorRecording()
+                    }
+                },
+                accentColor: ClipStakesPalette.neonOrange
+            )
+
+            recorderHint(
+                simulatorRecording
+                    ? "Recording simulated clip. Tap again to stop."
+                    : "Simulator fallback still enforces 5-15 seconds."
+            )
         }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 10)
+    }
+
+    private func recordButton(
+        isRecording: Bool,
+        canStop: Bool,
+        remainingSeconds: Int,
+        onTap: @escaping () -> Void,
+        accentColor: Color
+    ) -> some View {
+        let stopDisabled = isRecording && !canStop
+        let title: String
+        if isRecording {
+            title = canStop ? "Stop Recording" : "Keep Recording \(remainingSeconds)s"
+        } else {
+            title = "Start Recording"
+        }
+
+        let iconName: String
+        if isRecording {
+            iconName = canStop ? "stop.fill" : "timer"
+        } else {
+            iconName = "record.circle.fill"
+        }
+
+        return Button(action: onTap) {
+            HStack(spacing: 10) {
+                Image(systemName: iconName)
+                    .font(.system(size: 16, weight: .black))
+
+                Text(title)
+                    .font(.system(size: 15, weight: .black, design: .rounded))
+            }
+            .foregroundStyle(stopDisabled ? .white.opacity(0.7) : .white)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 13)
+            .background(
+                RoundedRectangle(cornerRadius: 14)
+                    .fill(stopDisabled ? Color.white.opacity(0.25) : (isRecording ? Color.red : accentColor))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 14)
+                    .stroke(Color.white.opacity(0.2), lineWidth: 0.5)
+            )
+            .shadow(color: (isRecording ? Color.red : accentColor).opacity(0.32), radius: 12, y: 4)
+            .animation(.easeInOut(duration: 0.2), value: isRecording)
+        }
+        .buttonStyle(.plain)
+        .disabled(stopDisabled)
+        .accessibilityLabel(isRecording ? "Stop recording" : "Start recording")
+    }
+
+    private func recorderHint(_ text: String) -> some View {
+        Text(text)
+            .font(.system(size: 11, weight: .medium, design: .rounded))
+            .foregroundStyle(.white.opacity(0.55))
+            .multilineTextAlignment(.center)
+            .padding(.horizontal, 16)
+            .padding(.top, 2)
     }
 
     @ViewBuilder
     private func recordPill(elapsed: TimeInterval, mode: ClipStakesCaptureMode) -> some View {
-        HStack(spacing: 6) {
+        let isActive = (mode == .camera ? controller.isRecording : simulatorRecording)
+        HStack(spacing: 5) {
             Circle()
-                .fill((mode == .camera ? controller.isRecording : simulatorRecording) ? Color.red : Color.green)
-                .frame(width: 8, height: 8)
+                .fill(isActive ? Color.red : ClipStakesPalette.mint)
+                .frame(width: 6, height: 6)
             Text("\(Int(elapsed))s")
-                .font(.system(size: 12, weight: .semibold, design: .monospaced))
-            Text("\(Int(minDuration))–\(Int(maxDuration))s")
-                .font(.system(size: 11, weight: .medium, design: .monospaced))
-                .foregroundStyle(.secondary)
+                .font(.system(size: 11, weight: .bold, design: .monospaced))
+                .foregroundStyle(.white)
+            Text("\(Int(minDuration))-\(Int(maxDuration))s")
+                .font(.system(size: 10, weight: .medium, design: .monospaced))
+                .foregroundStyle(.white.opacity(0.5))
         }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 7)
-        .glassEffect(.regular.interactive(), in: Capsule())
+        .padding(.horizontal, 8)
+        .padding(.vertical, 5)
+        .background(.ultraThinMaterial, in: Capsule())
     }
 
     private func startSimulatorRecording() {
@@ -221,6 +345,7 @@ final class ClipStakesCameraController: NSObject, ObservableObject {
     @Published var errorMessage: String?
     @Published var isSessionRunning = false
     @Published var isRecording = false
+    @Published var isFinalizing = false
     @Published var elapsed: TimeInterval = 0
     @Published var useSimulatorFallback = false
 
@@ -251,18 +376,13 @@ final class ClipStakesCameraController: NSObject, ObservableObject {
 #else
         Task {
             let cameraGranted = await requestVideoAccessIfNeeded()
-            let micGranted = await requestMicrophoneAccessIfNeeded()
 
             guard cameraGranted else {
                 errorMessage = "Camera permission is required to record clips."
                 return
             }
 
-            if !micGranted {
-                errorMessage = "Microphone permission was denied. Recording will continue without audio."
-            }
-
-            configureSessionIfNeeded(includeAudio: micGranted)
+            configureSessionIfNeeded(includeAudio: false)
             startSession()
         }
 #endif
@@ -270,9 +390,15 @@ final class ClipStakesCameraController: NSObject, ObservableObject {
 
     func startRecording() {
         guard isConfigured else { return }
+        guard !isFinalizing else { return }
         guard !movieOutput.isRecording else { return }
+        guard isSessionRunning else {
+            errorMessage = "Camera is still preparing. Try again."
+            return
+        }
 
         errorMessage = nil
+        isFinalizing = false
         elapsed = 0
 
         let outputURL = Self.tempMovieURL()
@@ -282,6 +408,7 @@ final class ClipStakesCameraController: NSObject, ObservableObject {
 
     func stopRecording() {
         guard movieOutput.isRecording else { return }
+        isFinalizing = true
         movieOutput.stopRecording()
     }
 
@@ -318,20 +445,6 @@ final class ClipStakesCameraController: NSObject, ObservableObject {
         }
     }
 
-    private func requestMicrophoneAccessIfNeeded() async -> Bool {
-        let status = AVCaptureDevice.authorizationStatus(for: .audio)
-        switch status {
-        case .authorized:
-            return true
-        case .denied, .restricted:
-            return false
-        case .notDetermined:
-            return await requestAccess(for: .audio)
-        @unknown default:
-            return false
-        }
-    }
-
     private func requestAccess(for mediaType: AVMediaType) async -> Bool {
         await withCheckedContinuation { continuation in
             AVCaptureDevice.requestAccess(for: mediaType) { granted in
@@ -347,6 +460,7 @@ final class ClipStakesCameraController: NSObject, ObservableObject {
 
         session.beginConfiguration()
         session.sessionPreset = .high
+        session.automaticallyConfiguresApplicationAudioSession = false
 
         defer {
             session.commitConfiguration()
@@ -388,7 +502,11 @@ final class ClipStakesCameraController: NSObject, ObservableObject {
             }
             self.session.startRunning()
             Task { @MainActor in
-                self.isSessionRunning = self.session.isRunning
+                let didStart = self.session.isRunning
+                self.isSessionRunning = didStart
+                if !didStart, self.errorMessage == nil {
+                    self.errorMessage = "Camera did not start. Check permissions and try again."
+                }
             }
         }
     }
@@ -412,14 +530,23 @@ final class ClipStakesCameraController: NSObject, ObservableObject {
         timer?.invalidate()
         timer = nil
         isRecording = false
-
-        if let error {
-            errorMessage = error.localizedDescription
-            return
-        }
+        isFinalizing = false
 
         let asset = AVURLAsset(url: outputURL)
-        let duration = CMTimeGetSeconds(asset.duration)
+        let loadedDuration = CMTimeGetSeconds(asset.duration)
+        let measuredDuration = elapsed
+        let duration = if loadedDuration.isFinite, loadedDuration > 0 {
+            loadedDuration
+        } else {
+            measuredDuration
+        }
+        let hasFile = FileManager.default.fileExists(atPath: outputURL.path)
+        let hasUsableVideo = hasFile && duration.isFinite && duration > 0
+
+        if let error, !hasUsableVideo {
+            errorMessage = "Recording failed. \(error.localizedDescription)"
+            return
+        }
 
         guard duration.isFinite, duration >= minDuration else {
             errorMessage = "Clip must be at least \(Int(minDuration)) seconds."
@@ -440,7 +567,7 @@ final class ClipStakesCameraController: NSObject, ObservableObject {
 
     private static func tempMovieURL() -> URL {
         FileManager.default.temporaryDirectory
-            .appendingPathComponent("clipstakes-\(UUID().uuidString).mp4")
+            .appendingPathComponent("clipstakes-\(UUID().uuidString).mov")
     }
 }
 
@@ -452,6 +579,7 @@ extension ClipStakesCameraController: AVCaptureFileOutputRecordingDelegate {
     ) {
         Task { @MainActor in
             self.isRecording = true
+            self.isFinalizing = false
             self.elapsed = 0
             self.beginTimer()
         }
