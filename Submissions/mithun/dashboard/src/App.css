@@ -1,0 +1,562 @@
+/* ─── Reset & Base ──────────────────────────────────────────────────────── */
+
+*, *::before, *::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: #0f0f0f;
+  color: #e8e8e8;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ─── App Shell ─────────────────────────────────────────────────────────── */
+
+.app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.main {
+  max-width: 1200px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 24px 20px 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+/* ─── Header ────────────────────────────────────────────────────────────── */
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 28px;
+  background: #161616;
+  border-bottom: 1px solid #1e1e1e;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.logo-icon {
+  font-size: 24px;
+}
+
+.logo-text {
+  font-size: 20px;
+  font-weight: 700;
+  color: #4CAF50;
+  letter-spacing: -0.5px;
+}
+
+.header-divider {
+  width: 1px;
+  height: 28px;
+  background: #2a2a2a;
+}
+
+.header-info {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.charity-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: #e8e8e8;
+}
+
+.charity-city {
+  font-size: 13px;
+  color: #777;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.powered-badge {
+  font-size: 11px;
+  font-weight: 600;
+  color: #4CAF50;
+  background: rgba(46, 125, 50, 0.1);
+  border: 1px solid rgba(46, 125, 50, 0.2);
+  padding: 5px 12px;
+  border-radius: 16px;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+}
+
+/* ─── Stat Cards ────────────────────────────────────────────────────────── */
+
+.stats-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+}
+
+.stat-card {
+  background: #1a1a1a;
+  border-radius: 14px;
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border: 1px solid #222;
+  border-left: 3px solid var(--accent, #2E7D32);
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+
+.stat-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.stat-label {
+  font-size: 12px;
+  color: #888;
+  font-weight: 500;
+  letter-spacing: 0.2px;
+}
+
+.stat-card-bottom {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.stat-value {
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -1px;
+  color: #fff;
+}
+
+.stat-change {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+
+.stat-change.positive {
+  color: #4CAF50;
+  background: rgba(76, 175, 80, 0.1);
+}
+
+.stat-change.negative {
+  color: #ef5350;
+  background: rgba(239, 83, 80, 0.1);
+}
+
+/* ─── Card (shared) ─────────────────────────────────────────────────────── */
+
+.card {
+  background: #1a1a1a;
+  border-radius: 14px;
+  padding: 20px;
+  border: 1px solid #222;
+}
+
+.card-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.section-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #e0e0e0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.card-header-sub {
+  font-size: 12px;
+  color: #666;
+  font-weight: 500;
+}
+
+/* ─── Goal Ring Card ────────────────────────────────────────────────────── */
+
+.goal-ring-card {
+  background: linear-gradient(135deg, #1a2e1a, #1a1a1a);
+  border: 1px solid #253025;
+}
+
+.goal-ring-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.goal-pill {
+  font-size: 12px;
+  color: #4CAF50;
+  background: rgba(76, 175, 80, 0.12);
+  padding: 4px 10px;
+  border-radius: 10px;
+  font-weight: 600;
+}
+
+.goal-ring-body {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.ring-wrapper {
+  position: relative;
+  width: 160px;
+  height: 160px;
+  flex-shrink: 0;
+}
+
+.ring-center {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.ring-pct {
+  font-size: 32px;
+  font-weight: 700;
+  color: #4CAF50;
+  letter-spacing: -1px;
+}
+
+.ring-sub {
+  font-size: 11px;
+  color: #777;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.ring-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.ring-stat-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ring-stat-val {
+  font-size: 18px;
+  font-weight: 700;
+  color: #e0e0e0;
+}
+
+.ring-stat-lbl {
+  font-size: 12px;
+  color: #666;
+}
+
+/* ─── Top Row ───────────────────────────────────────────────────────────── */
+
+.top-row {
+  display: grid;
+  grid-template-columns: 340px 1fr;
+  gap: 18px;
+}
+
+/* ─── Mid Row (Feed + Side Stack) ───────────────────────────────────────── */
+
+.mid-row {
+  display: grid;
+  grid-template-columns: 1.1fr 1fr;
+  gap: 18px;
+  align-items: start;
+}
+
+/* ─── Live Donation Feed ────────────────────────────────────────────────── */
+
+.feed-card {
+  max-height: 520px;
+  display: flex;
+  flex-direction: column;
+}
+
+.feed-list {
+  overflow-y: auto;
+  flex: 1;
+}
+
+.feed-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 4px;
+  border-bottom: 1px solid #1f1f1f;
+  transition: background 0.12s;
+}
+
+.feed-row:hover {
+  background: rgba(46, 125, 50, 0.05);
+}
+
+.feed-row:last-child {
+  border-bottom: none;
+}
+
+.feed-left {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.feed-amount {
+  font-size: 16px;
+  font-weight: 700;
+  color: #4CAF50;
+}
+
+.feed-detail {
+  font-size: 12px;
+  color: #666;
+}
+
+.feed-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+.feed-bin {
+  font-size: 12px;
+  color: #aaa;
+  font-weight: 500;
+  text-align: right;
+}
+
+.feed-time {
+  font-size: 11px;
+  color: #555;
+}
+
+/* ─── Pulse Dot ─────────────────────────────────────────────────────────── */
+
+.pulse-dot {
+  width: 7px;
+  height: 7px;
+  background: #4CAF50;
+  border-radius: 50%;
+  display: inline-block;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.5); }
+  50% { opacity: 0.6; box-shadow: 0 0 0 5px rgba(76, 175, 80, 0); }
+}
+
+/* ─── Bin Performance ───────────────────────────────────────────────────── */
+
+.bin-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.bin-card {
+  background: #141414;
+  border-radius: 10px;
+  padding: 14px 16px;
+  border: 1px solid #1e1e1e;
+}
+
+.bin-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.bin-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #ddd;
+}
+
+.bin-change {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 8px;
+}
+
+.bin-change.positive {
+  color: #4CAF50;
+  background: rgba(76, 175, 80, 0.1);
+}
+
+.bin-change.negative {
+  color: #ef5350;
+  background: rgba(239, 83, 80, 0.1);
+}
+
+.bin-card-stats {
+  display: flex;
+  gap: 24px;
+  margin-bottom: 10px;
+}
+
+.bin-metric {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.bin-metric-val {
+  font-size: 16px;
+  font-weight: 700;
+  color: #e8e8e8;
+}
+
+.bin-metric-lbl {
+  font-size: 11px;
+  color: #666;
+}
+
+.bin-bar-track {
+  width: 100%;
+  height: 5px;
+  background: #2a2a2a;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.bin-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #2E7D32, #4CAF50);
+  border-radius: 3px;
+  transition: width 0.8s ease-out;
+}
+
+/* ─── Chart ─────────────────────────────────────────────────────────────── */
+
+.chart-container {
+  width: 100%;
+  height: 240px;
+}
+
+.chart-tooltip {
+  background: #222;
+  border: 1px solid #333;
+  border-radius: 10px;
+  padding: 10px 14px;
+}
+
+.chart-tooltip-label {
+  font-size: 11px;
+  color: #888;
+  margin-bottom: 2px;
+}
+
+.chart-tooltip-value {
+  font-size: 14px;
+  font-weight: 600;
+  color: #4CAF50;
+}
+
+/* ─── Footer ────────────────────────────────────────────────────────────── */
+
+.footer {
+  text-align: center;
+  padding: 20px;
+  border-top: 1px solid #1a1a1a;
+  margin-top: auto;
+}
+
+.footer-text {
+  font-size: 12px;
+  color: #444;
+}
+
+/* ─── Responsive ────────────────────────────────────────────────────────── */
+
+@media (max-width: 1024px) {
+  .top-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 900px) {
+  .stats-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .mid-row {
+    grid-template-columns: 1fr;
+  }
+
+  .header {
+    flex-direction: column;
+    gap: 10px;
+    align-items: flex-start;
+  }
+
+  .header-divider {
+    display: none;
+  }
+}
+
+@media (max-width: 500px) {
+  .stats-row {
+    grid-template-columns: 1fr;
+  }
+
+  .main {
+    padding: 12px 10px 24px;
+  }
+
+  .stat-value {
+    font-size: 24px;
+  }
+
+  .goal-ring-body {
+    flex-direction: column;
+    align-items: center;
+  }
+}
