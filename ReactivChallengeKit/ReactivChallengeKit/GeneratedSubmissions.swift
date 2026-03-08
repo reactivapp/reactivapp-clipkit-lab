@@ -225,14 +225,15 @@ struct ClipBetSecondaryButton: View {
     var body: some View {
         Button(action: action) {
             Text(title)
-                .font(.custom("DM Mono", size: 11))
-                .kerning(1.4)
-                .foregroundColor(ClipBetColors.textSecondary)
+                .font(.custom("DM Mono", size: 13))
+                .kerning(2.4)
+                .foregroundColor(ClipBetColors.textPrimary)
                 .frame(maxWidth: .infinity)
-                .padding(.vertical, 14)
+                .padding(.vertical, 16)
+                .background(Color.white)
                 .overlay(
                     RoundedRectangle(cornerRadius: 2)
-                        .stroke(ClipBetColors.divider, lineWidth: 1)
+                        .stroke(ClipBetColors.textPrimary, lineWidth: 1.5)
                 )
         }
     }
@@ -252,10 +253,10 @@ struct AmountButton: View {
                 .foregroundColor(isSelected ? ClipBetColors.bg : ClipBetColors.textPrimary)
                 .padding(.horizontal, 16)
                 .padding(.vertical, 12)
-                .background(isSelected ? ClipBetColors.dark : Color.clear)
+                .background(isSelected ? ClipBetColors.dark : Color.white)
                 .overlay(
                     RoundedRectangle(cornerRadius: 2)
-                        .stroke(isSelected ? Color.clear : ClipBetColors.divider, lineWidth: 1)
+                        .stroke(isSelected ? Color.clear : ClipBetColors.textPrimary, lineWidth: 1.5)
                 )
                 .clipShape(RoundedRectangle(cornerRadius: 2))
         }
@@ -1457,14 +1458,9 @@ struct OrganizerDashboard: View {
                             closeBets()
                         }
 
-                        // Cancel & refund
-                        Button {
+                        // cancel & refund — styled as a proper bordered button
+                        ClipBetSecondaryButton(title: "CANCEL & REFUND ALL") {
                             showCancelConfirm = true
-                        } label: {
-                            Text("CANCEL & REFUND ALL")
-                                .font(.custom("DM Mono", size: 12))
-                                .kerning(1.2)
-                                .foregroundColor(ClipBetColors.no)
                         }
                     }
 
@@ -1535,12 +1531,14 @@ struct OrganizerDashboard: View {
                                     .font(.custom("DM Mono", size: 12))
                                     .kerning(1.2)
                             }
-                            .foregroundColor(ClipBetColors.textSecondary)
+                            .foregroundColor(ClipBetColors.textPrimary)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 12)
+                            .background(Color.white)
+                            .clipShape(RoundedRectangle(cornerRadius: 2))
                             .overlay(
                                 RoundedRectangle(cornerRadius: 2)
-                                    .stroke(ClipBetColors.divider, lineWidth: 1)
+                                    .stroke(ClipBetColors.textPrimary, lineWidth: 1.5)
                             )
                         }
                     }
@@ -2579,12 +2577,12 @@ struct ClipBetExperience: ClipExperience {
                                 Text("NOT NOW")
                                     .font(.custom("DM Mono", size: 12))
                                     .kerning(1.6)
-                                    .foregroundColor(ClipBetColors.textSecondary)
+                                    .foregroundColor(ClipBetColors.textPrimary)
                                     .padding(.horizontal, 20)
                                     .padding(.vertical, 14)
                                     .overlay(
                                         RoundedRectangle(cornerRadius: 2)
-                                            .stroke(ClipBetColors.divider, lineWidth: 1)
+                                            .stroke(ClipBetColors.textPrimary, lineWidth: 1.5)
                                     )
                             }
                             
@@ -2621,6 +2619,10 @@ struct ClipBetExperience: ClipExperience {
                                     .padding(.vertical, 10)
                                     .background(ClipBetColors.surface)
                                     .clipShape(RoundedRectangle(cornerRadius: 2))
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 2)
+                                            .stroke(ClipBetColors.textPrimary, lineWidth: 1)
+                                    )
                             }
                             Button { simulateNotification(type: 2) } label: {
                                 Text("SIMULATE: ENDED")
@@ -2630,6 +2632,10 @@ struct ClipBetExperience: ClipExperience {
                                     .padding(.vertical, 10)
                                     .background(ClipBetColors.surface)
                                     .clipShape(RoundedRectangle(cornerRadius: 2))
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 2)
+                                            .stroke(ClipBetColors.textPrimary, lineWidth: 1)
+                                    )
                             }
                         }
                     }
@@ -2648,13 +2654,10 @@ struct ClipBetExperience: ClipExperience {
                 VStack(spacing: 4) {
                     MonoLabel(text: "FUNDS HELD IN ESCROW")
                     Text("Organizer has 24h to resolve. If unresolved, you get a full refund.")
-                        .font(.custom("DM Mono", size: 10))
-                        .foregroundColor(ClipBetColors.textFaint)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal, 32)
-                }
                 .padding(.bottom, 24)
                 
+                // organizer demo feature removed
+                /*
                 // View Organizer Dashboard demo feature
                 Button {
                     // For demo purposes, map mock data to organizer state if missing
@@ -2670,6 +2673,7 @@ struct ClipBetExperience: ClipExperience {
                         .foregroundColor(ClipBetColors.textSecondary)
                 }
                 .padding(.bottom, 40)
+                */
             }
         }
         .scrollIndicators(.hidden)
@@ -2900,8 +2904,8 @@ enum ClipBetColors {
     static let surface      = Color(white: 0.94)
     static let divider      = Color(white: 0.90)
     static let textPrimary  = Color(white: 0.12) // Softer off-black
-    static let textSecondary = Color(white: 0.45)
-    static let textFaint    = Color(white: 0.65)
+    static let textSecondary = Color(white: 0.35)
+    static let textFaint    = Color(white: 0.50)
 
     static let yes          = Color(red: 100/255, green: 170/255, blue: 140/255)
     static let yesFill      = Color(red: 220/255, green: 240/255, blue: 230/255)
