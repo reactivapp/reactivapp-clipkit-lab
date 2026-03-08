@@ -112,16 +112,36 @@ MomentTimer validation: we verified the first meaningful value moment appears un
 Google Drive folder (all demo videos): https://drive.google.com/drive/folders/1iDUOn7rRy_Gpmyru26CI3nVl9M779oHy?usp=sharing
 
 Optional direct video links:
-- Viewer demo (hoodie): `PASTE_LINK_HERE`
-- Viewer demo (book): `PASTE_LINK_HERE`
-- Creator demo (record -> reward): `PASTE_LINK_HERE`
+- Viewer demo (hoodie): https://drive.google.com/file/d/1CmHS6nuLgIhEnxWaSevPkExCi2J1yC9U/view?usp=sharing
+- Viewer demo (book): Included in the Google Drive folder above.
+- Creator demo (record -> reward): Included in the Google Drive folder above.
 
 ### Screenshot(s)
 
-Selected screenshots:
+Screenshot 1 - Viewer landing (`/v/hoodie`)
 
-- Screenshot 1 (Viewer landing): `Submissions/copped/DemoAssets/FromRecordings/candidates/ScreenRecording_03-08-2026 08-36-04_1_t2.png`
-- Screenshot 2 (Viewer checkout): `Submissions/copped/DemoAssets/FromRecordings/selected/viewer_checkout_t6.6.png`
-- Screenshot 3 (Creator recording): `Submissions/copped/DemoAssets/FromRecordings/selected/creator_long_t16.png`
-- Screenshot 4 (Creator success): `Submissions/copped/DemoAssets/FromRecordings/selected/creator_success_scan_t44.png`
-- Screenshot 5 (Conversion proof): `Submissions/copped/DemoAssets/FromRecordings/selected/creator_long_t94.png`
+![Viewer landing](DemoAssets/Final/viewer-landing.png)
+
+Screenshot 2 - Viewer checkout sheet
+
+![Viewer checkout](DemoAssets/Final/viewer-checkout.png)
+
+Screenshot 3 - Creator recording (`/c/demo?product=hoodie`)
+
+![Creator recording](DemoAssets/Final/creator-recording.png)
+
+Screenshot 4 - Creator success (+$5 instant reward)
+
+![Creator success](DemoAssets/Final/creator-success.png)
+
+Screenshot 5 - Conversion proof ("Someone bought from your reel")
+
+![Conversion proof](DemoAssets/Final/conversion-proof.png)
+
+Bonus screenshot - Apple Wallet pass add sheet (from attached screenshot set)
+
+![Wallet pass](DemoAssets/Final/wallet-pass-attached.png)
+
+Bonus screenshot - conversion banner close-up (from attached screenshot set)
+
+![Conversion banner close-up](DemoAssets/Final/conversion-banner-attached.png)
