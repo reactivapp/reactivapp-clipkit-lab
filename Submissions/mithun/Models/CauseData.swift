@@ -25,7 +25,7 @@ struct CauseData: Identifiable {
             name: "Hamilton Food Share",
             city: "Hamilton, ON",
             foundedYear: 1984,
-            mealsToday: 848,
+            mealsToday: 849,
             dailyGoal: 1000,
             donorsThisWeek: 94,
             scenario: "A single mom skipped lunch so her kids could eat. Your gift means she doesn't have to choose.",
