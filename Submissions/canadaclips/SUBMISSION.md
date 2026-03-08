@@ -104,7 +104,7 @@ CanadaClips primarily benefits the **online conversion channel**, with secondary
 
 ### Demo Video
 
-Link: ___
+Link: https://drive.google.com/file/d/1y2qr6llciL2pgqPU5PtuVDP4nNlAj5ih/view?usp=sharing
 
 ### Screenshot(s)
 
@@ -115,8 +115,6 @@ Link: ___
 - Visit Store deep-link behavior
 
 <!-- Link to video or paste screenshots -->
-
-Video demo: https://drive.google.com/file/d/1y2qr6llciL2pgqPU5PtuVDP4nNlAj5ih/view?usp=sharing
 
 screenshots:
 https://github.com/user-attachments/assets/7379dd79-5a63-40b1-9e99-c26f58e11df3
