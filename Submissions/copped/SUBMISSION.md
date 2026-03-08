@@ -112,36 +112,20 @@ MomentTimer validation: we verified the first meaningful value moment appears un
 Google Drive folder (all demo videos): https://drive.google.com/drive/folders/1iDUOn7rRy_Gpmyru26CI3nVl9M779oHy?usp=sharing
 
 Optional direct video links:
-- Viewer demo (hoodie): https://drive.google.com/file/d/1CmHS6nuLgIhEnxWaSevPkExCi2J1yC9U/view?usp=sharing
+- Cinematic launch video (overall product story): https://drive.google.com/file/d/1CmHS6nuLgIhEnxWaSevPkExCi2J1yC9U/view?usp=share_link
+- Viewer demo (hoodie): Included in the Google Drive folder above.
 - Viewer demo (book): Included in the Google Drive folder above.
 - Creator demo (record -> reward): Included in the Google Drive folder above.
 
 ### Screenshot(s)
 
-Screenshot 1 - Viewer landing (`/v/hoodie`)
+Screenshot folder (all submission screenshots): https://drive.google.com/drive/folders/1EvdP7n6tV9P8ljkseNUZbr0zZ2LQ9LKs?usp=sharing
 
-![Viewer landing](DemoAssets/Final/viewer-landing.png)
-
-Screenshot 2 - Viewer checkout sheet
-
-![Viewer checkout](DemoAssets/Final/viewer-checkout.png)
-
-Screenshot 3 - Creator recording (`/c/demo?product=hoodie`)
-
-![Creator recording](DemoAssets/Final/creator-recording.png)
-
-Screenshot 4 - Creator success (+$5 instant reward)
-
-![Creator success](DemoAssets/Final/creator-success.png)
-
-Screenshot 5 - Conversion proof ("Someone bought from your reel")
-
-![Conversion proof](DemoAssets/Final/conversion-proof.png)
-
-Bonus screenshot - Apple Wallet pass add sheet (from attached screenshot set)
-
-![Wallet pass](DemoAssets/Final/wallet-pass-attached.png)
-
-Bonus screenshot - conversion banner close-up (from attached screenshot set)
-
-![Conversion banner close-up](DemoAssets/Final/conversion-banner-attached.png)
+Included shots in that folder:
+- Viewer landing (`/v/hoodie`)
+- Viewer checkout sheet
+- Creator recording (`/c/demo?product=hoodie`)
+- Creator success (+$5 instant reward)
+- Conversion proof ("Someone bought from your reel")
+- Wallet pass add sheet (bonus)
+- Conversion banner close-up (bonus)
