@@ -8,30 +8,51 @@ import PhotosUI
 /// A scan-to-return App Clip experience that lets customers complete a product return
 /// in under 30 seconds by scanning a QR code on their packaging.
 struct ReturnclipClipExperience: ClipExperience {
+    /// URL pattern used to match invocation URLs containing an order ID and SKU.
     static let urlPattern = "example.com/returnclip/:orderId/:sku"
+    /// Human-readable name shown on the landing card.
     static let clipName = "ReturnClip"
+    /// Short description shown below the clip name on the landing card.
     static let clipDescription = "Scan the QR on your package to start a return in under 30 seconds."
+    /// Team identifier for this submission.
     static let teamName = "ReturnClip"
+    /// Journey touchpoint this clip targets.
     static let touchpoint: JourneyTouchpoint = .reengagement
+    /// How the clip is physically invoked.
     static let invocationSource: InvocationSource = .qrCode
 
+    /// Invocation context injected by the simulator, containing URL and path parameters.
     let context: ClipContext
 
     // MARK: - State
 
+    /// Current step in the return flow.
     @State private var step: ReturnStep = .orderConfirm
+    /// The item the user has selected to return.
     @State private var selectedItem: ReturnMockData.OrderItem? = nil
+    /// The reason the user selected for the return.
     @State private var selectedReason: ReturnReason?
+    /// Whether the user has uploaded a photo of the item.
     @State private var hasUploadedPhoto = false
+    /// The result of the AI return-policy analysis.
     @State private var aiResult: AIVerdict?
+    /// Whether the AI analysis is currently running.
     @State private var isAnalyzing = false
+    /// Whether AI checklist step 1 (policy check) has completed.
     @State private var aiStep1Done = false
+    /// Whether AI checklist step 2 (photo review) has completed.
     @State private var aiStep2Done = false
+    /// Whether AI checklist step 3 (quality assessment) has completed.
     @State private var aiStep3Done = false
+    /// The resolution the user chose (refund, exchange, or store credit).
     @State private var selectedResolution: Resolution?
+    /// The photo item selected from the photo library.
     @State private var selectedPhotoItem: PhotosPickerItem? = nil
+    /// Whether the camera-or-library source dialog is showing.
     @State private var showingImageSourceDialog = false
+    /// Whether the camera picker sheet is presented.
     @State private var showingCamera = false
+    /// Stable random suffix for the return label code, generated once at init.
     @State private var returnLabelSuffix = String(format: "%04d", Int.random(in: 1000...9999))
 
     /// The order ID extracted from the invocation URL path, or `nil` if missing.
@@ -53,6 +74,7 @@ struct ReturnclipClipExperience: ClipExperience {
 
     // MARK: - Body
 
+    /// The main view body that switches between return-flow steps with animated transitions.
     var body: some View {
         ZStack {
             ClipBackground()
@@ -802,6 +824,7 @@ private struct CameraPickerView: UIViewControllerRepresentable {
     /// Callback invoked with the captured image.
     let onCapture: (UIImage) -> Void
 
+    /// Creates and configures a `UIImagePickerController` set to the camera source.
     func makeUIViewController(context: Context) -> UIImagePickerController {
         let picker = UIImagePickerController()
         if UIImagePickerController.isSourceTypeAvailable(.camera) {
@@ -811,14 +834,20 @@ private struct CameraPickerView: UIViewControllerRepresentable {
         return picker
     }
 
+    /// No-op; updates are not needed for the camera picker.
     func updateUIViewController(_ uiViewController: UIImagePickerController, context: Context) {}
 
+    /// Creates the coordinator that handles delegate callbacks from the picker.
     func makeCoordinator() -> Coordinator { Coordinator(onCapture: onCapture) }
 
+    /// Coordinator that bridges `UIImagePickerControllerDelegate` events to SwiftUI.
     class Coordinator: NSObject, UINavigationControllerDelegate, UIImagePickerControllerDelegate {
+        /// Callback to invoke when an image is captured.
         let onCapture: (UIImage) -> Void
+        /// Initializes the coordinator with a capture callback.
         init(onCapture: @escaping (UIImage) -> Void) { self.onCapture = onCapture }
 
+        /// Called when the user picks or captures an image; forwards it via `onCapture`.
         func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey: Any]) {
             if let image = info[.originalImage] as? UIImage {
                 onCapture(image)
@@ -826,6 +855,7 @@ private struct CameraPickerView: UIViewControllerRepresentable {
             picker.dismiss(animated: true)
         }
 
+        /// Called when the user cancels the picker; dismisses the controller.
         func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
             picker.dismiss(animated: true)
         }
@@ -852,8 +882,10 @@ private enum ReturnReason: String, CaseIterable, Identifiable {
     case changedMind = "changed_mind"
     case arrivedLate = "arrived_late"
 
+    /// Unique identifier derived from the raw value.
     var id: String { rawValue }
 
+    /// Human-readable label describing the return reason.
     var label: String {
         switch self {
         case .wrongSize: return "Wrong size or fit"
@@ -864,6 +896,7 @@ private enum ReturnReason: String, CaseIterable, Identifiable {
         }
     }
 
+    /// SF Symbol icon name representing this return reason.
     var icon: String {
         switch self {
         case .wrongSize: return "ruler"
@@ -881,8 +914,10 @@ private enum Resolution: String, CaseIterable, Identifiable {
     case exchange = "exchange"
     case storeCredit = "credit"
 
+    /// Unique identifier derived from the raw value.
     var id: String { rawValue }
 
+    /// Display title for this resolution option.
     var title: String {
         switch self {
         case .fullRefund: return "Full Refund"
@@ -891,6 +926,7 @@ private enum Resolution: String, CaseIterable, Identifiable {
         }
     }
 
+    /// SF Symbol icon name representing this resolution.
     var icon: String {
         switch self {
         case .fullRefund: return "dollarsign.arrow.circlepath"
@@ -899,6 +935,7 @@ private enum Resolution: String, CaseIterable, Identifiable {
         }
     }
 
+    /// Returns a subtitle describing the financial outcome for the given item price.
     func subtitle(for price: Double) -> String {
         let formatted = String(format: "$%.2f", price)
         switch self {
@@ -908,6 +945,7 @@ private enum Resolution: String, CaseIterable, Identifiable {
         }
     }
 
+    /// Returns a short label with the formatted amount for the return summary card.
     func amountLabel(for price: Double) -> String {
         switch self {
         case .fullRefund: return String(format: "$%.2f refund", price)
@@ -919,12 +957,19 @@ private enum Resolution: String, CaseIterable, Identifiable {
 
 /// The result of the simulated AI return-policy analysis.
 private struct AIVerdict {
+    /// Whether the return was approved by the AI analysis.
     let isEligible: Bool
+    /// Headline text for the verdict (e.g. "Return Approved").
     let title: String
+    /// Detailed explanation of the verdict.
     let message: String
+    /// SF Symbol icon name for the verdict badge.
     let icon: String
+    /// Color used for the verdict icon and highlights.
     let color: Color
+    /// Short label summarizing the item condition.
     let conditionLabel: String
+    /// Short label summarizing eligibility status.
     let eligibilityLabel: String
 }
 
@@ -932,19 +977,28 @@ private struct AIVerdict {
 
 /// Mock order data used for the return flow demonstration.
 private enum ReturnMockData {
+    /// Represents an item in a mock order.
     struct OrderItem: Identifiable, Hashable {
+        /// Unique identifier for the order item.
         let id: UUID
+        /// Display name of the product.
         let name: String
+        /// Price of the product in USD.
         let price: Double
+        /// Size descriptor (e.g. "M", "L"), or `nil` for unsized items like hats.
         let size: String?
+        /// SF Symbol used to represent the product visually.
         let systemImage: String
+        /// Stock-keeping unit identifier matched against the URL path.
         let sku: String
 
+        /// Price formatted as a USD string (e.g. "$75.00").
         var formattedPrice: String {
             String(format: "$%.2f", price)
         }
     }
 
+    /// Pre-defined order items used in the return-flow demo.
     static let orderItems: [OrderItem] = [
         OrderItem(id: UUID(), name: "Hackathon T-Shirt", price: 75.00, size: "L", systemImage: "tshirt.fill", sku: "hoodie"),
         OrderItem(id: UUID(), name: "Tour T-Shirt", price: 40.00, size: "M", systemImage: "tshirt.fill", sku: "tshirt"),
