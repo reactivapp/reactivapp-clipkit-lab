@@ -126,9 +126,12 @@ struct ClipBetExperience: ClipExperience {
                     .transition(.opacity)
             }
             
-            // In-app mock notification banner
+            // this is the in-app notification banner that slides down from the top.
+            // if the user taps it and it's the "event ended" one, we go straight
+            // to the results page. otherwise it just dismisses itself.
             if let title = mockNotifTitle, let bodyStr = mockNotifBody {
                 Button {
+                    // tapping the banner takes you to results if the event ended
                     if title == "Event Ended" {
                         withAnimation { currentScreen = .results }
                     }
@@ -477,7 +480,9 @@ struct ClipBetExperience: ClipExperience {
     }
 
     // MARK: - Results View
-
+    // this is the screen users see after an event ends.
+    // it shows whether they won or lost, their total earnings,
+    // the final pool stats, and a breakdown of each outcome.
     private var resultsView: some View {
         ScrollView {
             VStack(spacing: 0) {
@@ -513,9 +518,11 @@ struct ClipBetExperience: ClipExperience {
                         .multilineTextAlignment(.center)
                         .padding(.horizontal, 24)
 
-                    // Win/Loss display
+                    // check if the user picked the winning outcome, and
+                    // calculate how much they earned based on the pool split
                     if let selected = selectedOutcome {
                         let isWinner = event.resolvedOutcomeId == selected.id
+                        // if they lost, earnings are just $0
                         let est = isWinner ? event.estimatedReturn(betAmount: betAmount, for: selected) : 0
 
                         VStack(spacing: 8) {
@@ -1098,8 +1105,10 @@ struct ClipBetExperience: ClipExperience {
 
     // MARK: - Notifications
     
+    // we just set opted-in right away for a smoother ux,
+    // then actually request permission in the background.
+    // on simulators it might get blocked, so we don't overwrite true → false.
     private func requestNotificationPermission() {
-        // Assume opt-in immediately for UX
         withAnimation { self.notificationOptInStatus = true }
         
         UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, _ in
@@ -1112,6 +1121,11 @@ struct ClipBetExperience: ClipExperience {
         }
     }
     
+    // simulates what happens when a notification comes in.
+    // type 1 = bets closed, type 2 = event ended.
+    // for the "event ended" one, we also set a 3-second timer
+    // that auto-redirects to the results page if the user
+    // doesn't tap the banner themselves.
     private func simulateNotification(type: Int) {
         withAnimation(.spring()) {
             if type == 1 {
@@ -1122,11 +1136,11 @@ struct ClipBetExperience: ClipExperience {
                 self.mockNotifBody = "Tap to view results and claim your winnings."
                 self.event.status = .resolved
                 
-                // Demo default win logic
+                // for the demo, we just make the user's pick the winner
                 let targetOutcomeId = self.selectedOutcome?.id ?? self.event.outcomes.first?.id
                 self.event.resolvedOutcomeId = targetOutcomeId
 
-                // Auto-redirect to the results screen after 3 seconds
+                // if user doesn't tap the banner, auto-redirect after 3 seconds
                 DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
                     if self.currentScreen != .results && self.mockNotifTitle == "Event Ended" {
                         withAnimation { self.currentScreen = .results }
@@ -1141,7 +1155,8 @@ struct ClipBetExperience: ClipExperience {
         
         let currentTitle = self.mockNotifTitle
         
-        // Auto-dismiss after 3.5 seconds
+        // also auto-dismiss the banner after 3.5s no matter what
+        // (slightly longer than the redirect timer so it doesn't flicker)
         DispatchQueue.main.asyncAfter(deadline: .now() + 3.5) {
             withAnimation(.easeOut) {
                 if self.mockNotifTitle == currentTitle {

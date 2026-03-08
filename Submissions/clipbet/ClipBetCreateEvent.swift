@@ -537,6 +537,9 @@ struct CreateEventFlow: View {
         outcomes.filter { !$0.trimmingCharacters(in: .whitespaces).isEmpty }
     }
 
+    // sends everything to the backend to actually create the event.
+    // if the api call fails (like if the server is down), we just
+    // create a mock event locally so the demo still works.
     private func createMarket() {
         isCreating = true
 
@@ -559,7 +562,8 @@ struct CreateEventFlow: View {
                 self.qrURL = url
                 withAnimation { step = .qrCard }
             case .failure:
-                // Fallback for demo
+                // fallback: if the server is down or whatever, just make
+                // a local mock event so the flow still works for demo purposes
                 let mockId = UUID()
                 self.createdEvent = PredictionEvent(
                     id: mockId,
@@ -585,7 +589,9 @@ struct CreateEventFlow: View {
     }
 
     // MARK: - QR Card View (Printable PDF)
-
+    // this is the final screen after creating an event.
+    // it shows a printable card with the qr code that people
+    // can scan at the venue to place their bets.
     private var qrCardView: some View {
         ScrollView {
             VStack(spacing: 0) {
