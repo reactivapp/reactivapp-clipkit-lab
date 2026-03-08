@@ -104,7 +104,7 @@ The working prototype demonstrates a complete in-store shopping flow through fou
 
 ### Demo Video
 
-Link: ___
+Link: https://www.youtube.com/watch?v=rPfK6HNzSdo
 
 ### Screenshot(s)
 
