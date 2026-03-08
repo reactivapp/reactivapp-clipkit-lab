@@ -21,6 +21,7 @@ struct CoppedViewerExperience: ClipExperience {
     @State private var errorMessage: String?
     @State private var copiedReceiptURL = false
     @State private var pulseCTA = false
+    @State private var selectedTab = 0
 
     private let deviceID = "copped-device-id"
 
@@ -82,6 +83,7 @@ struct CoppedViewerExperience: ClipExperience {
             topHUD
         }
         .onAppear {
+            CoppedTheme.bootstrap()
             withAnimation(.easeInOut(duration: 1.35).repeatForever(autoreverses: true)) {
                 pulseCTA = true
             }
@@ -137,14 +139,14 @@ struct CoppedViewerExperience: ClipExperience {
         VStack(spacing: 8) {
             HStack {
                 VStack(alignment: .leading, spacing: 1) {
-                    CoppedInfoChip(title: "REAL CLIPS", icon: "play.rectangle.fill", tint: CoppedPalette.neonOrange)
+                    CoppedInfoChip(title: "REAL CLIPS", icon: "play.rectangle.fill", tint: .white)
 
                     Text(product.name)
-                        .font(.system(size: 17, weight: .black, design: .rounded))
+                        .font(.custom(Manrope.extraBold, size: 17))
                         .foregroundStyle(.white)
                     if !clips.isEmpty {
                         Text("Swipe for more")
-                            .font(.system(size: 10, weight: .medium, design: .rounded))
+                            .font(.custom(Manrope.medium, size: 10))
                             .foregroundStyle(.white.opacity(0.5))
                     }
                 }
@@ -154,11 +156,11 @@ struct CoppedViewerExperience: ClipExperience {
             if let errorMessage {
                 HStack(spacing: 4) {
                     Image(systemName: "exclamationmark.triangle.fill")
-                        .font(.system(size: 9))
+                        .font(.custom(Manrope.regular, size: 9))
                     Text(errorMessage)
-                        .font(.system(size: 11, weight: .medium, design: .rounded))
+                        .font(.custom(Manrope.medium, size: 11))
                 }
-                .foregroundStyle(CoppedPalette.neonOrange)
+                .foregroundStyle(CoppedPalette.warning)
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
 
@@ -171,29 +173,78 @@ struct CoppedViewerExperience: ClipExperience {
 
     // MARK: - Bottom Overlay
 
+    private var tabBarItems: [TabBarItem] {
+        [
+            TabBarItem(id: 0, icon: "play.rectangle.fill", label: "Browse"),
+            TabBarItem(id: 1, icon: "plus.circle.fill", label: "Create"),
+            TabBarItem(id: 2, icon: "creditcard.fill", label: "Wallet")
+        ]
+    }
+
     @ViewBuilder
     private var bottomOverlay: some View {
-        if checkoutOutcome != nil || (!isLoading && !clips.isEmpty) {
-            VStack(spacing: 8) {
-                if let outcome = checkoutOutcome {
-                    receiptPanel(outcome: outcome)
-                }
+        VStack(spacing: 0) {
+            if checkoutOutcome != nil || (!isLoading && !clips.isEmpty) {
+                VStack(spacing: 8) {
+                    if let outcome = checkoutOutcome {
+                        receiptPanel(outcome: outcome)
+                    }
 
-                if !isLoading && !clips.isEmpty {
-                    buyBar
+                    if !isLoading && !clips.isEmpty {
+                        buyBar
+                    }
                 }
+                .padding(.horizontal, 12)
+                .padding(.top, 8)
+                .padding(.bottom, 4)
             }
-            .padding(.horizontal, 12)
-            .padding(.top, 8)
-            .padding(.bottom, 6)
-            .background(
-                LinearGradient(
-                    colors: [Color.clear, Color.black.opacity(0.5)],
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
+
+            // FAB create button
+            Button {
+                if let outcome = checkoutOutcome {
+                    let url = URL(string: "https://clip.copped.app/c/\(outcome.receiptID)")!
+                    Task { await CoppedURLLauncher.open(url) }
+                }
+            } label: {
+                Image(systemName: "plus")
+                    .font(.system(size: 24, weight: .bold))
+                    .foregroundStyle(.white)
+                    .frame(width: 56, height: 56)
+                    .background(
+                        Circle()
+                            .fill(CoppedPalette.accent)
+                            .shadow(color: CoppedPalette.accent.opacity(0.4), radius: 12, y: 4)
+                    )
+            }
+            .buttonStyle(PlainButtonStyle())
+            .padding(.vertical, 4)
+
+            FloatingTabBar(
+                items: tabBarItems,
+                selection: $selectedTab,
+                inactiveColor: .primary.opacity(0.45),
+                bottomPadding: 8,
+                useLiquidGlass: true,
+                onSelectionChanged: { tab in
+                    if tab == 1 {
+                        // + Create: deep-link to creator
+                        if let outcome = checkoutOutcome {
+                            let url = URL(string: "https://clip.copped.app/c/\(outcome.receiptID)")!
+                            Task { await CoppedURLLauncher.open(url) }
+                        }
+                        // Reset to browse tab
+                        selectedTab = 0
+                    }
+                }
             )
         }
+        .background(
+            LinearGradient(
+                colors: [Color.clear, Color.black.opacity(0.6)],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+        )
     }
 
     private var buyBar: some View {
@@ -203,36 +254,36 @@ struct CoppedViewerExperience: ClipExperience {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("BUY NOW")
-                        .font(.system(size: 9, weight: .black, design: .rounded))
+                        .font(.custom(Manrope.extraBold, size: 9))
                         .tracking(0.8)
                         .foregroundStyle(.white.opacity(0.7))
 
                     Text(product.formattedPrice)
-                        .font(.system(size: 22, weight: .black, design: .rounded))
+                        .font(.custom(Manrope.extraBold, size: 22))
                         .foregroundStyle(.white)
 
                     Text("Fast checkout")
-                        .font(.system(size: 10, weight: .medium, design: .rounded))
+                        .font(.custom(Manrope.medium, size: 10))
                         .foregroundStyle(.white.opacity(0.65))
                 }
                 Spacer()
                 Image(systemName: "cart.badge.plus")
-                    .font(.system(size: 26, weight: .bold))
+                    .font(.custom(Manrope.bold, size: 26))
                     .foregroundStyle(.white)
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 14)
             .background(
                 RoundedRectangle(cornerRadius: 16)
-                    .fill(CoppedPalette.primaryGradient)
-                    .shadow(color: CoppedPalette.neonPink.opacity(pulseCTA ? 0.35 : 0.12), radius: pulseCTA ? 18 : 8)
+                    .fill(CoppedPalette.accent)
+                    .shadow(color: Color.black.opacity(0.3), radius: 10, y: 4)
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 16)
                     .stroke(Color.white.opacity(0.15), lineWidth: 0.5)
             )
         }
-        .buttonStyle(.plain)
+        .buttonStyle(PlainButtonStyle())
         .disabled(currentClip == nil)
         .opacity(currentClip == nil ? 0.5 : 1)
     }
@@ -246,7 +297,7 @@ struct CoppedViewerExperience: ClipExperience {
                 .scaleEffect(1.2)
 
             Text("PULLING LIVE CLIPS")
-                .font(.system(size: 11, weight: .black, design: .rounded))
+                .font(.custom(Manrope.extraBold, size: 11))
                 .tracking(1.0)
                 .foregroundStyle(.white.opacity(0.6))
         }
@@ -256,15 +307,15 @@ struct CoppedViewerExperience: ClipExperience {
     private var emptyState: some View {
         VStack(spacing: 12) {
             Image(systemName: "video.slash.fill")
-                .font(.system(size: 34, weight: .bold))
+                .font(.custom(Manrope.bold, size: 34))
                 .foregroundStyle(.white.opacity(0.3))
 
             Text("NO CLIPS YET")
-                .font(.system(size: 20, weight: .black, design: .rounded))
+                .font(.custom(Manrope.extraBold, size: 20))
                 .foregroundStyle(.white)
 
             Text("Be first to create social proof for \(product.name).\nStake a 5-15s clip and unlock instant rewards.")
-                .font(.system(size: 12, weight: .medium, design: .rounded))
+                .font(.custom(Manrope.medium, size: 12))
                 .foregroundStyle(.white.opacity(0.5))
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 32)
@@ -314,7 +365,7 @@ struct CoppedViewerExperience: ClipExperience {
     private func positionedCaption(for clip: CoppedClip) -> some View {
         if let text = clip.textOverlay, !text.isEmpty {
             let caption = Text(text.uppercased())
-                .font(.system(size: 24, weight: .black, design: .rounded))
+                .font(.custom(Manrope.extraBold, size: 24))
                 .foregroundStyle(.white)
                 .shadow(color: .black.opacity(0.5), radius: 6)
                 .lineLimit(2)
@@ -345,7 +396,7 @@ struct CoppedViewerExperience: ClipExperience {
             VStack {
                 Spacer(minLength: 0)
                 Text(clip.product.name)
-                    .font(.system(size: 12, weight: .semibold, design: .rounded))
+                    .font(.custom(Manrope.semiBold, size: 12))
                     .foregroundStyle(.white.opacity(0.6))
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, 12)
@@ -364,17 +415,17 @@ struct CoppedViewerExperience: ClipExperience {
             HStack {
                 HStack(spacing: 4) {
                     Image(systemName: "checkmark.circle.fill")
-                        .font(.system(size: 11))
-                        .foregroundStyle(CoppedPalette.mint)
+                        .font(.custom(Manrope.regular, size: 11))
+                        .foregroundStyle(.white.opacity(0.7))
                     Text("ORDER CONFIRMED")
-                        .font(.system(size: 11, weight: .black, design: .rounded))
-                        .foregroundStyle(CoppedPalette.mint)
+                        .font(.custom(Manrope.extraBold, size: 11))
+                        .foregroundStyle(.white.opacity(0.7))
                 }
                 Spacer()
             }
 
             Text("Your receipt is ready. Open creator flow to record and claim reward.")
-                .font(.system(size: 11, weight: .medium, design: .rounded))
+                .font(.custom(Manrope.medium, size: 11))
                 .foregroundStyle(.white.opacity(0.65))
 
             HStack(spacing: 8) {
@@ -390,11 +441,11 @@ struct CoppedViewerExperience: ClipExperience {
                         }
                     }
                 }
-                .font(.system(size: 11, weight: .bold, design: .rounded))
+                .font(.custom(Manrope.bold, size: 11))
                 .foregroundStyle(.white)
                 .padding(.horizontal, 10)
                 .padding(.vertical, 6)
-                .background(CoppedPalette.neonBlue, in: RoundedRectangle(cornerRadius: 8))
+                .background(CoppedPalette.accent, in: RoundedRectangle(cornerRadius: 8))
 
                 Button(copiedReceiptURL ? "Copied Link" : "Copy Link") {
                     Task { @MainActor in
@@ -402,7 +453,7 @@ struct CoppedViewerExperience: ClipExperience {
                         copiedReceiptURL = true
                     }
                 }
-                .font(.system(size: 11, weight: .bold, design: .rounded))
+                .font(.custom(Manrope.bold, size: 11))
                 .foregroundStyle(.white)
                 .padding(.horizontal, 10)
                 .padding(.vertical, 6)
@@ -504,15 +555,15 @@ private struct CoppedViewerCheckoutSheet: View {
                 VStack(spacing: 16) {
                     VStack(spacing: 6) {
                         Image(systemName: "creditcard.fill")
-                            .font(.system(size: 28, weight: .light))
-                            .foregroundStyle(CoppedPalette.neonBlue)
+                            .font(.custom(Manrope.light, size: 28))
+                            .foregroundStyle(.white.opacity(0.6))
 
                         Text("CHECKOUT")
-                            .font(.system(size: 20, weight: .black, design: .rounded))
+                            .font(.custom(Manrope.extraBold, size: 20))
                             .foregroundStyle(.white)
 
                         Text("Secure one-tap checkout")
-                            .font(.system(size: 12, weight: .medium, design: .rounded))
+                            .font(.custom(Manrope.medium, size: 12))
                             .foregroundStyle(.white.opacity(0.45))
                             .multilineTextAlignment(.center)
                     }
@@ -532,10 +583,10 @@ private struct CoppedViewerCheckoutSheet: View {
                     if isProcessing {
                         HStack(spacing: 8) {
                             ProgressView()
-                                .tint(CoppedPalette.neonPink)
+                                .tint(.white)
                                 .scaleEffect(0.8)
                             Text("Processing Apple Pay...")
-                                .font(.system(size: 12, weight: .medium, design: .rounded))
+                                .font(.custom(Manrope.medium, size: 12))
                                 .foregroundStyle(.white.opacity(0.6))
                         }
                     }
@@ -557,11 +608,11 @@ private struct CoppedViewerCheckoutSheet: View {
     private func checkoutRow(label: String, value: String) -> some View {
         HStack {
             Text(label)
-                .font(.system(size: 12, weight: .medium, design: .rounded))
+                .font(.custom(Manrope.medium, size: 12))
                 .foregroundStyle(.white.opacity(0.5))
             Spacer()
             Text(value)
-                .font(.system(size: 12, weight: .bold, design: .monospaced))
+                .font(.custom(Manrope.bold, size: 12))
                 .foregroundStyle(.white)
         }
         .padding(.horizontal, 12)
@@ -593,16 +644,16 @@ private struct CoppedLoopingVideoPlayer: View {
                 VStack(spacing: 8) {
                     if controller.didFail {
                         Image(systemName: "video.slash.fill")
-                            .font(.system(size: 26, weight: .semibold))
+                            .font(.custom(Manrope.semiBold, size: 26))
                             .foregroundStyle(.white.opacity(0.55))
                         Text("Video unavailable")
-                            .font(.system(size: 12, weight: .bold, design: .rounded))
+                            .font(.custom(Manrope.bold, size: 12))
                             .foregroundStyle(.white.opacity(0.7))
                     } else {
                         ProgressView()
                             .tint(.white)
                         Text("Loading clip")
-                            .font(.system(size: 11, weight: .medium, design: .rounded))
+                            .font(.custom(Manrope.medium, size: 11))
                             .foregroundStyle(.white.opacity(0.65))
                     }
                 }

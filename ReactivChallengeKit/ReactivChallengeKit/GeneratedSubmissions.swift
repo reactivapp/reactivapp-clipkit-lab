@@ -229,16 +229,16 @@ struct CoppedCreatorExperience: ClipExperience {
                     if showsInlineErrorBanner, let errorMessage {
                         HStack(spacing: 6) {
                             Image(systemName: "exclamationmark.triangle.fill")
-                                .font(.system(size: 11))
+                                .font(.custom(Manrope.regular, size: 11))
                             Text(errorMessage)
-                                .font(.system(size: 12, weight: .medium, design: .rounded))
+                                .font(.custom(Manrope.medium, size: 12))
                         }
-                        .foregroundStyle(CoppedPalette.neonOrange)
+                        .foregroundStyle(.white.opacity(0.7))
                         .multilineTextAlignment(.center)
                         .padding(.horizontal, 16)
                         .padding(.vertical, 8)
                         .frame(maxWidth: .infinity)
-                        .background(CoppedPalette.neonOrange.opacity(0.1), in: RoundedRectangle(cornerRadius: 10))
+                        .background(Color.white.opacity(0.06), in: RoundedRectangle(cornerRadius: 10))
                     }
                 }
                 .padding(.horizontal, 12)
@@ -249,6 +249,7 @@ struct CoppedCreatorExperience: ClipExperience {
             .scrollDismissesKeyboard(.interactively)
         }
         .onAppear {
+            CoppedTheme.bootstrap()
             withAnimation(.easeInOut(duration: 1.6).repeatForever(autoreverses: true)) {
                 pulseHero = true
                 pulseReward = true
@@ -268,12 +269,12 @@ struct CoppedCreatorExperience: ClipExperience {
         VStack(spacing: 7) {
             HStack(spacing: 6) {
                 Image(systemName: "camera.aperture")
-                    .font(.system(size: 10, weight: .bold))
-                    .foregroundStyle(CoppedPalette.neonPink)
+                    .font(.custom(Manrope.bold, size: 10))
+                    .foregroundStyle(.white.opacity(0.6))
                 Text("CREATOR")
-                    .font(.system(size: 10, weight: .black, design: .rounded))
+                    .font(.custom(Manrope.extraBold, size: 10))
                     .tracking(1.2)
-                    .foregroundStyle(CoppedPalette.neonPink)
+                    .foregroundStyle(.white.opacity(0.6))
 
                 Spacer()
             }
@@ -284,9 +285,8 @@ struct CoppedCreatorExperience: ClipExperience {
                     RoundedRectangle(cornerRadius: 3)
                         .fill(Color.white.opacity(0.08))
                     RoundedRectangle(cornerRadius: 3)
-                        .fill(CoppedPalette.accentGradient)
+                        .fill(Color.white)
                         .frame(width: max(8, geometry.size.width * progressValue))
-                        .shadow(color: CoppedPalette.neonBlue.opacity(pulseHero ? 0.4 : 0.15), radius: pulseHero ? 10 : 4)
                 }
             }
             .frame(height: 4)
@@ -295,8 +295,8 @@ struct CoppedCreatorExperience: ClipExperience {
             if let rewardsSnapshot {
                 HStack {
                     Text("Wallet \(rewardsSnapshot.availableBalanceDisplay)")
-                        .font(.system(size: 10, weight: .bold, design: .monospaced))
-                        .foregroundStyle(CoppedPalette.mint)
+                        .font(.custom(Manrope.bold, size: 10))
+                        .foregroundStyle(.white.opacity(0.6))
                     Spacer()
                 }
             }
@@ -342,18 +342,18 @@ struct CoppedCreatorExperience: ClipExperience {
                     .frame(width: 56, height: 56)
                 Circle()
                     .trim(from: 0, to: 0.7)
-                    .stroke(CoppedPalette.accentGradient, style: StrokeStyle(lineWidth: 6, lineCap: .round))
+                    .stroke(Color.white.opacity(0.6), style: StrokeStyle(lineWidth: 6, lineCap: .round))
                     .frame(width: 56, height: 56)
                     .rotationEffect(.degrees(pulseHero ? 240 : -30))
             }
 
             Text("SYNCING RECEIPT")
-                .font(.system(size: 11, weight: .black, design: .rounded))
+                .font(.custom(Manrope.extraBold, size: 11))
                 .tracking(1.0)
                 .foregroundStyle(.white.opacity(0.7))
 
             Text("Checking eligible products")
-                .font(.system(size: 11, weight: .medium, design: .rounded))
+                .font(.custom(Manrope.medium, size: 11))
                 .foregroundStyle(.white.opacity(0.45))
         }
         .frame(maxWidth: .infinity)
@@ -367,25 +367,25 @@ struct CoppedCreatorExperience: ClipExperience {
         VStack(spacing: 8) {
             HStack {
                 Text("Select a product")
-                    .font(.system(size: 15, weight: .bold, design: .rounded))
+                    .font(.custom(Manrope.bold, size: 15))
                     .foregroundStyle(.white)
                 Spacer()
                 Text("\(products.count) eligible")
-                    .font(.system(size: 10, weight: .bold, design: .monospaced))
-                    .foregroundStyle(CoppedPalette.mint)
+                    .font(.custom(Manrope.bold, size: 10))
+                    .foregroundStyle(.white)
                     .padding(.horizontal, 8)
                     .padding(.vertical, 3)
-                    .background(CoppedPalette.mint.opacity(0.12), in: Capsule())
+                    .background(Color.white.opacity(0.1), in: Capsule())
             }
             .padding(.horizontal, 4)
 
             if products.isEmpty {
                 VStack(spacing: 8) {
                     Image(systemName: "shippingbox")
-                        .font(.system(size: 28))
+                        .font(.custom(Manrope.regular, size: 28))
                         .foregroundStyle(.white.opacity(0.3))
                     Text("No eligible products found.")
-                        .font(.system(size: 13, weight: .medium, design: .rounded))
+                        .font(.custom(Manrope.medium, size: 13))
                         .foregroundStyle(.white.opacity(0.5))
                 }
                 .padding(.vertical, 24)
@@ -408,16 +408,16 @@ struct CoppedCreatorExperience: ClipExperience {
 
                 VStack(alignment: .leading, spacing: 3) {
                     Text(product.name)
-                        .font(.system(size: 15, weight: .bold, design: .rounded))
+                        .font(.custom(Manrope.bold, size: 15))
                         .foregroundStyle(.white)
                     HStack(spacing: 6) {
                         Text(product.formattedPrice)
-                            .font(.system(size: 12, weight: .bold, design: .monospaced))
-                            .foregroundStyle(CoppedPalette.mint)
+                            .font(.custom(Manrope.bold, size: 12))
+                            .foregroundStyle(.white)
                         Text("STAKE-READY")
-                            .font(.system(size: 9, weight: .black, design: .rounded))
+                            .font(.custom(Manrope.extraBold, size: 9))
                             .tracking(0.6)
-                            .foregroundStyle(.black)
+                            .foregroundStyle(.white.opacity(0.7))
                             .padding(.horizontal, 6)
                             .padding(.vertical, 3)
                             .background(productAccent(product), in: Capsule())
@@ -427,7 +427,7 @@ struct CoppedCreatorExperience: ClipExperience {
                 Spacer()
 
                 Image(systemName: "chevron.right")
-                    .font(.system(size: 13, weight: .semibold))
+                    .font(.custom(Manrope.semiBold, size: 13))
                     .foregroundStyle(.white.opacity(0.4))
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -435,7 +435,7 @@ struct CoppedCreatorExperience: ClipExperience {
             .padding(12)
             .clipStakesGlassCard(cornerRadius: 14)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(PlainButtonStyle())
     }
 
     private func beginRecording(for product: CoppedProduct) {
@@ -456,10 +456,10 @@ struct CoppedCreatorExperience: ClipExperience {
                         .frame(width: 34, height: 34)
                     VStack(alignment: .leading, spacing: 1) {
                         Text("Recording")
-                            .font(.system(size: 10, weight: .medium, design: .rounded))
+                            .font(.custom(Manrope.medium, size: 10))
                             .foregroundStyle(.white.opacity(0.5))
                         Text(selectedProduct.name)
-                            .font(.system(size: 13, weight: .bold, design: .rounded))
+                            .font(.custom(Manrope.bold, size: 13))
                             .foregroundStyle(.white)
                             .lineLimit(1)
                     }
@@ -470,7 +470,7 @@ struct CoppedCreatorExperience: ClipExperience {
                 Button("Change Product") {
                     step = .selectProduct
                 }
-                .font(.system(size: 11, weight: .bold, design: .rounded))
+                .font(.custom(Manrope.bold, size: 11))
                 .foregroundStyle(.white)
                 .padding(.horizontal, 10)
                 .padding(.vertical, 6)
@@ -490,7 +490,7 @@ struct CoppedCreatorExperience: ClipExperience {
 
             HStack(spacing: 8) {
                 Text("Record one clean take, then tap Stop.")
-                    .font(.system(size: 11, weight: .medium, design: .rounded))
+                    .font(.custom(Manrope.medium, size: 11))
                     .foregroundStyle(.white.opacity(0.55))
                 Spacer()
             }
@@ -513,25 +513,25 @@ struct CoppedCreatorExperience: ClipExperience {
         VStack(spacing: 14) {
             ZStack {
                 Circle()
-                    .stroke(CoppedPalette.neonBlue.opacity(0.15), lineWidth: 6)
+                    .stroke(Color.white.opacity(0.08), lineWidth: 6)
                     .frame(width: 56, height: 56)
                 Circle()
                     .trim(from: 0, to: 0.6)
-                    .stroke(CoppedPalette.accentGradient, style: StrokeStyle(lineWidth: 6, lineCap: .round))
+                    .stroke(Color.white.opacity(0.6), style: StrokeStyle(lineWidth: 6, lineCap: .round))
                     .frame(width: 56, height: 56)
                     .rotationEffect(.degrees(pulseHero ? 210 : -70))
                 Image(systemName: "brain")
-                    .font(.system(size: 18, weight: .semibold))
+                    .font(.custom(Manrope.semiBold, size: 18))
                     .foregroundStyle(.white.opacity(0.7))
             }
 
             Text("AI REVIEW")
-                .font(.system(size: 11, weight: .black, design: .rounded))
+                .font(.custom(Manrope.extraBold, size: 11))
                 .tracking(1.0)
                 .foregroundStyle(.white.opacity(0.8))
 
             Text(validationMessage.isEmpty ? "Checking visibility, framing, and content" : validationMessage)
-                .font(.system(size: 12, weight: .medium, design: .rounded))
+                .font(.custom(Manrope.medium, size: 12))
                 .foregroundStyle(.white.opacity(0.5))
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 20)
@@ -547,11 +547,11 @@ struct CoppedCreatorExperience: ClipExperience {
         VStack(spacing: 12) {
             HStack {
                 Text("Add overlay text")
-                    .font(.system(size: 16, weight: .bold, design: .rounded))
+                    .font(.custom(Manrope.bold, size: 16))
                     .foregroundStyle(.white)
                 Spacer()
                 Text("Optional")
-                    .font(.system(size: 10, weight: .medium, design: .rounded))
+                    .font(.custom(Manrope.medium, size: 10))
                     .foregroundStyle(.white.opacity(0.4))
             }
 
@@ -559,7 +559,7 @@ struct CoppedCreatorExperience: ClipExperience {
                 TextField("OBSESSED", text: $textOverlay)
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
-                    .font(.system(size: 15, weight: .bold, design: .rounded))
+                    .font(.custom(Manrope.bold, size: 15))
                     .foregroundStyle(.white)
                     .padding(11)
                     .background(Color.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 10))
@@ -568,13 +568,26 @@ struct CoppedCreatorExperience: ClipExperience {
                             .stroke(Color.white.opacity(0.1), lineWidth: 0.5)
                     )
 
-                Picker("Text Position", selection: $textPosition) {
+                HStack(spacing: 6) {
                     ForEach(CoppedTextPosition.allCases) { position in
-                        Text(position.rawValue.capitalized)
-                            .tag(position)
+                        Button {
+                            textPosition = position
+                        } label: {
+                            Text(position.rawValue.capitalized)
+                                .font(.custom(Manrope.semiBold, size: 12))
+                                .foregroundStyle(textPosition == position ? .white : .white.opacity(0.4))
+                                .padding(.horizontal, 14)
+                                .padding(.vertical, 7)
+                                .background(
+                                    textPosition == position
+                                        ? Color.white.opacity(0.15)
+                                        : Color.white.opacity(0.04),
+                                    in: RoundedRectangle(cornerRadius: 8)
+                                )
+                        }
+                        .buttonStyle(PlainButtonStyle())
                     }
                 }
-                .pickerStyle(.segmented)
 
                 textPreviewCard
             }
@@ -598,13 +611,7 @@ struct CoppedCreatorExperience: ClipExperience {
     private var textPreviewCard: some View {
         ZStack {
             RoundedRectangle(cornerRadius: 12)
-                .fill(
-                    LinearGradient(
-                        colors: [Color.black.opacity(0.5), CoppedPalette.neonBlue.opacity(0.3)],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
+                .fill(Color.white.opacity(0.06))
                 .frame(height: 110)
 
             VStack {
@@ -631,7 +638,7 @@ struct CoppedCreatorExperience: ClipExperience {
 
     private var overlayPreviewText: some View {
         Text(trimmedTextOverlay.isEmpty ? "YOUR OVERLAY" : trimmedTextOverlay.uppercased())
-            .font(.system(size: 15, weight: .black, design: .rounded))
+            .font(.custom(Manrope.extraBold, size: 15))
             .foregroundStyle(.white)
             .shadow(color: .black.opacity(0.45), radius: 4)
             .lineLimit(2)
@@ -644,7 +651,7 @@ struct CoppedCreatorExperience: ClipExperience {
         VStack(spacing: 12) {
             HStack {
                 Text("Final Review")
-                    .font(.system(size: 17, weight: .bold, design: .rounded))
+                    .font(.custom(Manrope.bold, size: 17))
                     .foregroundStyle(.white)
                 Spacer()
             }
@@ -661,25 +668,21 @@ struct CoppedCreatorExperience: ClipExperience {
             HStack(spacing: 10) {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("INSTANT REWARD")
-                        .font(.system(size: 9, weight: .black, design: .rounded))
+                        .font(.custom(Manrope.extraBold, size: 9))
                         .tracking(0.8)
                         .foregroundStyle(.white.opacity(0.6))
                     Text("$5 Coupon")
-                        .font(.system(size: 20, weight: .black, design: .rounded))
+                        .font(.custom(Manrope.extraBold, size: 20))
                         .foregroundStyle(.white)
                 }
                 Spacer()
                 Image(systemName: "ticket.fill")
-                    .font(.system(size: 24, weight: .bold))
-                    .foregroundStyle(CoppedPalette.neonOrange)
+                    .font(.custom(Manrope.bold, size: 24))
+                    .foregroundStyle(.white.opacity(0.7))
             }
             .padding(12)
             .background(
-                LinearGradient(
-                    colors: [CoppedPalette.neonPink.opacity(0.25), CoppedPalette.neonOrange.opacity(0.2)],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                ),
+                Color.white.opacity(0.06),
                 in: RoundedRectangle(cornerRadius: 12)
             )
             .overlay(
@@ -690,10 +693,10 @@ struct CoppedCreatorExperience: ClipExperience {
             if isUploading {
                 HStack(spacing: 8) {
                     ProgressView()
-                        .tint(CoppedPalette.neonPink)
+                        .tint(.white)
                         .scaleEffect(0.8)
                     Text("Uploading + minting reward...")
-                        .font(.system(size: 12, weight: .medium, design: .rounded))
+                        .font(.custom(Manrope.medium, size: 12))
                         .foregroundStyle(.white.opacity(0.6))
                 }
                 .padding(.vertical, 4)
@@ -730,11 +733,11 @@ struct CoppedCreatorExperience: ClipExperience {
                 // Header
                 VStack(spacing: 4) {
                     Image(systemName: "checkmark.circle.fill")
-                        .font(.system(size: 32, weight: .bold))
-                        .foregroundStyle(CoppedPalette.mint)
+                        .font(.custom(Manrope.bold, size: 32))
+                        .foregroundStyle(.white)
 
                     Text("CLIP IS LIVE")
-                        .font(.system(size: 10, weight: .black, design: .rounded))
+                        .font(.custom(Manrope.extraBold, size: 10))
                         .tracking(1.2)
                         .foregroundStyle(.white.opacity(0.6))
                 }
@@ -742,17 +745,17 @@ struct CoppedCreatorExperience: ClipExperience {
                 // Reward card
                 VStack(spacing: 10) {
                     Text("+\(reward.instantCreditDisplay)")
-                        .font(.system(size: 44, weight: .black, design: .rounded))
+                        .font(.custom(Manrope.extraBold, size: 44))
                         .foregroundStyle(.white)
 
                     Text("ADDED TO YOUR WALLET BALANCE")
-                        .font(.system(size: 9, weight: .black, design: .rounded))
+                        .font(.custom(Manrope.extraBold, size: 9))
                         .tracking(1.2)
                         .foregroundStyle(.white.opacity(0.8))
 
                     HStack(spacing: 8) {
                         Text(displayedBalance)
-                            .font(.system(size: 14, weight: .bold, design: .monospaced))
+                            .font(.custom(Manrope.bold, size: 14))
                             .foregroundStyle(.white)
 
                         Button(copiedWalletCode ? "Copied" : "Copy Wallet Code") {
@@ -761,7 +764,7 @@ struct CoppedCreatorExperience: ClipExperience {
                                 copiedWalletCode = true
                             }
                         }
-                        .font(.system(size: 11, weight: .bold, design: .rounded))
+                        .font(.custom(Manrope.bold, size: 11))
                         .foregroundStyle(.white)
                         .padding(.horizontal, 10)
                         .padding(.vertical, 5)
@@ -774,18 +777,13 @@ struct CoppedCreatorExperience: ClipExperience {
                 .frame(maxWidth: .infinity)
                 .padding(20)
                 .background(
-                    LinearGradient(
-                        colors: [CoppedPalette.neonPink, CoppedPalette.neonBlue],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    ),
+                    Color.white.opacity(0.08),
                     in: RoundedRectangle(cornerRadius: 18)
                 )
                 .overlay(
                     RoundedRectangle(cornerRadius: 18)
-                        .stroke(Color.white.opacity(0.2), lineWidth: 0.5)
+                        .stroke(Color.white.opacity(0.12), lineWidth: 0.5)
                 )
-                .shadow(color: CoppedPalette.neonPink.opacity(pulseReward ? 0.35 : 0.15), radius: pulseReward ? 20 : 10, y: 6)
 
                 // Actions
                 VStack(spacing: 8) {
@@ -848,7 +846,7 @@ struct CoppedCreatorExperience: ClipExperience {
 
                 if let walletStatusMessage {
                     Text(walletStatusMessage)
-                        .font(.system(size: 11, weight: .medium, design: .rounded))
+                        .font(.custom(Manrope.medium, size: 11))
                         .foregroundStyle(.white.opacity(0.6))
                         .multilineTextAlignment(.center)
                 }
@@ -856,20 +854,20 @@ struct CoppedCreatorExperience: ClipExperience {
                 if !transactions.isEmpty {
                     VStack(alignment: .leading, spacing: 8) {
                         Text("Recent Earnings")
-                            .font(.system(size: 12, weight: .bold, design: .rounded))
+                            .font(.custom(Manrope.bold, size: 12))
                             .foregroundStyle(.white.opacity(0.82))
 
                         ForEach(transactions.prefix(3)) { item in
                             HStack(spacing: 8) {
                                 Image(systemName: item.kind == .conversion ? "cart.fill.badge.plus" : "video.badge.plus")
-                                    .font(.system(size: 11, weight: .bold))
-                                    .foregroundStyle(CoppedPalette.mint)
+                                    .font(.custom(Manrope.bold, size: 11))
+                                    .foregroundStyle(.white)
                                 Text(item.kind == .conversion ? "Conversion reward" : "Clip published")
-                                    .font(.system(size: 11, weight: .medium, design: .rounded))
+                                    .font(.custom(Manrope.medium, size: 11))
                                     .foregroundStyle(.white.opacity(0.74))
                                 Spacer()
                                 Text("+\(item.amountDisplay)")
-                                    .font(.system(size: 11, weight: .bold, design: .monospaced))
+                                    .font(.custom(Manrope.bold, size: 11))
                                     .foregroundStyle(.white)
                             }
                         }
@@ -889,23 +887,23 @@ struct CoppedCreatorExperience: ClipExperience {
     private var blockedState: some View {
         VStack(spacing: 10) {
             Image(systemName: "lock.trianglebadge.exclamationmark")
-                .font(.system(size: 36, weight: .bold))
-                .foregroundStyle(CoppedPalette.neonOrange)
+                .font(.custom(Manrope.bold, size: 36))
+                .foregroundStyle(.white.opacity(0.7))
 
             Text("Receipt Already Used")
-                .font(.system(size: 18, weight: .bold, design: .rounded))
+                .font(.custom(Manrope.bold, size: 18))
                 .foregroundStyle(.white)
 
             Text(errorMessage ?? "This receipt already created a clip.")
-                .font(.system(size: 12, weight: .medium, design: .rounded))
+                .font(.custom(Manrope.medium, size: 12))
                 .foregroundStyle(.white.opacity(0.5))
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 16)
 
             if let rewardsSnapshot {
                 Text("Wallet balance: \(rewardsSnapshot.availableBalanceDisplay)")
-                    .font(.system(size: 12, weight: .bold, design: .monospaced))
-                    .foregroundStyle(CoppedPalette.mint)
+                    .font(.custom(Manrope.bold, size: 12))
+                    .foregroundStyle(.white)
             }
 
             VStack(spacing: 8) {
@@ -925,7 +923,7 @@ struct CoppedCreatorExperience: ClipExperience {
 
             if let blockedStatusMessage {
                 Text(blockedStatusMessage)
-                    .font(.system(size: 11, weight: .medium, design: .rounded))
+                    .font(.custom(Manrope.medium, size: 11))
                     .foregroundStyle(.white.opacity(0.6))
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 16)
@@ -939,15 +937,15 @@ struct CoppedCreatorExperience: ClipExperience {
     private var failureState: some View {
         VStack(spacing: 10) {
             Image(systemName: "xmark.octagon.fill")
-                .font(.system(size: 36, weight: .bold))
-                .foregroundStyle(CoppedPalette.neonPink)
+                .font(.custom(Manrope.bold, size: 36))
+                .foregroundStyle(.white.opacity(0.5))
 
             Text("Could Not Load Receipt")
-                .font(.system(size: 18, weight: .bold, design: .rounded))
+                .font(.custom(Manrope.bold, size: 18))
                 .foregroundStyle(.white)
 
             Text(errorMessage ?? "Try another receipt URL.")
-                .font(.system(size: 12, weight: .medium, design: .rounded))
+                .font(.custom(Manrope.medium, size: 12))
                 .foregroundStyle(.white.opacity(0.5))
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 16)
@@ -968,11 +966,11 @@ struct CoppedCreatorExperience: ClipExperience {
     private func confirmRow(label: String, value: String) -> some View {
         HStack {
             Text(label)
-                .font(.system(size: 12, weight: .medium, design: .rounded))
+                .font(.custom(Manrope.medium, size: 12))
                 .foregroundStyle(.white.opacity(0.5))
             Spacer()
             Text(value)
-                .font(.system(size: 12, weight: .bold, design: .monospaced))
+                .font(.custom(Manrope.bold, size: 12))
                 .foregroundStyle(.white)
                 .lineLimit(1)
         }
@@ -995,13 +993,13 @@ struct CoppedCreatorExperience: ClipExperience {
                             .scaledToFill()
                     default:
                         Image(systemName: product.systemImage)
-                            .font(.system(size: 14, weight: .semibold))
+                            .font(.custom(Manrope.semiBold, size: 14))
                             .foregroundStyle(.white.opacity(0.5))
                     }
                 }
             } else {
                 Image(systemName: product.systemImage)
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(.custom(Manrope.semiBold, size: 14))
                     .foregroundStyle(.white.opacity(0.5))
             }
         }
@@ -1009,16 +1007,8 @@ struct CoppedCreatorExperience: ClipExperience {
         .clipShape(RoundedRectangle(cornerRadius: 8))
     }
 
-    private func productAccent(_ product: CoppedProduct) -> LinearGradient {
-        let seed = abs(product.id.hashValue) % 3
-        switch seed {
-        case 0:
-            return LinearGradient(colors: [CoppedPalette.neonBlue, CoppedPalette.mint], startPoint: .topLeading, endPoint: .bottomTrailing)
-        case 1:
-            return LinearGradient(colors: [CoppedPalette.neonOrange, CoppedPalette.neonPink], startPoint: .topLeading, endPoint: .bottomTrailing)
-        default:
-            return LinearGradient(colors: [CoppedPalette.mint, CoppedPalette.neonBlue], startPoint: .topLeading, endPoint: .bottomTrailing)
-        }
+    private func productAccent(_ product: CoppedProduct) -> Color {
+        .white.opacity(0.15)
     }
 
     private func stepOrder(_ value: CreatorStep) -> Int {
@@ -1391,90 +1381,92 @@ struct CoppedCreatorExperience: ClipExperience {
 // MARK: - From Submissions/copped/CoppedDesignSystem.swift
 
 import SwiftUI
+import CoreText
 
-enum CoppedPalette {
-    static let ink = Color(red: 0.08, green: 0.05, blue: 0.12)
-    static let shadowInk = Color(red: 0.04, green: 0.02, blue: 0.08)
-    static let neonPink = Color(red: 1.00, green: 0.31, blue: 0.63)
-    static let neonOrange = Color(red: 1.00, green: 0.55, blue: 0.20)
-    static let neonBlue = Color(red: 0.26, green: 0.69, blue: 1.00)
-    static let mint = Color(red: 0.31, green: 0.92, blue: 0.78)
-    static let cardBase = Color.white.opacity(0.07)
-    static let cardBorder = Color.white.opacity(0.14)
-    static let surfaceElevated = Color.white.opacity(0.10)
+// MARK: - Theme Bootstrap
 
-    static let primaryGradient = LinearGradient(
-        colors: [neonPink, neonOrange],
-        startPoint: .topLeading,
-        endPoint: .bottomTrailing
-    )
+/// Call once when either Copped clip launches to configure ClankerComponents theme.
+enum CoppedTheme {
+    private static var isConfigured = false
 
-    static let accentGradient = LinearGradient(
-        colors: [neonBlue, mint],
-        startPoint: .topLeading,
-        endPoint: .bottomTrailing
-    )
+    static func bootstrap() {
+        guard !isConfigured else { return }
+        isConfigured = true
+        registerManropeFonts()
+        Theme.configureApp()
+    }
 
-    static let subtleGradient = LinearGradient(
-        colors: [Color.white.opacity(0.08), Color.white.opacity(0.02)],
-        startPoint: .topLeading,
-        endPoint: .bottomTrailing
-    )
-}
-
-struct CoppedStageBackground: View {
-    var body: some View {
-        ZStack {
-            LinearGradient(
-                colors: [CoppedPalette.shadowInk, CoppedPalette.ink],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-
-            Circle()
-                .fill(CoppedPalette.neonPink.opacity(0.22))
-                .blur(radius: 100)
-                .frame(width: 220, height: 220)
-                .offset(x: 120, y: -260)
-
-            Circle()
-                .fill(CoppedPalette.neonBlue.opacity(0.16))
-                .blur(radius: 110)
-                .frame(width: 240, height: 240)
-                .offset(x: -130, y: -60)
-
-            Circle()
-                .fill(CoppedPalette.neonOrange.opacity(0.14))
-                .blur(radius: 120)
-                .frame(width: 250, height: 250)
-                .offset(x: 80, y: 300)
+    /// Programmatically register Manrope .ttf files from the app bundle
+    /// so they work without Info.plist entries (hackathon convenience).
+    private static func registerManropeFonts() {
+        let fontNames = [
+            "Manrope-ExtraLight", "Manrope-Light", "Manrope-Regular",
+            "Manrope-Medium", "Manrope-SemiBold", "Manrope-Bold", "Manrope-ExtraBold"
+        ]
+        for name in fontNames {
+            if let url = Bundle.main.url(forResource: name, withExtension: "ttf") {
+                CTFontManagerRegisterFontsForURL(url as CFURL, .process, nil)
+            }
         }
-        .ignoresSafeArea()
     }
 }
+
+// MARK: - CoppedPalette (brand accent colors, kept thin)
+
+enum CoppedPalette {
+    // Primary surfaces
+    static let ink = Color(red: 0.07, green: 0.07, blue: 0.07)
+
+    // Accent kept from ClankerComponents theme — violet #7C3AED
+    static var accent: Color { UniversalColor.accent.color }
+    static var accentBg: Color { UniversalColor.accentBackground.color }
+
+    // Semantic
+    static var success: Color { UniversalColor.success.color }
+    static var danger: Color { UniversalColor.danger.color }
+    static var warning: Color { UniversalColor.warning.color }
+
+    // Neutrals
+    static var fg: Color { UniversalColor.foreground.color }
+    static var fgSecondary: Color { UniversalColor.secondaryForeground.color }
+    static var bg: Color { UniversalColor.background.color }
+    static var divider: Color { UniversalColor.divider.color }
+    static var content1: Color { UniversalColor.content1.color }
+    static var content2: Color { UniversalColor.content2.color }
+}
+
+// MARK: - Copped Glass Card (bridges to ClankerComponents glass)
 
 struct CoppedGlassCardModifier: ViewModifier {
     let cornerRadius: CGFloat
 
     func body(content: Content) -> some View {
         content
-            .background(
-                RoundedRectangle(cornerRadius: cornerRadius)
-                    .fill(CoppedPalette.cardBase)
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: cornerRadius)
-                    .stroke(CoppedPalette.cardBorder, lineWidth: 0.5)
-            )
-            .shadow(color: .black.opacity(0.22), radius: 12, y: 6)
+            .liquidGlass(cornerRadius: cornerRadius)
     }
 }
 
 extension View {
-    func clipStakesGlassCard(cornerRadius: CGFloat = 22) -> some View {
+    func coppedGlass(cornerRadius: CGFloat = 20) -> some View {
         modifier(CoppedGlassCardModifier(cornerRadius: cornerRadius))
     }
+
+    /// Legacy name kept for files that still reference it.
+    func clipStakesGlassCard(cornerRadius: CGFloat = 22) -> some View {
+        coppedGlass(cornerRadius: cornerRadius)
+    }
 }
+
+// MARK: - Background
+
+struct CoppedStageBackground: View {
+    var body: some View {
+        CoppedPalette.ink
+            .ignoresSafeArea()
+    }
+}
+
+// MARK: - Small Utilities
 
 struct CoppedInfoChip: View {
     let title: String
@@ -1484,60 +1476,14 @@ struct CoppedInfoChip: View {
     var body: some View {
         HStack(spacing: 5) {
             Image(systemName: icon)
-                .font(.system(size: 9, weight: .bold))
+                .font(.custom(Manrope.semiBold, size: 9))
             Text(title)
-                .font(.system(size: 10, weight: .bold, design: .rounded))
+                .font(.custom(Manrope.bold, size: 10))
         }
         .foregroundStyle(tint)
         .padding(.horizontal, 8)
         .padding(.vertical, 5)
-        .background(tint.opacity(0.12), in: Capsule())
-        .overlay(Capsule().stroke(tint.opacity(0.25), lineWidth: 0.5))
-    }
-}
-
-struct CoppedPrimaryButtonStyle: ButtonStyle {
-    var disabled = false
-
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .font(.system(size: 15, weight: .bold, design: .rounded))
-            .foregroundStyle(.white)
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 14)
-            .background(
-                RoundedRectangle(cornerRadius: 14)
-                    .fill(
-                        disabled
-                            ? AnyShapeStyle(Color.gray.opacity(0.3))
-                            : AnyShapeStyle(CoppedPalette.primaryGradient)
-                    )
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 14)
-                    .stroke(Color.white.opacity(disabled ? 0.1 : 0.2), lineWidth: 0.5)
-            )
-            .scaleEffect(configuration.isPressed ? 0.97 : 1)
-            .opacity(configuration.isPressed ? 0.85 : 1)
-            .animation(.easeOut(duration: 0.15), value: configuration.isPressed)
-    }
-}
-
-struct CoppedSecondaryButtonStyle: ButtonStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .font(.system(size: 14, weight: .semibold, design: .rounded))
-            .foregroundStyle(.white.opacity(0.9))
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 12)
-            .background(Color.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 12))
-            .overlay(
-                RoundedRectangle(cornerRadius: 12)
-                    .stroke(Color.white.opacity(0.15), lineWidth: 0.5)
-            )
-            .scaleEffect(configuration.isPressed ? 0.97 : 1)
-            .opacity(configuration.isPressed ? 0.85 : 1)
-            .animation(.easeOut(duration: 0.15), value: configuration.isPressed)
+        .liquidGlass(cornerRadius: 20, useCapsule: true)
     }
 }
 
@@ -1547,15 +1493,112 @@ struct CoppedStepPill: View {
 
     var body: some View {
         Text(label)
-            .font(.system(size: 10, weight: .bold, design: .rounded))
-            .foregroundStyle(isActive ? Color.black : Color.white.opacity(0.6))
+            .font(.custom(Manrope.bold, size: 10))
+            .foregroundStyle(isActive ? .white : .white.opacity(0.5))
             .padding(.horizontal, 10)
             .padding(.vertical, 5)
-            .background(
-                Capsule()
-                    .fill(isActive ? AnyShapeStyle(CoppedPalette.accentGradient) : AnyShapeStyle(Color.white.opacity(0.08)))
-            )
+            .liquidGlass(cornerRadius: 20, useCapsule: true)
             .animation(.easeInOut(duration: 0.25), value: isActive)
+    }
+}
+
+// MARK: - Bridge Button Styles (ClankerComponents look via SwiftUI ButtonStyle)
+
+struct CoppedPrimaryButtonStyle: SwiftUI.ButtonStyle {
+    var disabled: Bool = false
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.custom(Manrope.bold, size: 15))
+            .foregroundStyle(.white)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 13)
+            .background(
+                RoundedRectangle(cornerRadius: 14)
+                    .fill(disabled ? CoppedPalette.accent.opacity(0.4) : CoppedPalette.accent)
+            )
+            .opacity(configuration.isPressed ? 0.85 : 1)
+            .animation(.easeInOut(duration: 0.15), value: configuration.isPressed)
+    }
+}
+
+struct CoppedSecondaryButtonStyle: SwiftUI.ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.custom(Manrope.semiBold, size: 14))
+            .foregroundStyle(.white.opacity(0.85))
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 11)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color.white.opacity(0.1))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(Color.white.opacity(0.15), lineWidth: 0.5)
+            )
+            .opacity(configuration.isPressed ? 0.7 : 1)
+            .animation(.easeInOut(duration: 0.15), value: configuration.isPressed)
+    }
+}
+
+// MARK: - Convenience Button Builders
+
+enum CoppedButtons {
+    static func primary(
+        title: String,
+        icon: String? = nil,
+        isLoading: Bool = false,
+        isEnabled: Bool = true,
+        action: @escaping () -> Void
+    ) -> SUButton {
+        SUButton(model: ButtonVM {
+            $0.title = title
+            $0.style = .filled
+            $0.color = .accent
+            $0.size = .large
+            $0.isFullWidth = true
+            $0.isLoading = isLoading
+            $0.isEnabled = isEnabled
+            if let icon {
+                $0.image = UniversalImage(systemName: icon)
+            }
+        }, action: action)
+    }
+
+    static func secondary(
+        title: String,
+        icon: String? = nil,
+        isEnabled: Bool = true,
+        action: @escaping () -> Void
+    ) -> SUButton {
+        SUButton(model: ButtonVM {
+            $0.title = title
+            $0.style = .light
+            $0.color = .primary
+            $0.size = .medium
+            $0.isFullWidth = true
+            $0.isEnabled = isEnabled
+            if let icon {
+                $0.image = UniversalImage(systemName: icon)
+            }
+        }, action: action)
+    }
+
+    static func ghost(
+        title: String,
+        icon: String? = nil,
+        action: @escaping () -> Void
+    ) -> SUButton {
+        SUButton(model: ButtonVM {
+            $0.title = title
+            $0.style = .plain
+            $0.color = .primary
+            $0.size = .small
+            if let icon {
+                $0.image = UniversalImage(systemName: icon)
+            }
+        }, action: action)
     }
 }
 
@@ -3264,6 +3307,4016 @@ private struct ShopifyVariant: Decodable {
     let price: String?
 }
 
+// MARK: - From Submissions/copped/CoppedUI/Components/Alert.swift
+
+import SwiftUI
+
+// MARK: - AlertButtonVM
+
+public struct AlertButtonVM: ComponentVM {
+  public var title: String = ""
+  public var animationScale: AnimationScale = .medium
+  public var color: ComponentColor?
+  public var cornerRadius: ComponentRadius = .medium
+  public var style: ButtonStyle = .filled
+  public init() {}
+}
+
+// MARK: - AlertVM
+
+public struct AlertVM: ComponentVM {
+  public var title: String?
+  public var message: String?
+  public var primaryButton: AlertButtonVM?
+  public var secondaryButton: AlertButtonVM?
+  public var backgroundColor: UniversalColor?
+  public var borderWidth: BorderWidth = .small
+  public var closesOnOverlayTap: Bool = false
+  public var contentPaddings: Paddings = .init(padding: 16)
+  public var cornerRadius: ContainerRadius = .medium
+  public var overlayStyle: ModalOverlayStyle = .dimmed
+  public var transition: ModalTransition = .fast
+  public init() {}
+}
+
+extension AlertVM {
+  var modalVM: CenterModalVM {
+    CenterModalVM {
+      $0.backgroundColor = self.backgroundColor
+      $0.borderWidth = self.borderWidth
+      $0.closesOnOverlayTap = self.closesOnOverlayTap
+      $0.contentPaddings = self.contentPaddings
+      $0.cornerRadius = self.cornerRadius
+      $0.overlayStyle = self.overlayStyle
+      $0.transition = self.transition
+      $0.size = .small
+    }
+  }
+
+  var primaryButtonVM: ButtonVM? {
+    let vm = primaryButton.map(mapAlertButtonVM)
+    return secondaryButton.isNotNil ? vm : (vm ?? Self.defaultButtonVM)
+  }
+
+  var secondaryButtonVM: ButtonVM? {
+    secondaryButton.map(mapAlertButtonVM)
+  }
+
+  private func mapAlertButtonVM(_ model: AlertButtonVM) -> ButtonVM {
+    ButtonVM {
+      $0.title = model.title
+      $0.animationScale = model.animationScale
+      $0.color = model.color
+      $0.cornerRadius = model.cornerRadius
+      $0.style = model.style
+      $0.isFullWidth = true
+    }
+  }
+
+  static let buttonsSpacing: CGFloat = 12
+
+  static let defaultButtonVM = ButtonVM {
+    $0.title = "OK"
+    $0.color = .primary
+    $0.style = .filled
+    $0.isFullWidth = true
+  }
+}
+
+// MARK: - AlertButtonsOrientationCalculator
+
+struct AlertButtonsOrientationCalculator {
+  enum Orientation { case vertical, horizontal }
+
+  static func preferredOrientation(model: AlertVM) -> Orientation {
+    guard let primary = model.primaryButtonVM,
+          let secondary = model.secondaryButtonVM else {
+      return .vertical
+    }
+    // Heuristic: short titles → horizontal
+    let threshold = 14
+    return (primary.title.count <= threshold && secondary.title.count <= threshold)
+      ? .horizontal : .vertical
+  }
+}
+
+// MARK: - AlertContent (internal)
+
+struct AlertContent: View {
+  @Binding var isPresented: Bool
+  let model: AlertVM
+  let primaryAction: (() -> Void)?
+  let secondaryAction: (() -> Void)?
+
+  var body: some View {
+    SUCenterModal(
+      isVisible: $isPresented,
+      model: model.modalVM,
+      header: {
+        if model.message.isNotNil, let text = model.title { titleView(text) }
+      },
+      body: {
+        if let text = model.message { messageView(text) }
+        else if let text = model.title { titleView(text) }
+      },
+      footer: {
+        switch AlertButtonsOrientationCalculator.preferredOrientation(model: model) {
+        case .horizontal:
+          HStack(spacing: AlertVM.buttonsSpacing) {
+            buttonView(model: model.secondaryButtonVM, action: secondaryAction)
+            buttonView(model: model.primaryButtonVM, action: primaryAction)
+          }
+        case .vertical:
+          VStack(spacing: AlertVM.buttonsSpacing) {
+            buttonView(model: model.primaryButtonVM, action: primaryAction)
+            buttonView(model: model.secondaryButtonVM, action: secondaryAction)
+          }
+        }
+      }
+    )
+  }
+
+  private func titleView(_ text: String) -> some View {
+    Text(text)
+      .font(UniversalFont.mdHeadline.font)
+      .foregroundStyle(UniversalColor.foreground.color)
+      .multilineTextAlignment(.center)
+      .frame(maxWidth: .infinity)
+      .fixedSize(horizontal: false, vertical: true)
+  }
+
+  private func messageView(_ text: String) -> some View {
+    Text(text)
+      .font(UniversalFont.mdBody.font)
+      .foregroundStyle(UniversalColor.secondaryForeground.color)
+      .multilineTextAlignment(.center)
+      .frame(maxWidth: .infinity)
+  }
+
+  @ViewBuilder
+  private func buttonView(model: ButtonVM?, action: (() -> Void)?) -> some View {
+    if let model {
+      SUButton(model: model) {
+        action?()
+        isPresented = false
+      }
+    }
+  }
+}
+
+// MARK: - View Extensions
+
+extension View {
+  public func suAlert(
+    isPresented: Binding<Bool>,
+    model: AlertVM,
+    primaryAction: (() -> Void)? = nil,
+    secondaryAction: (() -> Void)? = nil,
+    onDismiss: (() -> Void)? = nil
+  ) -> some View {
+    self.modal(
+      isVisible: isPresented,
+      transitionDuration: model.transition.value,
+      onDismiss: onDismiss
+    ) {
+      AlertContent(
+        isPresented: isPresented,
+        model: model,
+        primaryAction: primaryAction,
+        secondaryAction: secondaryAction
+      )
+    }
+  }
+
+  public func suAlert<Item: Identifiable>(
+    item: Binding<Item?>,
+    model: @escaping (Item) -> AlertVM,
+    primaryAction: ((Item) -> Void)? = nil,
+    secondaryAction: ((Item) -> Void)? = nil,
+    onDismiss: (() -> Void)? = nil
+  ) -> some View {
+    self.modal(
+      item: item,
+      transitionDuration: { model($0).transition.value },
+      onDismiss: onDismiss
+    ) { unwrapped in
+      AlertContent(
+        isPresented: .init(
+          get: { item.wrappedValue.isNotNil },
+          set: { if $0 { item.wrappedValue = unwrapped } else { item.wrappedValue = nil } }
+        ),
+        model: model(unwrapped),
+        primaryAction: { primaryAction?(unwrapped) },
+        secondaryAction: { secondaryAction?(unwrapped) }
+      )
+    }
+  }
+}
+
+// MARK: - From Submissions/copped/CoppedUI/Components/Button.swift
+
+import SwiftUI
+
+// MARK: - ButtonVM
+
+public struct ButtonVM: ComponentVM {
+  public var animationScale: AnimationScale = .medium
+  public var color: ComponentColor?
+  public var contentSpacing: CGFloat = 8.0
+  public var cornerRadius: ComponentRadius = .medium
+  public var font: UniversalFont?
+  public var image: UniversalImage?
+  public var imageLocation: ImageLocation = .leading
+  @available(*, deprecated, message: "Use image.withRenderingMode(_:) instead.")
+  public var imageRenderingMode: ImageRenderingMode?
+  @available(*, deprecated, message: "Use image instead.")
+  public var imageSrc: ImageSource?
+  public var isEnabled: Bool = true
+  public var isFullWidth: Bool = false
+  public var isLoading: Bool = false
+  public var loadingVM: LoadingVM?
+  public var size: ComponentSize = .medium
+  public var style: ButtonStyle = .filled
+  public var title: String = ""
+  public init() {}
+}
+
+// MARK: - ButtonVM.ImageLocation
+
+extension ButtonVM {
+  public enum ImageLocation {
+    case leading, trailing
+  }
+}
+
+// MARK: - ButtonVM.ImageSource (deprecated)
+
+extension ButtonVM {
+  public enum ImageSource: Hashable {
+    case sfSymbol(String)
+    case local(String, bundle: Bundle? = nil)
+  }
+}
+
+// MARK: - ButtonVM Shared Helpers
+
+extension ButtonVM {
+  var isInteractive: Bool { isEnabled && !isLoading }
+
+  var preferredLoadingVM: LoadingVM {
+    return loadingVM ?? LoadingVM {
+      $0.color = ComponentColor(
+        main:     foregroundColor,
+        contrast: self.color?.main ?? .background
+      )
+      $0.size = .small
+    }
+  }
+
+  var backgroundColor: UniversalColor? {
+    switch style {
+    case .filled:
+      return (color?.main ?? .content2).enabled(isInteractive)
+    case .light:
+      return (color?.background ?? .content1).enabled(isInteractive)
+    case .plain, .bordered, .minimal, .glass:
+      return nil
+    }
+  }
+
+  var foregroundColor: UniversalColor {
+    let c: UniversalColor = switch style {
+    case .filled:
+      color?.contrast ?? .foreground
+    case .plain, .light, .bordered, .minimal, .glass:
+      color?.main ?? .foreground
+    }
+    return c.enabled(isInteractive)
+  }
+
+  var borderWidth: CGFloat {
+    switch style {
+    case .filled, .plain, .light, .minimal, .glass: return 0.0
+    case .bordered(let bw): return bw.value
+    }
+  }
+
+  var borderColor: UniversalColor? {
+    switch style {
+    case .filled, .plain, .light, .minimal, .glass: return nil
+    case .bordered:
+      return (color?.main ?? .divider).enabled(isInteractive)
+    }
+  }
+
+  var isGlassStyle: Bool { style == .glass }
+
+  var glassAccentColor: Color? {
+    color?.main.color
+  }
+
+  var preferredFont: UniversalFont {
+    if let font { return font }
+    switch size {
+    case .small:  return .smButton
+    case .medium: return .mdButton
+    case .large:  return .lgButton
+    }
+  }
+
+  var height: CGFloat? {
+    switch style {
+    case .minimal: return nil
+    case .light, .filled, .bordered, .plain, .glass:
+      return switch size {
+      case .small:  36
+      case .medium: 44
+      case .large:  52
+      }
+    }
+  }
+
+  var imageSide: CGFloat {
+    switch size {
+    case .small:  20
+    case .medium: 24
+    case .large:  28
+    }
+  }
+
+  var horizontalPadding: CGFloat {
+    switch style {
+    case .minimal: return 0
+    case .light, .filled, .bordered, .plain, .glass:
+      if title.isNotEmpty || isLoading {
+        return switch size {
+        case .small:  16
+        case .medium: 20
+        case .large:  24
+        }
+      } else {
+        return switch size {
+        case .small:  8
+        case .medium: 10
+        case .large:  12
+        }
+      }
+    }
+  }
+
+  var width: CGFloat? { isFullWidth ? 10_000 : nil }
+
+  var imageWithLegacyFallback: UniversalImage? {
+    if let image { return image }
+    guard let imageSrc else { return nil }
+    let img: UniversalImage? = switch imageSrc {
+    case .sfSymbol(let name):          UniversalImage(systemName: name)
+    case .local(let name, let bundle): UniversalImage(name, bundle: bundle)
+    }
+    if let imageRenderingMode, let img {
+      return img.withRenderingMode(imageRenderingMode)
+    }
+    return img
+  }
+}
+
+// MARK: - SUButton
+
+public struct SUButton: View {
+  public var model: ButtonVM
+  public var action: () -> Void
+  public var onLongPress: (() -> Void)?
+  @State public var scale: CGFloat = 1.0
+
+  public init(model: ButtonVM, onLongPress: (() -> Void)? = nil, action: @escaping () -> Void = {}) {
+    self.model = model
+    self.onLongPress = onLongPress
+    self.action = action
+  }
+
+  public var body: some View {
+    Button(action: action) {
+      HStack(spacing: model.contentSpacing) {
+        content
+      }
+    }
+    .buttonStyle(CKButtonStyle(model: model))
+    .simultaneousGesture(
+      DragGesture(minimumDistance: 0.0)
+        .onChanged { _ in scale = model.animationScale.value }
+        .onEnded   { _ in scale = 1.0 }
+    )
+    .disabled(!model.isInteractive)
+    .modifier(OptionalLongPressModifier(action: onLongPress))
+    .scaleEffect(scale, anchor: .center)
+    .animation(.easeOut(duration: 0.05), value: scale)
+  }
+
+  @ViewBuilder
+  private var content: some View {
+    switch (model.isLoading, model.imageWithLegacyFallback, model.imageLocation) {
+    case (true, _, _) where model.title.isEmpty:
+      SULoading(model: model.preferredLoadingVM)
+    case (true, _, _):
+      SULoading(model: model.preferredLoadingVM)
+      Text(model.title)
+    case (false, let img?, _) where model.title.isEmpty:
+      CKButtonImage(universalImage: img, tintColor: model.foregroundColor, side: model.imageSide)
+    case (false, let img?, .leading):
+      CKButtonImage(universalImage: img, tintColor: model.foregroundColor, side: model.imageSide)
+      Text(model.title)
+    case (false, let img?, .trailing):
+      Text(model.title)
+      CKButtonImage(universalImage: img, tintColor: model.foregroundColor, side: model.imageSide)
+    case (false, _, _):
+      Text(model.title)
+    }
+  }
+}
+
+// MARK: - Private Helpers
+
+private struct CKButtonImage: View {
+  let universalImage: UniversalImage
+  let tintColor: UniversalColor
+  let side: CGFloat
+
+  var body: some View {
+    universalImage.image
+      .resizable()
+      .scaledToFit()
+      .tint(tintColor.color)
+      .frame(width: side, height: side)
+  }
+}
+
+private struct OptionalLongPressModifier: ViewModifier {
+  let action: (() -> Void)?
+
+  func body(content: Content) -> some View {
+    if let action {
+      content.onLongPressGesture(minimumDuration: 0.5, perform: action)
+    } else {
+      content
+    }
+  }
+}
+
+private struct CKButtonStyle: SwiftUI.ButtonStyle {
+  let model: ButtonVM
+
+  func makeBody(configuration: Configuration) -> some View {
+    let label = configuration.label
+      .font(model.preferredFont.font)
+      .lineLimit(1)
+      .padding(.horizontal, model.horizontalPadding)
+      .frame(maxWidth: model.width)
+      .frame(height: model.height)
+      .contentShape(.rect)
+      .foregroundStyle(model.foregroundColor.color)
+
+    if model.isGlassStyle {
+      label.liquidGlass(
+        enabled: true,
+        cornerRadius: model.cornerRadius.value(),
+        accentColor: model.glassAccentColor
+      )
+    } else {
+      label
+        .background(model.backgroundColor?.color ?? .clear)
+        .clipShape(RoundedRectangle(cornerRadius: model.cornerRadius.value()))
+        .overlay {
+          RoundedRectangle(cornerRadius: model.cornerRadius.value())
+            .strokeBorder(model.borderColor?.color ?? .clear, lineWidth: model.borderWidth)
+        }
+    }
+  }
+}
+
+// MARK: - From Submissions/copped/CoppedUI/Components/ExpandableCard.swift
+
+import SwiftUI
+
+// MARK: - ExpandableCard
+
+/// A glass-effect card that expands from a compact preview to a full detail view.
+/// Uses matched geometry + spring animation for a fluid expand/collapse.
+public struct ExpandableCard<Preview: View, Detail: View>: View {
+  @Binding var isExpanded: Bool
+  let preview: () -> Preview
+  let detail: () -> Detail
+  var onExpandChange: ((Bool) -> Void)?
+
+  /// Corner radius for collapsed state.
+  var cornerRadius: CGFloat = 24
+  /// Background blur style.
+  var blurStyle: UIBlurEffect.Style = Theme.current.layout.glass.blurStyle
+  /// Background tint on top of blur.
+  var tint: Color = Theme.current.layout.glass.tint
+  /// Border color.
+  var borderColor: Color = Theme.current.layout.glass.border
+  /// Border width.
+  var borderWidth: CGFloat = Theme.current.layout.glass.borderWidth
+  /// Collapsed card height. `nil` lets the preview size naturally.
+  var collapsedHeight: CGFloat? = nil
+  var useLiquidGlass: Bool = false
+
+  public init(
+    isExpanded: Binding<Bool>,
+    cornerRadius: CGFloat = 24,
+    blurStyle: UIBlurEffect.Style = Theme.current.layout.glass.blurStyle,
+    tint: Color = Theme.current.layout.glass.tint,
+    borderColor: Color = Theme.current.layout.glass.border,
+    borderWidth: CGFloat = Theme.current.layout.glass.borderWidth,
+    collapsedHeight: CGFloat? = nil,
+    useLiquidGlass: Bool = false,
+    onExpandChange: ((Bool) -> Void)? = nil,
+    @ViewBuilder preview: @escaping () -> Preview,
+    @ViewBuilder detail: @escaping () -> Detail
+  ) {
+    self._isExpanded = isExpanded
+    self.cornerRadius = cornerRadius
+    self.blurStyle = blurStyle
+    self.tint = tint
+    self.borderColor = borderColor
+    self.borderWidth = borderWidth
+    self.collapsedHeight = collapsedHeight
+    self.useLiquidGlass = useLiquidGlass
+    self.onExpandChange = onExpandChange
+    self.preview = preview
+    self.detail = detail
+  }
+
+  public var body: some View {
+    VStack(spacing: 0) {
+      // Preview is always visible
+      preview()
+        .frame(height: collapsedHeight)
+        .frame(maxWidth: .infinity)
+        .clipped()
+
+      // Detail slides in when expanded
+      if isExpanded {
+        detail()
+          .transition(.move(edge: .bottom).combined(with: .opacity))
+      }
+    }
+    .liquidGlass(
+      enabled: useLiquidGlass,
+      cornerRadius: cornerRadius,
+      blurStyle: blurStyle,
+      tint: tint,
+      borderColor: borderColor,
+      borderWidth: borderWidth
+    )
+    .shadow(
+      color: Theme.current.layout.glass.shadowColor,
+      radius: Theme.current.layout.glass.shadowRadius,
+      x: Theme.current.layout.glass.shadowOffset.width,
+      y: Theme.current.layout.glass.shadowOffset.height
+    )
+    .onTapGesture {
+      let newValue = !isExpanded
+      onExpandChange?(newValue)
+      withAnimation(Theme.current.layout.motion.smooth.animation) {
+        isExpanded.toggle()
+      }
+    }
+    .animation(Theme.current.layout.motion.smooth.animation, value: isExpanded)
+  }
+}
+
+// MARK: - GlassCard
+
+/// Standalone frosted-glass card. Use directly when you don't need expand/collapse.
+public struct GlassCard<Content: View>: View {
+  let content: () -> Content
+  var cornerRadius: CGFloat = 24
+  var blurStyle: UIBlurEffect.Style = Theme.current.layout.glass.blurStyle
+  var tint: Color = Theme.current.layout.glass.tint
+  var borderColor: Color = Theme.current.layout.glass.border
+  var borderWidth: CGFloat = Theme.current.layout.glass.borderWidth
+
+  var useLiquidGlass: Bool = false
+
+  public init(
+    cornerRadius: CGFloat = 24,
+    blurStyle: UIBlurEffect.Style = Theme.current.layout.glass.blurStyle,
+    tint: Color = Theme.current.layout.glass.tint,
+    borderColor: Color = Theme.current.layout.glass.border,
+    borderWidth: CGFloat = Theme.current.layout.glass.borderWidth,
+    useLiquidGlass: Bool = false,
+    @ViewBuilder content: @escaping () -> Content
+  ) {
+    self.cornerRadius = cornerRadius
+    self.blurStyle = blurStyle
+    self.tint = tint
+    self.borderColor = borderColor
+    self.borderWidth = borderWidth
+    self.useLiquidGlass = useLiquidGlass
+    self.content = content
+  }
+
+  public var body: some View {
+    content()
+      .liquidGlass(
+        enabled: useLiquidGlass,
+        cornerRadius: cornerRadius,
+        blurStyle: blurStyle,
+        tint: tint,
+        borderColor: borderColor,
+        borderWidth: borderWidth
+      )
+  }
+}
+
+// MARK: - GlassBackground
+
+/// UIKit blur view wrapped for SwiftUI.
+public struct GlassBackground: UIViewRepresentable {
+  let style: UIBlurEffect.Style
+  let tint: Color
+  let cornerRadius: CGFloat
+
+  public init(
+    style: UIBlurEffect.Style = Theme.current.layout.glass.blurStyle,
+    tint: Color = Theme.current.layout.glass.tint,
+    cornerRadius: CGFloat = 20
+  ) {
+    self.style = style
+    self.tint = tint
+    self.cornerRadius = cornerRadius
+  }
+
+  public func makeUIView(context: Context) -> UIVisualEffectView {
+    let view = UIVisualEffectView(effect: UIBlurEffect(style: style))
+    view.clipsToBounds = true
+    view.layer.cornerRadius = cornerRadius
+    view.layer.cornerCurve = .continuous
+
+    // Tint overlay
+    let tintView = UIView()
+    tintView.backgroundColor = UIColor(tint)
+    tintView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+    view.contentView.addSubview(tintView)
+
+    return view
+  }
+
+  public func updateUIView(_ uiView: UIVisualEffectView, context: Context) {
+    uiView.effect = UIBlurEffect(style: style)
+    uiView.layer.cornerRadius = cornerRadius
+  }
+}
+
+// MARK: - From Submissions/copped/CoppedUI/Components/FloatingTabBar.swift
+
+import SwiftUI
+
+// MARK: - TabBarItem
+
+public struct TabBarItem: Identifiable {
+  public let id: Int
+  public let icon: String
+  public let label: String
+
+  public init(id: Int, icon: String, label: String) {
+    self.id = id
+    self.icon = icon
+    self.label = label
+  }
+}
+
+// MARK: - FloatingTabBar
+
+/// Uber-style floating translucent pill tab bar.
+/// Hovers above content with a glass blur background.
+public struct FloatingTabBar: View {
+  let items: [TabBarItem]
+  @Binding var selection: Int
+
+  var accentColor: Color = UniversalColor.accent.color
+  var inactiveColor: Color = .white.opacity(Theme.current.layout.overlay.inactiveContent)
+  var blurStyle: UIBlurEffect.Style = Theme.current.layout.glass.blurStyle
+  var bottomPadding: CGFloat = 24
+  var useLiquidGlass: Bool = false
+  var onSelectionChanged: ((Int) -> Void)? = nil
+
+  public init(
+    items: [TabBarItem],
+    selection: Binding<Int>,
+    accentColor: Color = UniversalColor.accent.color,
+    inactiveColor: Color = .white.opacity(Theme.current.layout.overlay.inactiveContent),
+    bottomPadding: CGFloat = 24,
+    useLiquidGlass: Bool = false,
+    onSelectionChanged: ((Int) -> Void)? = nil
+  ) {
+    self.items = items
+    self._selection = selection
+    self.accentColor = accentColor
+    self.inactiveColor = inactiveColor
+    self.bottomPadding = bottomPadding
+    self.useLiquidGlass = useLiquidGlass
+    self.onSelectionChanged = onSelectionChanged
+  }
+
+  public var body: some View {
+    HStack(spacing: 0) {
+      ForEach(items) { item in
+        TabBarButton(
+          item: item,
+          isSelected: selection == item.id,
+          accentColor: accentColor,
+          inactiveColor: inactiveColor
+        ) {
+          withAnimation(Theme.current.layout.motion.snappy.animation) {
+            selection = item.id
+          }
+          onSelectionChanged?(item.id)
+        }
+      }
+    }
+    .padding(.horizontal, 8)
+    .padding(.vertical, 10)
+    .liquidGlass(
+      enabled: useLiquidGlass,
+      blurStyle: blurStyle,
+      tint: Theme.Layout.Glass.subtle.tint,
+      borderColor: Theme.Layout.Glass.subtle.border,
+      useCapsule: true
+    )
+    .shadow(
+      color: Theme.Layout.Glass.subtle.shadowColor,
+      radius: Theme.Layout.Glass.subtle.shadowRadius,
+      x: Theme.Layout.Glass.subtle.shadowOffset.width,
+      y: Theme.Layout.Glass.subtle.shadowOffset.height
+    )
+    .padding(.horizontal, 32)
+    .padding(.bottom, bottomPadding)
+  }
+}
+
+// MARK: - TabBarButton
+
+private struct TabBarButton: View {
+  let item: TabBarItem
+  let isSelected: Bool
+  let accentColor: Color
+  let inactiveColor: Color
+  let action: () -> Void
+
+  var body: some View {
+    Button(action: action) {
+      VStack(spacing: 4) {
+        Image(systemName: item.icon)
+          .font(.system(size: 20, weight: isSelected ? .semibold : .regular))
+          .foregroundStyle(isSelected ? accentColor : inactiveColor)
+          .scaleEffect(isSelected ? 1.1 : 1.0)
+
+        Text(item.label)
+          .font(.custom(Manrope.medium, size: 10))
+          .foregroundStyle(isSelected ? accentColor : inactiveColor)
+      }
+      .frame(maxWidth: .infinity)
+      .padding(.vertical, 4)
+    }
+    .buttonStyle(.plain)
+    .animation(Theme.current.layout.motion.snappy.animation, value: isSelected)
+  }
+}
+
+// MARK: - FloatingTabBarContainer
+
+/// Wraps your page views with a floating tab bar overlay at the bottom.
+public struct FloatingTabBarContainer<Content: View>: View {
+  @Binding var selection: Int
+  let items: [TabBarItem]
+  let onSelectionChanged: ((Int) -> Void)?
+  let content: (Int) -> Content
+
+  public init(
+    selection: Binding<Int>,
+    items: [TabBarItem],
+    onSelectionChanged: ((Int) -> Void)? = nil,
+    @ViewBuilder content: @escaping (Int) -> Content
+  ) {
+    self._selection = selection
+    self.items = items
+    self.onSelectionChanged = onSelectionChanged
+    self.content = content
+  }
+
+  public var body: some View {
+    ZStack(alignment: .bottom) {
+      content(selection)
+        .ignoresSafeArea()
+
+      FloatingTabBar(items: items, selection: $selection, onSelectionChanged: onSelectionChanged)
+    }
+    .ignoresSafeArea()
+  }
+}
+
+// MARK: - From Submissions/copped/CoppedUI/Components/Loader.swift
+
+import SwiftUI
+
+// MARK: - LoadingVM
+
+public struct LoadingVM: ComponentVM {
+  /// The color of the spinner.
+  public var color: ComponentColor?
+  /// The line cap style of the arc.
+  public var lineCap: LineCap = .round
+  /// Optional fixed line width. Auto-calculated from size if nil.
+  public var lineWidth: CGFloat?
+  /// Predefined size. Pass nil to fill available space.
+  public var size: ComponentSize? = .medium
+
+  public init() {}
+}
+
+extension LoadingVM {
+  var preferredColor: UniversalColor {
+    color?.main ?? .accent
+  }
+  var loadingLineWidth: CGFloat {
+    if let lineWidth { return lineWidth }
+    switch size {
+    case .small:  return 2.5
+    case .large:  return 3.5
+    default:      return 3.0
+    }
+  }
+  var preferredSize: CGSize? {
+    switch size {
+    case .small:  return CGSize(width: 24, height: 24)
+    case .medium: return CGSize(width: 36, height: 36)
+    case .large:  return CGSize(width: 48, height: 48)
+    case nil:     return nil
+    }
+  }
+  func radius(for size: CGSize) -> CGFloat {
+    min(size.width, size.height) / 2 - loadingLineWidth / 2
+  }
+  func center(for size: CGSize) -> CGPoint {
+    CGPoint(x: size.width / 2, y: size.height / 2)
+  }
+}
+
+// MARK: - SULoading
+
+/// A spinning arc loading indicator.
+/// Replace the body with your custom spinner when ready.
+public struct SULoading: View {
+  public var model: LoadingVM
+  @State private var rotation: Double = 0
+
+  public init(model: LoadingVM = .init()) {
+    self.model = model
+  }
+
+  public var body: some View {
+    GeometryReader { geometry in
+      let sz = model.preferredSize ?? geometry.size
+      let center = model.center(for: sz)
+      let radius = model.radius(for: sz)
+
+      ZStack {
+        // Track ring
+        Circle()
+          .stroke(model.preferredColor.color.opacity(0.15), lineWidth: model.loadingLineWidth)
+
+        // Spinning arc (75% of circle)
+        Path { path in
+          path.addArc(
+            center: center,
+            radius: radius,
+            startAngle: .degrees(0),
+            endAngle: .degrees(270),
+            clockwise: false
+          )
+        }
+        .stroke(
+          model.preferredColor.color,
+          style: StrokeStyle(lineWidth: model.loadingLineWidth, lineCap: model.lineCap.cgLineCap)
+        )
+        .rotationEffect(.degrees(rotation))
+        .onAppear {
+          withAnimation(.linear(duration: 0.9).repeatForever(autoreverses: false)) {
+            rotation = 360
+          }
+        }
+      }
+      .frame(width: sz.width, height: sz.height)
+    }
+    .frame(width: model.preferredSize?.width, height: model.preferredSize?.height)
+  }
+}
+
+// MARK: - From Submissions/copped/CoppedUI/Components/MenuBar.swift
+
+import SwiftUI
+
+// MARK: - MenuBarItem
+
+public struct MenuBarItem: Identifiable {
+  public let id: Int
+  public let icon: String
+  public let label: String
+
+  public init(id: Int, icon: String, label: String) {
+    self.id = id
+    self.icon = icon
+    self.label = label
+  }
+}
+
+// MARK: - MenuBar
+
+/// Apple Music-style slim pill menu bar with an integrated liquid glass action button.
+/// Tight vertical padding creates the refined "pill" aesthetic.
+public struct MenuBar: View {
+  let items: [MenuBarItem]
+  @Binding var selection: Int
+
+  var actionIcon: String = "plus"
+  var actionLabel: String? = nil
+  var accentColor: Color = UniversalColor.accent.color
+  var inactiveColor: Color = .primary.opacity(Theme.current.layout.overlay.inactiveContent)
+  var blurStyle: UIBlurEffect.Style = Theme.current.layout.glass.blurStyle
+  var bottomPadding: CGFloat = 24
+  var useLiquidGlass: Bool = false
+  var onAction: (() -> Void)? = nil
+  var onSelectionChanged: ((Int) -> Void)? = nil
+
+  public init(
+    items: [MenuBarItem],
+    selection: Binding<Int>,
+    actionIcon: String = "plus",
+    actionLabel: String? = nil,
+    accentColor: Color = UniversalColor.accent.color,
+    bottomPadding: CGFloat = 24,
+    useLiquidGlass: Bool = false,
+    onAction: (() -> Void)? = nil,
+    onSelectionChanged: ((Int) -> Void)? = nil
+  ) {
+    self.items = items
+    self._selection = selection
+    self.actionIcon = actionIcon
+    self.actionLabel = actionLabel
+    self.accentColor = accentColor
+    self.bottomPadding = bottomPadding
+    self.useLiquidGlass = useLiquidGlass
+    self.onAction = onAction
+    self.onSelectionChanged = onSelectionChanged
+  }
+
+  public var body: some View {
+    let content = VStack(spacing: 16) {
+      // Liquid glass action button above
+      actionButton
+
+      // Navigation pills below
+      navigationPills
+    }
+    .padding(.horizontal, 24)
+    .padding(.bottom, bottomPadding)
+    .contentShape(Rectangle())
+    .background(Color.black.opacity(0.001))
+    .onTapGesture {} // blocks touch pass-through to views behind
+
+    if #available(iOS 26.0, *) {
+      GlassEffectContainer {
+        content
+      }
+    } else {
+      content
+    }
+  }
+
+  private var navigationPills: some View {
+    HStack(spacing: 2) {
+      ForEach(items) { item in
+        MenuBarPill(
+          item: item,
+          isSelected: selection == item.id,
+          accentColor: accentColor,
+          inactiveColor: inactiveColor
+        ) {
+          withAnimation(Theme.current.layout.motion.snappy.animation) {
+            selection = item.id
+          }
+          onSelectionChanged?(item.id)
+        }
+      }
+    }
+    .frame(maxWidth: .infinity)
+    .frame(height: 64)
+    .liquidGlass(
+      enabled: true,
+      cornerRadius: 32,
+      blurStyle: blurStyle,
+      tint: Theme.Layout.Glass.prominent.tint,
+      borderColor: Theme.Layout.Glass.prominent.border,
+      borderWidth: Theme.current.layout.glass.borderWidth
+    )
+    .shadow(
+      color: Theme.current.layout.glass.shadowColor,
+      radius: Theme.current.layout.glass.shadowRadius,
+      x: Theme.current.layout.glass.shadowOffset.width,
+      y: Theme.current.layout.glass.shadowOffset.height
+    )
+  }
+
+  private var actionButton: some View {
+    Button {
+      onAction?()
+    } label: {
+      HStack(spacing: 6) {
+        Image(systemName: actionIcon)
+          .font(.system(size: 15, weight: .semibold))
+        if let actionLabel {
+          Text(actionLabel)
+            .font(.custom(Manrope.semiBold, size: 13))
+        }
+      }
+      .foregroundStyle(.primary)
+      .frame(maxWidth: .infinity)
+      .frame(height: 48)
+    }
+    .buttonStyle(.plain)
+    .liquidGlass(
+      enabled: true,
+      cornerRadius: 24,
+      blurStyle: blurStyle,
+      tint: Theme.Layout.Glass.prominent.tint,
+      borderColor: Theme.Layout.Glass.prominent.border,
+      borderWidth: Theme.current.layout.glass.borderWidth
+    )
+    .shadow(
+      color: Theme.current.layout.glass.shadowColor,
+      radius: Theme.current.layout.glass.shadowRadius,
+      x: Theme.current.layout.glass.shadowOffset.width,
+      y: Theme.current.layout.glass.shadowOffset.height
+    )
+  }
+}
+
+// MARK: - MenuBarPill
+
+private struct MenuBarPill: View {
+  let item: MenuBarItem
+  let isSelected: Bool
+  let accentColor: Color
+  let inactiveColor: Color
+  let action: () -> Void
+
+  var body: some View {
+    Button(action: action) {
+      VStack(spacing: 4) {
+        Image(systemName: item.icon)
+          .font(.system(size: 18, weight: isSelected ? .semibold : .regular))
+
+        Text(item.label)
+          .font(.custom(Manrope.medium, size: 10))
+      }
+      .foregroundStyle(isSelected ? accentColor : inactiveColor)
+      .frame(maxWidth: .infinity)
+      .padding(.vertical, 7)
+    }
+    .buttonStyle(.plain)
+    .animation(Theme.current.layout.motion.snappy.animation, value: isSelected)
+  }
+}
+
+// MARK: - MenuBarContainer
+
+/// Wraps content with a MenuBar overlay at the bottom.
+public struct MenuBarContainer<Content: View>: View {
+  @Binding var selection: Int
+  let items: [MenuBarItem]
+  let actionIcon: String
+  let actionLabel: String?
+  let useLiquidGlass: Bool
+  let onAction: (() -> Void)?
+  let onSelectionChanged: ((Int) -> Void)?
+  let content: (Int) -> Content
+
+  public init(
+    selection: Binding<Int>,
+    items: [MenuBarItem],
+    actionIcon: String = "plus",
+    actionLabel: String? = nil,
+    useLiquidGlass: Bool = false,
+    onAction: (() -> Void)? = nil,
+    onSelectionChanged: ((Int) -> Void)? = nil,
+    @ViewBuilder content: @escaping (Int) -> Content
+  ) {
+    self._selection = selection
+    self.items = items
+    self.actionIcon = actionIcon
+    self.actionLabel = actionLabel
+    self.useLiquidGlass = useLiquidGlass
+    self.onAction = onAction
+    self.onSelectionChanged = onSelectionChanged
+    self.content = content
+  }
+
+  public var body: some View {
+    ZStack(alignment: .bottom) {
+      content(selection)
+        .ignoresSafeArea()
+
+      MenuBar(
+        items: items,
+        selection: $selection,
+        actionIcon: actionIcon,
+        actionLabel: actionLabel,
+        useLiquidGlass: useLiquidGlass,
+        onAction: onAction,
+        onSelectionChanged: onSelectionChanged
+      )
+      .zIndex(1)
+    }
+    .ignoresSafeArea()
+  }
+}
+
+// MARK: - From Submissions/copped/CoppedUI/Components/Modal.swift
+
+import SwiftUI
+
+// MARK: - ModalOverlayStyle
+
+public enum ModalOverlayStyle: Equatable {
+  case dimmed, blurred, transparent
+}
+
+// MARK: - ModalSize
+
+public enum ModalSize {
+  case small, medium, large, full
+}
+
+extension ModalSize {
+  public var maxWidth: CGFloat {
+    switch self {
+    case .small:  return 300
+    case .medium: return 400
+    case .large:  return 600
+    case .full:   return 10_000
+    }
+  }
+}
+
+// MARK: - ModalTransition
+
+public enum ModalTransition: Equatable {
+  case none, slow, normal, fast
+  case custom(TimeInterval)
+}
+
+extension ModalTransition {
+  public var value: TimeInterval {
+    switch self {
+    case .none:          return 0
+    case .slow:          return 0.5
+    case .normal:        return 0.3
+    case .fast:          return 0.2
+    case .custom(let v): return max(0, v)
+    }
+  }
+}
+
+// MARK: - ModalVM Protocol
+
+public protocol ModalVM: ComponentVM {
+  var backgroundColor: UniversalColor? { get set }
+  var borderWidth: BorderWidth { get set }
+  var closesOnOverlayTap: Bool { get set }
+  var contentPaddings: Paddings { get set }
+  var contentSpacing: CGFloat { get set }
+  var cornerRadius: ContainerRadius { get set }
+  var overlayStyle: ModalOverlayStyle { get set }
+  var outerPaddings: Paddings { get set }
+  var size: ModalSize { get set }
+  var transition: ModalTransition { get set }
+  var useLiquidGlass: Bool { get set }
+}
+
+extension ModalVM {
+  var preferredBackgroundColor: UniversalColor {
+    backgroundColor ?? .universal(.rgba(r: 44, g: 44, b: 46, a: 1.0))
+  }
+}
+
+// MARK: - BottomModalVM
+
+public struct BottomModalVM: ModalVM {
+  public var backgroundColor: UniversalColor?
+  public var borderWidth: BorderWidth = .small
+  public var closesOnOverlayTap: Bool = true
+  public var contentPaddings: Paddings = .init(padding: 20)
+  public var contentSpacing: CGFloat = 16
+  public var cornerRadius: ContainerRadius = .custom(24)
+  public var hidesOnSwipe: Bool = true
+  public var isDraggable: Bool = true
+  public var overlayStyle: ModalOverlayStyle = .dimmed
+  public var outerPaddings: Paddings = .init(padding: 20)
+  public var size: ModalSize = .medium
+  public var transition: ModalTransition = .fast
+  public var useLiquidGlass: Bool = false
+  public init() {}
+}
+
+// MARK: - CenterModalVM
+
+public struct CenterModalVM: ModalVM {
+  public var backgroundColor: UniversalColor?
+  public var borderWidth: BorderWidth = .small
+  public var closesOnOverlayTap: Bool = true
+  public var contentPaddings: Paddings = .init(padding: 20)
+  public var contentSpacing: CGFloat = 16
+  public var cornerRadius: ContainerRadius = .custom(24)
+  public var overlayStyle: ModalOverlayStyle = .dimmed
+  public var outerPaddings: Paddings = .init(padding: 20)
+  public var size: ModalSize = .medium
+  public var transition: ModalTransition = .fast
+  public var useLiquidGlass: Bool = false
+  public init() {}
+}
+
+// MARK: - ModalAnimation
+
+enum ModalAnimation {
+  static func rubberBandClamp(_ translation: CGFloat) -> CGFloat {
+    let dim: CGFloat = 20
+    let coef: CGFloat = 0.2
+    return (1.0 - (1.0 / ((translation * coef / dim) + 1.0))) * dim
+  }
+
+  static func bottomModalOffset(_ translation: CGFloat, model: BottomModalVM) -> CGFloat {
+    if translation > 0 {
+      return model.hidesOnSwipe
+        ? translation
+        : (model.isDraggable ? Self.rubberBandClamp(translation) : 0)
+    } else {
+      return model.isDraggable ? -Self.rubberBandClamp(abs(translation)) : 0
+    }
+  }
+
+  static func shouldHideBottomModal(
+    offset: CGFloat,
+    height: CGFloat,
+    velocity: CGFloat,
+    model: BottomModalVM
+  ) -> Bool {
+    guard model.hidesOnSwipe else { return false }
+    return abs(offset) > height / 2 || velocity > 250
+  }
+}
+
+// MARK: - ModalOverlay
+
+struct ModalOverlay<VM: ModalVM>: View {
+  let model: VM
+  @Binding var isVisible: Bool
+
+  init(isVisible: Binding<Bool>, model: VM) {
+    self._isVisible = isVisible
+    self.model = model
+  }
+
+  var body: some View {
+    Group {
+      switch model.overlayStyle {
+      case .dimmed:
+        Color.black.opacity(Theme.current.layout.overlay.dim)
+      case .blurred:
+        Color.clear.background(.ultraThinMaterial)
+      case .transparent:
+        Color.clear.contentShape(.rect)
+      }
+    }
+    .ignoresSafeArea(.all)
+    .onTapGesture {
+      if model.closesOnOverlayTap { isVisible = false }
+    }
+  }
+}
+
+// MARK: - ModalContent
+
+struct ModalContent<VM: ModalVM, Header: View, Body: View, Footer: View>: View {
+  let model: VM
+  let contentHeader: () -> Header
+  let contentBody: () -> Body
+  let contentFooter: () -> Footer
+
+  @State private var headerSize: CGSize = .zero
+  @State private var bodySize: CGSize = .zero
+  @State private var footerSize: CGSize = .zero
+
+  init(
+    model: VM,
+    @ViewBuilder header: @escaping () -> Header,
+    @ViewBuilder body: @escaping () -> Body,
+    @ViewBuilder footer: @escaping () -> Footer
+  ) {
+    self.model = model
+    self.contentHeader = header
+    self.contentBody = body
+    self.contentFooter = footer
+  }
+
+  var body: some View {
+    VStack(spacing: model.contentSpacing) {
+      contentHeader()
+        .observeSize { headerSize = $0 }
+        .padding(.top, model.contentPaddings.top)
+        .padding(.leading, model.contentPaddings.leading)
+        .padding(.trailing, model.contentPaddings.trailing)
+
+      ScrollView {
+        contentBody()
+          .padding(.leading, model.contentPaddings.leading)
+          .padding(.trailing, model.contentPaddings.trailing)
+          .observeSize { bodySize = $0 }
+          .padding(.top, bodyTopPadding)
+          .padding(.bottom, bodyBottomPadding)
+      }
+      .frame(maxWidth: .infinity, maxHeight: scrollViewMaxHeight)
+      .disableScrollWhenContentFits()
+
+      contentFooter()
+        .observeSize { footerSize = $0 }
+        .padding(.leading, model.contentPaddings.leading)
+        .padding(.trailing, model.contentPaddings.trailing)
+        .padding(.bottom, model.contentPaddings.bottom)
+    }
+    .frame(maxWidth: model.size.maxWidth, alignment: .leading)
+    .modalGlass(model: model)
+    .padding(model.outerPaddings.edgeInsets)
+  }
+
+  private var bodyTopPadding: CGFloat    { headerSize.height > 0 ? 0 : model.contentPaddings.top }
+  private var bodyBottomPadding: CGFloat { footerSize.height > 0 ? 0 : model.contentPaddings.bottom }
+  private var scrollViewMaxHeight: CGFloat { bodySize.height + bodyTopPadding + bodyBottomPadding }
+}
+
+// MARK: - Modal Glass Helper
+
+extension View {
+  @ViewBuilder
+  func modalGlass<VM: ModalVM>(model: VM) -> some View {
+    let cr = model.cornerRadius.value
+    let bw = model.borderWidth.value
+
+    let glass = Theme.current.layout.glass
+    if model.useLiquidGlass {
+      if #available(iOS 26.0, *) {
+        self
+          .glassEffect(.regular.interactive(), in: .rect(cornerRadius: cr))
+          .shadow(color: .clear, radius: 0)
+      } else {
+        self
+          .background(GlassBackground(style: glass.blurStyle, tint: glass.tint, cornerRadius: cr))
+          .clipShape(RoundedRectangle(cornerRadius: cr, style: .continuous))
+          .overlay(
+            RoundedRectangle(cornerRadius: cr, style: .continuous)
+              .strokeBorder(glass.border, lineWidth: bw)
+          )
+          .shadow(color: glass.shadowColor, radius: glass.shadowRadius,
+                  x: glass.shadowOffset.width, y: glass.shadowOffset.height)
+      }
+    } else {
+      self
+        .background(GlassBackground(style: glass.blurStyle, tint: glass.tint, cornerRadius: cr))
+        .clipShape(RoundedRectangle(cornerRadius: cr, style: .continuous))
+        .overlay(
+          RoundedRectangle(cornerRadius: cr, style: .continuous)
+            .strokeBorder(glass.border, lineWidth: bw)
+        )
+        .shadow(color: glass.shadowColor, radius: glass.shadowRadius,
+                x: glass.shadowOffset.width, y: glass.shadowOffset.height)
+    }
+  }
+}
+
+// MARK: - SUBottomModal
+
+struct SUBottomModal<Header: View, Body: View, Footer: View>: View {
+  let model: BottomModalVM
+  @Binding var isVisible: Bool
+  let contentHeader: () -> Header
+  let contentBody: () -> Body
+  let contentFooter: () -> Footer
+
+  @State private var contentHeight: CGFloat = 0
+  @State private var contentOffsetY: CGFloat = 0
+  @State private var overlayOpacity: CGFloat = 0
+
+  init(
+    isVisible: Binding<Bool>,
+    model: BottomModalVM,
+    @ViewBuilder header: @escaping () -> Header,
+    @ViewBuilder body: @escaping () -> Body,
+    @ViewBuilder footer: @escaping () -> Footer
+  ) {
+    self._isVisible = isVisible
+    self.model = model
+    self.contentHeader = header
+    self.contentBody = body
+    self.contentFooter = footer
+  }
+
+  var body: some View {
+    ZStack(alignment: .bottom) {
+      ModalOverlay(isVisible: $isVisible, model: model)
+        .opacity(overlayOpacity)
+
+      ModalContent(model: model, header: contentHeader, body: contentBody, footer: contentFooter)
+        .observeSize { contentHeight = $0.height }
+        .offset(y: contentOffsetY)
+        .gesture(
+          DragGesture()
+            .onChanged { gesture in
+              contentOffsetY = ModalAnimation.bottomModalOffset(gesture.translation.height, model: model)
+            }
+            .onEnded { gesture in
+              if ModalAnimation.shouldHideBottomModal(
+                offset: contentOffsetY, height: contentHeight,
+                velocity: gesture.velocity.height, model: model
+              ) {
+                isVisible = false
+              } else {
+                withAnimation(.linear(duration: 0.2)) { contentOffsetY = 0 }
+              }
+            }
+        )
+    }
+    .onAppear {
+      contentOffsetY = screenHeight
+      withAnimation(.linear(duration: model.transition.value)) {
+        overlayOpacity = 1.0
+        contentOffsetY = 0
+      }
+    }
+    .onChange(of: isVisible) { newValue in
+      withAnimation(.linear(duration: model.transition.value)) {
+        if newValue {
+          overlayOpacity = 1.0
+          contentOffsetY = 0
+        } else {
+          overlayOpacity = 0.0
+          contentOffsetY = screenHeight
+        }
+      }
+    }
+  }
+
+  private var screenHeight: CGFloat { UIScreen.main.bounds.height }
+}
+
+// MARK: - SUCenterModal
+
+struct SUCenterModal<Header: View, Body: View, Footer: View>: View {
+  let model: CenterModalVM
+  @Binding var isVisible: Bool
+  let contentHeader: () -> Header
+  let contentBody: () -> Body
+  let contentFooter: () -> Footer
+
+  @State private var contentOpacity: CGFloat = 0
+
+  init(
+    isVisible: Binding<Bool>,
+    model: CenterModalVM,
+    @ViewBuilder header: @escaping () -> Header,
+    @ViewBuilder body: @escaping () -> Body,
+    @ViewBuilder footer: @escaping () -> Footer
+  ) {
+    self._isVisible = isVisible
+    self.model = model
+    self.contentHeader = header
+    self.contentBody = body
+    self.contentFooter = footer
+  }
+
+  var body: some View {
+    ZStack(alignment: .center) {
+      ModalOverlay(isVisible: $isVisible, model: model)
+      ModalContent(model: model, header: contentHeader, body: contentBody, footer: contentFooter)
+    }
+    .opacity(contentOpacity)
+    .onAppear {
+      withAnimation(.linear(duration: model.transition.value)) { contentOpacity = 1.0 }
+    }
+    .onChange(of: isVisible) { newValue in
+      withAnimation(.linear(duration: model.transition.value)) {
+        contentOpacity = newValue ? 1.0 : 0.0
+      }
+    }
+  }
+}
+
+// MARK: - ModalPresentationModifier
+
+struct ModalPresentationModifier<Modal: View>: ViewModifier {
+  @State var isPresented: Bool = false
+  @Binding var isContentVisible: Bool
+  @ViewBuilder var content: () -> Modal
+  let transitionDuration: TimeInterval
+  let onDismiss: (() -> Void)?
+
+  func body(content: Content) -> some View {
+    content
+      .transaction { $0.disablesAnimations = false }
+      .onAppear { if isContentVisible { isPresented = true } }
+      .onChange(of: isContentVisible) { isVisible in
+        if isVisible {
+          isPresented = true
+        } else {
+          DispatchQueue.main.asyncAfter(deadline: .now() + transitionDuration) {
+            isPresented = false
+          }
+        }
+      }
+      .fullScreenCover(
+        isPresented: .init(get: { isPresented }, set: { isContentVisible = $0 }),
+        onDismiss: onDismiss,
+        content: { self.content().transparentPresentationBackground() }
+      )
+      .transaction { $0.disablesAnimations = true }
+  }
+}
+
+struct ModalPresentationWithItemModifier<Modal: View, Item: Identifiable>: ViewModifier {
+  @State var presentedItem: Item?
+  @Binding var visibleItem: Item?
+  @ViewBuilder var content: (Item) -> Modal
+  let transitionDuration: (Item) -> TimeInterval
+  let onDismiss: (() -> Void)?
+
+  func body(content: Content) -> some View {
+    content
+      .transaction { $0.disablesAnimations = false }
+      .onAppear { presentedItem = visibleItem }
+      .onChange(of: visibleItem.isNotNil) { isVisible in
+        if isVisible {
+          presentedItem = visibleItem
+        } else {
+          let duration = presentedItem.map { transitionDuration($0) } ?? 0.3
+          DispatchQueue.main.asyncAfter(deadline: .now() + duration) {
+            presentedItem = visibleItem
+          }
+        }
+      }
+      .fullScreenCover(
+        item: .init(get: { presentedItem }, set: { visibleItem = $0 }),
+        onDismiss: onDismiss,
+        content: { item in self.content(item).transparentPresentationBackground() }
+      )
+      .transaction { $0.disablesAnimations = true }
+  }
+}
+
+// MARK: - View Extensions: modal (internal)
+
+extension View {
+  func modal<Modal: View>(
+    isVisible: Binding<Bool>,
+    transitionDuration: TimeInterval,
+    onDismiss: (() -> Void)? = nil,
+    @ViewBuilder content: @escaping () -> Modal
+  ) -> some View {
+    modifier(ModalPresentationModifier(
+      isContentVisible: isVisible,
+      content: content,
+      transitionDuration: transitionDuration,
+      onDismiss: onDismiss
+    ))
+  }
+
+  func modal<Modal: View, Item: Identifiable>(
+    item: Binding<Item?>,
+    transitionDuration: @escaping (Item) -> TimeInterval,
+    onDismiss: (() -> Void)? = nil,
+    @ViewBuilder content: @escaping (Item) -> Modal
+  ) -> some View {
+    modifier(ModalPresentationWithItemModifier(
+      visibleItem: item,
+      content: content,
+      transitionDuration: transitionDuration,
+      onDismiss: onDismiss
+    ))
+  }
+}
+
+// MARK: - View Extensions: bottomModal (public)
+
+extension View {
+  public func bottomModal<Header: View, Body: View, Footer: View>(
+    isPresented: Binding<Bool>,
+    model: BottomModalVM = .init(),
+    onDismiss: (() -> Void)? = nil,
+    @ViewBuilder header: @escaping () -> Header = { EmptyView() },
+    @ViewBuilder body: @escaping () -> Body,
+    @ViewBuilder footer: @escaping () -> Footer = { EmptyView() }
+  ) -> some View {
+    self.modal(isVisible: isPresented, transitionDuration: model.transition.value, onDismiss: onDismiss) {
+      SUBottomModal(isVisible: isPresented, model: model, header: header, body: body, footer: footer)
+    }
+  }
+
+  public func bottomModal<Item: Identifiable, Header: View, Body: View, Footer: View>(
+    item: Binding<Item?>,
+    model: @escaping (Item) -> BottomModalVM = { _ in .init() },
+    onDismiss: (() -> Void)? = nil,
+    @ViewBuilder header: @escaping (Item) -> Header,
+    @ViewBuilder body: @escaping (Item) -> Body,
+    @ViewBuilder footer: @escaping (Item) -> Footer
+  ) -> some View {
+    self.modal(item: item, transitionDuration: { model($0).transition.value }, onDismiss: onDismiss) { unwrapped in
+      SUBottomModal(
+        isVisible: .init(
+          get: { item.wrappedValue.isNotNil },
+          set: { if $0 { item.wrappedValue = unwrapped } else { item.wrappedValue = nil } }
+        ),
+        model: model(unwrapped),
+        header: { header(unwrapped) },
+        body: { body(unwrapped) },
+        footer: { footer(unwrapped) }
+      )
+    }
+  }
+
+  public func bottomModal<Item: Identifiable, Body: View>(
+    item: Binding<Item?>,
+    model: @escaping (Item) -> BottomModalVM = { _ in .init() },
+    onDismiss: (() -> Void)? = nil,
+    @ViewBuilder body: @escaping (Item) -> Body
+  ) -> some View {
+    bottomModal(item: item, model: model, onDismiss: onDismiss,
+      header: { _ in EmptyView() }, body: body, footer: { _ in EmptyView() })
+  }
+}
+
+// MARK: - View Extensions: centerModal (public)
+
+extension View {
+  public func centerModal<Header: View, Body: View, Footer: View>(
+    isPresented: Binding<Bool>,
+    model: CenterModalVM = .init(),
+    onDismiss: (() -> Void)? = nil,
+    @ViewBuilder header: @escaping () -> Header = { EmptyView() },
+    @ViewBuilder body: @escaping () -> Body,
+    @ViewBuilder footer: @escaping () -> Footer = { EmptyView() }
+  ) -> some View {
+    self.modal(isVisible: isPresented, transitionDuration: model.transition.value, onDismiss: onDismiss) {
+      SUCenterModal(isVisible: isPresented, model: model, header: header, body: body, footer: footer)
+    }
+  }
+
+  public func centerModal<Item: Identifiable, Header: View, Body: View, Footer: View>(
+    item: Binding<Item?>,
+    model: @escaping (Item) -> CenterModalVM = { _ in .init() },
+    onDismiss: (() -> Void)? = nil,
+    @ViewBuilder header: @escaping (Item) -> Header,
+    @ViewBuilder body: @escaping (Item) -> Body,
+    @ViewBuilder footer: @escaping (Item) -> Footer
+  ) -> some View {
+    self.modal(item: item, transitionDuration: { model($0).transition.value }, onDismiss: onDismiss) { unwrapped in
+      SUCenterModal(
+        isVisible: .init(
+          get: { item.wrappedValue.isNotNil },
+          set: { if $0 { item.wrappedValue = unwrapped } else { item.wrappedValue = nil } }
+        ),
+        model: model(unwrapped),
+        header: { header(unwrapped) },
+        body: { body(unwrapped) },
+        footer: { footer(unwrapped) }
+      )
+    }
+  }
+
+  public func centerModal<Item: Identifiable, Body: View>(
+    item: Binding<Item?>,
+    model: @escaping (Item) -> CenterModalVM = { _ in .init() },
+    onDismiss: (() -> Void)? = nil,
+    @ViewBuilder body: @escaping (Item) -> Body
+  ) -> some View {
+    centerModal(item: item, model: model, onDismiss: onDismiss,
+      header: { _ in EmptyView() }, body: body, footer: { _ in EmptyView() })
+  }
+}
+
+// MARK: - From Submissions/copped/CoppedUI/Components/OverlayHUD.swift
+
+import SwiftUI
+
+// MARK: - OverlayHUD
+
+/// Full-screen blocking overlay with optional message.
+/// Shows a glass card with a spinner and label.
+/// Use `.overlayHUD(isPresented:message:)` view modifier.
+public struct OverlayHUD: View {
+  var message: String?
+  var blurStyle: UIBlurEffect.Style = Theme.current.layout.glass.blurStyle
+  var useLiquidGlass: Bool = false
+  var onTap: (() -> Void)? = nil
+
+  public init(message: String? = nil, useLiquidGlass: Bool = false, onTap: (() -> Void)? = nil) {
+    self.message = message
+    self.useLiquidGlass = useLiquidGlass
+    self.onTap = onTap
+  }
+
+  public var body: some View {
+    ZStack {
+      // Dimmed background
+      Color.black.opacity(Theme.current.layout.overlay.hudDim)
+        .ignoresSafeArea()
+
+      // HUD card
+      VStack(spacing: 16) {
+        SULoading(model: LoadingVM {
+          $0.color = .accent
+          $0.size = .medium
+        })
+
+        if let message {
+          Text(message)
+            .font(.custom(Manrope.medium, size: 14))
+            .foregroundStyle(.white)
+            .multilineTextAlignment(.center)
+        }
+      }
+      .padding(28)
+      .liquidGlass(
+        enabled: useLiquidGlass,
+        cornerRadius: 20,
+        blurStyle: blurStyle
+      )
+      .onTapGesture { onTap?() }
+    }
+  }
+}
+
+// MARK: - View Modifier
+
+extension View {
+  /// Presents a full-screen blocking HUD overlay.
+  ///
+  /// ```swift
+  /// ContentView()
+  ///   .overlayHUD(isPresented: $isLoading, message: "Loading...")
+  /// ```
+  public func overlayHUD(isPresented: Binding<Bool>, message: String? = nil, useLiquidGlass: Bool = false, onTap: (() -> Void)? = nil, onDismiss: (() -> Void)? = nil) -> some View {
+    ZStack {
+      self
+      if isPresented.wrappedValue {
+        OverlayHUD(message: message, useLiquidGlass: useLiquidGlass, onTap: onTap)
+          .transition(.opacity)
+          .zIndex(999)
+      }
+    }
+    .animation(.easeInOut(duration: Theme.current.layout.motion.fadeDuration), value: isPresented.wrappedValue)
+    .onChange(of: isPresented.wrappedValue) { newValue in
+      if !newValue { onDismiss?() }
+    }
+  }
+}
+
+// MARK: - From Submissions/copped/CoppedUI/Components/ProgressIndicator.swift
+
+import SwiftUI
+
+// MARK: - ProgressIndicatorView
+// Source: https://github.com/exyte/ProgressIndicatorView
+
+public struct ProgressIndicatorView: View {
+
+  public enum IndicatorType {
+    case `default`(progress: Binding<CGFloat>)
+    case bar(progress: Binding<CGFloat>, backgroundColor: Color = .clear)
+    case impulseBar(progress: Binding<CGFloat>, backgroundColor: Color = .clear)
+    case dashBar(progress: Binding<CGFloat>, numberOfItems: Int = 8, backgroundColor: Color = .clear)
+    case circle(progress: Binding<CGFloat>, lineWidth: CGFloat, strokeColor: Color, backgroundColor: Color = .clear)
+  }
+
+  @Binding var isVisible: Bool
+  var type: IndicatorType
+
+  public init(isVisible: Binding<Bool>, type: IndicatorType) {
+    self._isVisible = isVisible
+    self.type = type
+  }
+
+  public var body: some View {
+    if isVisible {
+      indicator
+    } else {
+      EmptyView()
+    }
+  }
+
+  private var indicator: some View {
+    ZStack {
+      switch type {
+      case .bar(let progress, let backgroundColor):
+        PIBarView(progress: progress, backgroundColor: backgroundColor)
+      case .impulseBar(let progress, let backgroundColor):
+        PIImpulseBarView(progress: progress, backgroundColor: backgroundColor)
+      case .`default`(let progress):
+        PIDefaultSectorView(progress: progress)
+      case .circle(let progress, let lineWidth, let strokeColor, let backgroundColor):
+        PICircleView(progress: progress, lineWidth: lineWidth, strokeColor: strokeColor, backgroundColor: backgroundColor)
+      case .dashBar(let progress, let numberOfItems, let backgroundColor):
+        PIDashBarView(progress: progress, numberOfItems: numberOfItems, backgroundColor: backgroundColor)
+      }
+    }
+  }
+}
+
+// MARK: - Bar
+
+private struct PIBarView: View {
+  @Binding var progress: CGFloat
+  let backgroundColor: Color
+
+  var body: some View {
+    GeometryReader { geometry in
+      ZStack(alignment: .leading) {
+        Capsule()
+          .foregroundColor(backgroundColor)
+        Capsule()
+          .frame(width: min(max(geometry.size.width * progress, 0), geometry.size.width))
+          .animation(.easeIn, value: progress)
+      }
+    }
+  }
+}
+
+// MARK: - Impulse Bar
+
+private struct PIImpulseBarView: View {
+  @Binding var progress: CGFloat
+  let backgroundColor: Color
+
+  @State private var size: CGSize = .zero
+  @State private var progressWidth: CGFloat = 0
+  @State private var impulseOffset: CGFloat = -200.0
+  private let animation: Animation = .linear(duration: 1.5).repeatForever(autoreverses: false)
+  private let gradientWidth: CGFloat = 100.0
+  private let gradient = Gradient(colors: [
+    .white.opacity(0.0),
+    .white.opacity(0.25),
+    .white.opacity(0.5),
+    .white.opacity(0.75),
+    .white.opacity(0.85),
+    .white.opacity(0.75),
+    .white.opacity(0.5),
+    .white.opacity(0.25),
+    .white.opacity(0.0)
+  ])
+
+  var body: some View {
+    Capsule()
+      .fill(backgroundColor)
+      .modifier(PISizeGetter(size: $size))
+      .overlay(PICapsuleProgressView(width: progressWidth, height: size.height))
+      .overlay(gradientView)
+      .animation(.easeIn, value: progressWidth)
+      .onChange(of: size) { size in
+        progressWidth = fmin(fmax(size.width * progress, 0), size.width)
+        withAnimation(animation) { impulseOffset = size.width }
+      }
+      .onChange(of: progress) { progress in
+        progressWidth = fmin(fmax(size.width * progress, 0), size.width)
+      }
+  }
+
+  private var gradientView: some View {
+    LinearGradient(gradient: gradient, startPoint: .leading, endPoint: .trailing)
+      .frame(width: gradientWidth)
+      .frame(maxWidth: .infinity, alignment: .leading)
+      .offset(x: impulseOffset)
+      .mask(PICapsuleProgressView(width: progressWidth, height: size.height))
+  }
+}
+
+private struct PICapsuleProgressView: View {
+  let width: CGFloat
+  let height: CGFloat
+
+  var body: some View {
+    Capsule()
+      .frame(width: width < height ? height : width)
+      .mask(
+        Capsule()
+          .frame(width: width < height ? height : width)
+          .offset(x: width < height ? width - height : 0)
+      )
+      .frame(maxWidth: .infinity, alignment: .leading)
+  }
+}
+
+private struct PISizeGetter: ViewModifier {
+  @Binding var size: CGSize
+
+  func body(content: Content) -> some View {
+    content.background(
+      GeometryReader { proxy -> Color in
+        if proxy.size != self.size {
+          DispatchQueue.main.async { self.size = proxy.size }
+        }
+        return Color.clear
+      }
+    )
+  }
+}
+
+// MARK: - Dash Bar
+
+private struct PIDashBarView: View {
+  @Binding var progress: CGFloat
+  let numberOfItems: Int
+  let backgroundColor: Color
+  private let spacing: CGFloat = 4.0
+
+  var body: some View {
+    GeometryReader { geometry in
+      let itemWidth = (geometry.size.width - CGFloat(numberOfItems - 1) * spacing) / CGFloat(numberOfItems)
+      HStack(spacing: spacing) {
+        ForEach(0..<numberOfItems, id: \.self) { index in
+          PIDashBarItemView(
+            backgroundColor: backgroundColor,
+            needToFill: progress > (1 / CGFloat(numberOfItems) * CGFloat(index)),
+            width: itemWidth
+          )
+        }
+      }
+    }
+  }
+}
+
+private struct PIDashBarItemView: View {
+  let backgroundColor: Color
+  let needToFill: Bool
+  let width: CGFloat
+
+  var body: some View {
+    ZStack(alignment: .leading) {
+      Capsule().foregroundColor(backgroundColor)
+      Capsule()
+        .frame(width: needToFill ? width : 0.0)
+        .animation(.easeIn, value: needToFill)
+    }
+  }
+}
+
+// MARK: - Circle
+
+private struct PICircleView: View {
+  @Binding var progress: CGFloat
+  let lineWidth: CGFloat
+  let strokeColor: Color
+  let backgroundColor: Color
+
+  var body: some View {
+    GeometryReader { _ in
+      ZStack(alignment: .leading) {
+        PIArc(startAngle: .radians(-.pi / 2), endAngle: .radians(.pi * 3 / 2))
+          .stroke(backgroundColor, style: .init(lineWidth: lineWidth, lineCap: .butt, lineJoin: .miter))
+        PIArc(startAngle: .radians(-.pi / 2), endAngle: .radians(-.pi / 2 + .pi * 3 / 2 * progress))
+          .stroke(strokeColor, style: .init(lineWidth: lineWidth, lineCap: .butt, lineJoin: .miter))
+          .animation(.easeIn, value: progress)
+      }
+    }
+  }
+}
+
+private struct PIArc: Shape {
+  var startAngle: Angle
+  var endAngle: Angle
+  var clockwise: Bool = false
+
+  var animatableData: CGFloat {
+    get { CGFloat(endAngle.radians) }
+    set { endAngle = Angle(radians: newValue) }
+  }
+
+  func path(in rect: CGRect) -> Path {
+    Path { path in
+      path.addArc(
+        center: .init(x: rect.midX, y: rect.midY),
+        radius: rect.width / 2.0,
+        startAngle: startAngle,
+        endAngle: endAngle,
+        clockwise: clockwise
+      )
+    }
+  }
+}
+
+// MARK: - Default Sector
+
+private struct PIDefaultSectorView: View {
+  @Binding var progress: CGFloat
+  private let count: Int = 8
+  @State private var rotationAngle: Angle = .radians(0)
+
+  var body: some View {
+    GeometryReader { geometry in
+      Group {
+        ForEach(0..<count, id: \.self) { index in
+          PIDefaultSectorItemView(index: index, count: count, size: geometry.size)
+            .opacity(progress * 2.0 - CGFloat(index) * 1 / CGFloat(count) - 0.1)
+            .animation(.linear, value: progress)
+        }
+      }
+      .rotationEffect(rotationAngle)
+      .frame(width: geometry.size.width, height: geometry.size.height)
+      .onChange(of: progress) { _ in
+        if progress > 1.0 {
+          withAnimation(.linear(duration: 1)) { rotationAngle = .radians(.pi * 2.0) }
+        } else {
+          rotationAngle = .zero
+        }
+      }
+    }
+  }
+}
+
+private struct PIDefaultSectorItemView: View {
+  let index: Int
+  let count: Int
+  let size: CGSize
+
+  var body: some View {
+    let height = size.height / 3.2
+    let width = height / 2
+    let angle = 2 * .pi / CGFloat(count) * CGFloat(index) - .pi / 2
+    let x = (size.width / 2 - height / 2) * cos(angle)
+    let y = (size.height / 2 - height / 2) * sin(angle)
+
+    return RoundedRectangle(cornerRadius: width / 2 + 1)
+      .frame(width: width, height: height)
+      .rotationEffect(.radians(angle + .pi / 2))
+      .offset(x: x, y: y)
+  }
+}
+
+// MARK: - From Submissions/copped/CoppedUI/Components/ReelsFeed.swift
+
+import SwiftUI
+
+// MARK: - ReelItem
+
+/// Data model for a single reel item. Extend as needed.
+public struct ReelItem: Identifiable {
+  public let id: String
+  public var videoURL: URL?
+  public var thumbnailURL: URL?
+  public var caption: String
+  public var username: String
+  public var likes: Int
+  public var isLiked: Bool
+
+  public init(
+    id: String = UUID().uuidString,
+    videoURL: URL? = nil,
+    thumbnailURL: URL? = nil,
+    caption: String = "",
+    username: String = "",
+    likes: Int = 0,
+    isLiked: Bool = false
+  ) {
+    self.id = id
+    self.videoURL = videoURL
+    self.thumbnailURL = thumbnailURL
+    self.caption = caption
+    self.username = username
+    self.likes = likes
+    self.isLiked = isLiked
+  }
+}
+
+// MARK: - ReelsFeed
+
+/// Instagram Reels-style vertical paged feed.
+/// Each item fills the entire screen. Swipe up/down to navigate.
+public struct ReelsFeed<Item: Identifiable, Content: View>: View {
+  let items: [Item]
+  @Binding var currentIndex: Int
+  let content: (Item) -> Content
+  var onIndexChange: ((Int) -> Void)? = nil
+  var onReachEnd: (() -> Void)? = nil
+
+  public init(
+    items: [Item],
+    currentIndex: Binding<Int>,
+    onIndexChange: ((Int) -> Void)? = nil,
+    onReachEnd: (() -> Void)? = nil,
+    @ViewBuilder content: @escaping (Item) -> Content
+  ) {
+    self.items = items
+    self._currentIndex = currentIndex
+    self.onIndexChange = onIndexChange
+    self.onReachEnd = onReachEnd
+    self.content = content
+  }
+
+  public var body: some View {
+    TabView(selection: $currentIndex) {
+      ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
+        content(item)
+          .tag(index)
+          .ignoresSafeArea()
+      }
+    }
+    .tabViewStyle(.page(indexDisplayMode: .never))
+    .ignoresSafeArea()
+    .onChange(of: currentIndex) { newIndex in
+      onIndexChange?(newIndex)
+      if newIndex >= items.count - 1 {
+        onReachEnd?()
+      }
+    }
+  }
+}
+
+// MARK: - Default Reel Cell
+
+/// Drop-in reel cell with overlaid caption, username, and action buttons.
+public struct ReelCell: View {
+  public let item: ReelItem
+  public var onLike: (() -> Void)?
+  public var onShare: (() -> Void)?
+  public var onComment: (() -> Void)?
+
+  public init(
+    item: ReelItem,
+    onLike: (() -> Void)? = nil,
+    onShare: (() -> Void)? = nil,
+    onComment: (() -> Void)? = nil
+  ) {
+    self.item = item
+    self.onLike = onLike
+    self.onShare = onShare
+    self.onComment = onComment
+  }
+
+  public var body: some View {
+    ZStack {
+      // Background / video placeholder
+      Color.black.ignoresSafeArea()
+
+      if let url = item.videoURL {
+        VideoPlayerLayer(url: url)
+          .ignoresSafeArea()
+      }
+
+      // Overlay gradient
+      LinearGradient(
+        gradient: Gradient(colors: [.clear, .black.opacity(Theme.current.layout.overlay.dim)]),
+        startPoint: .center,
+        endPoint: .bottom
+      )
+      .ignoresSafeArea()
+
+      // HUD overlay
+      VStack {
+        Spacer()
+        HStack(alignment: .bottom) {
+          // Left: metadata
+          VStack(alignment: .leading, spacing: 6) {
+            Text("@\(item.username)")
+              .font(.custom(Manrope.semiBold, size: 15))
+              .foregroundStyle(.white)
+
+            Text(item.caption)
+              .font(.custom(Manrope.regular, size: 14))
+              .foregroundStyle(.white.opacity(0.9))
+              .lineLimit(2)
+          }
+          .frame(maxWidth: .infinity, alignment: .leading)
+
+          // Right: actions
+          VStack(spacing: 20) {
+            ReelActionButton(
+              icon: item.isLiked ? "heart.fill" : "heart",
+              label: formatCount(item.likes),
+              tint: item.isLiked ? .red : .white,
+              action: onLike
+            )
+            ReelActionButton(icon: "bubble.right", label: "Reply", action: onComment)
+            ReelActionButton(icon: "paperplane", label: "Share", action: onShare)
+          }
+        }
+        .padding(.horizontal, 20)
+        .padding(.bottom, 40)
+      }
+    }
+  }
+
+  private func formatCount(_ n: Int) -> String {
+    n >= 1000 ? String(format: "%.1fK", Double(n) / 1000) : "\(n)"
+  }
+}
+
+// MARK: - ReelActionButton
+
+private struct ReelActionButton: View {
+  let icon: String
+  let label: String
+  var tint: Color = .white
+  var action: (() -> Void)?
+
+  var body: some View {
+    Button(action: { action?() }) {
+      VStack(spacing: 4) {
+        Image(systemName: icon)
+          .font(.system(size: 26, weight: .semibold))
+          .foregroundStyle(tint)
+        Text(label)
+          .font(.custom(Manrope.medium, size: 12))
+          .foregroundStyle(.white)
+      }
+    }
+  }
+}
+
+// MARK: - From Submissions/copped/CoppedUI/Components/ShareSheet.swift
+
+import SwiftUI
+import UIKit
+
+// MARK: - ShareSheet
+
+/// Thin UIActivityViewController wrapper for SwiftUI.
+public struct ShareSheet: UIViewControllerRepresentable {
+  let items: [Any]
+  var onDismiss: (() -> Void)?
+
+  public init(items: [Any], onDismiss: (() -> Void)? = nil) {
+    self.items = items
+    self.onDismiss = onDismiss
+  }
+
+  public func makeUIViewController(context: Context) -> UIActivityViewController {
+    let vc = UIActivityViewController(activityItems: items, applicationActivities: nil)
+    vc.completionWithItemsHandler = { _, _, _, _ in onDismiss?() }
+    return vc
+  }
+
+  public func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
+}
+
+// MARK: - View Modifier
+
+extension View {
+  /// Presents the system share sheet.
+  ///
+  /// ```swift
+  /// view.shareSheet(isPresented: $sharing, items: [videoURL, "Check out my clip!"])
+  /// ```
+  public func shareSheet(
+    isPresented: Binding<Bool>,
+    items: [Any],
+    onDismiss: (() -> Void)? = nil
+  ) -> some View {
+    sheet(isPresented: isPresented) {
+      ShareSheet(items: items, onDismiss: {
+        isPresented.wrappedValue = false
+        onDismiss?()
+      })
+      .presentationDetents([.medium, .large])
+    }
+  }
+}
+
+// MARK: - From Submissions/copped/CoppedUI/Components/TextInput.swift
+
+import SwiftUI
+import UIKit
+
+// MARK: - TextInputVM
+
+public struct TextInputVM: ComponentVM {
+  public var autocapitalization: TextAutocapitalization = .sentences
+  public var color: ComponentColor?
+  public var cornerRadius: ComponentRadius = .large
+  public var font: UniversalFont?
+  public var isAutocorrectionEnabled: Bool = true
+  public var isEnabled: Bool = true
+  public var keyboardType: UIKeyboardType = .default
+  public var maxRows: Int?
+  public var minRows: Int = 2
+  public var placeholder: String?
+  public var size: ComponentSize = .medium
+  public var style: InputStyle = .light
+  public var submitType: SubmitType = .return
+  public var tintColor: UniversalColor = .accent
+  public init() {}
+}
+
+extension TextInputVM {
+  var preferredFont: UniversalFont {
+    if let font { return font }
+    switch size {
+    case .small:  return .smBody
+    case .medium: return .mdBody
+    case .large:  return .lgBody
+    }
+  }
+
+  var contentPadding: CGFloat { 12 }
+
+  var backgroundColor: UniversalColor {
+    switch style {
+    case .light, .faded: return color?.background ?? .content1
+    case .bordered:      return .background
+    }
+  }
+
+  var foregroundColor: UniversalColor {
+    (color?.main ?? .foreground).enabled(isEnabled)
+  }
+
+  var placeholderColor: UniversalColor {
+    if let color {
+      return color.main.withOpacity(isEnabled ? 0.7 : 0.3)
+    }
+    return UniversalColor.secondaryForeground.enabled(isEnabled)
+  }
+
+  var borderWidth: CGFloat {
+    switch style {
+    case .light: return 0
+    case .bordered, .faded: return BorderWidth.small.value
+    }
+  }
+
+  var borderColor: UniversalColor {
+    (color?.main ?? .divider).enabled(isEnabled)
+  }
+
+  var minTextInputHeight: CGFloat {
+    let rows = maxRows.map { min($0, minRows) } ?? minRows
+    return height(forRows: rows)
+  }
+
+  var maxTextInputHeight: CGFloat {
+    maxRows.map { height(forRows: max($0, minRows)) } ?? 10_000
+  }
+
+  func adaptedCornerRadius(for h: CGFloat = 10_000) -> CGFloat {
+    let value = cornerRadius.value(for: h)
+    let max   = ComponentRadius.custom(height(forRows: 1) / 2).value(for: h)
+    return min(value, max)
+  }
+
+  private func height(forRows rows: Int) -> CGFloat {
+    let n = max(1, rows)
+    return preferredFont.uiFont.lineHeight * CGFloat(n) + 2 * contentPadding
+  }
+
+  func shouldUpdateLayout(_ oldModel: Self) -> Bool {
+    size != oldModel.size || font != oldModel.font
+    || minRows != oldModel.minRows || maxRows != oldModel.maxRows
+  }
+
+  var autocorrectionType: UITextAutocorrectionType {
+    isAutocorrectionEnabled ? .yes : .no
+  }
+}
+
+// MARK: - TextInputHeightCalculator
+
+struct TextInputHeightCalculator {
+  private static let textView = UITextView()
+
+  static func preferredHeight(for text: String, model: TextInputVM, width: CGFloat) -> CGFloat {
+    textView.text = text
+    style(textView, with: model)
+    let targetSize = CGSize(width: width, height: CGFloat.greatestFiniteMagnitude)
+    return textView.sizeThatFits(targetSize).height
+  }
+
+  private static func style(_ textView: UITextView, with model: TextInputVM) {
+    textView.isScrollEnabled = false
+    textView.font = model.preferredFont.uiFont
+    textView.textContainerInset = .init(top: model.contentPadding, left: model.contentPadding,
+                                        bottom: model.contentPadding, right: model.contentPadding)
+    textView.textContainer.lineFragmentPadding = 0
+  }
+}
+
+// MARK: - SUTextInput
+
+public struct SUTextInput<FocusValue: Hashable>: View {
+  public var model: TextInputVM
+  @Binding public var text: String
+  public let globalFocus: FocusState<FocusValue>.Binding?
+  public let localFocus: FocusValue
+  public var onTextChange: ((String) -> Void)?
+  public var onSubmit: (() -> Void)?
+  public var onFocusChange: ((Bool) -> Void)?
+
+  @State private var textEditorPreferredHeight: CGFloat = 0
+
+  public init(
+    text: Binding<String>,
+    globalFocus: FocusState<FocusValue>.Binding,
+    localFocus: FocusValue,
+    model: TextInputVM = .init(),
+    onTextChange: ((String) -> Void)? = nil,
+    onSubmit: (() -> Void)? = nil,
+    onFocusChange: ((Bool) -> Void)? = nil
+  ) {
+    self._text = text
+    self.globalFocus = globalFocus
+    self.localFocus = localFocus
+    self.model = model
+    self.onTextChange = onTextChange
+    self.onSubmit = onSubmit
+    self.onFocusChange = onFocusChange
+  }
+
+  public var body: some View {
+    ZStack(alignment: .topLeading) {
+      TextEditor(text: $text)
+        .tiContentMargins(model.contentPadding)
+        .tiTransparentScrollBackground()
+        .frame(
+          minHeight: model.minTextInputHeight,
+          idealHeight: max(model.minTextInputHeight,
+                           min(model.maxTextInputHeight, textEditorPreferredHeight)),
+          maxHeight:   max(model.minTextInputHeight,
+                           min(model.maxTextInputHeight, textEditorPreferredHeight))
+        )
+        .lineSpacing(0)
+        .font(model.preferredFont.font)
+        .foregroundStyle(model.foregroundColor.color)
+        .tint(model.tintColor.color)
+        .tiApplyFocus(globalFocus: globalFocus, localFocus: localFocus)
+        .disabled(!model.isEnabled)
+        .keyboardType(model.keyboardType)
+        .submitLabel(model.submitType.submitLabel)
+        .autocorrectionDisabled(!model.isAutocorrectionEnabled)
+        .textInputAutocapitalization(model.autocapitalization.textInputAutocapitalization)
+
+      if let placeholder = model.placeholder, text.isEmpty {
+        Text(placeholder)
+          .font(model.preferredFont.font)
+          .foregroundStyle(model.placeholderColor.color)
+          .padding(model.contentPadding)
+      }
+    }
+    .background(
+      GeometryReader { geometry in
+        model.backgroundColor.color
+          .onAppear {
+            textEditorPreferredHeight = TextInputHeightCalculator.preferredHeight(
+              for: text, model: model, width: geometry.size.width)
+          }
+          .onChange(of: text) { newText in
+            // Detect submit via newline for non-multiline inputs
+            if model.submitType != .return, newText.hasSuffix("\n"), let onSubmit {
+              text = String(newText.dropLast())
+              onSubmit()
+              return
+            }
+            textEditorPreferredHeight = TextInputHeightCalculator.preferredHeight(
+              for: newText, model: model, width: geometry.size.width)
+            onTextChange?(newText)
+          }
+          .onChange(of: model) { [oldModel = model] newModel in
+            if newModel.shouldUpdateLayout(oldModel) {
+              textEditorPreferredHeight = TextInputHeightCalculator.preferredHeight(
+                for: text, model: newModel, width: geometry.size.width)
+            }
+          }
+          .onChange(of: geometry.size.width) { w in
+            textEditorPreferredHeight = TextInputHeightCalculator.preferredHeight(
+              for: text, model: model, width: w)
+          }
+      }
+    )
+    .onChange(of: globalFocus?.wrappedValue) { newValue in
+      if let newValue {
+        onFocusChange?(newValue == localFocus)
+      }
+    }
+    .clipShape(RoundedRectangle(cornerRadius: model.adaptedCornerRadius(), style: .continuous))
+    .overlay(
+      RoundedRectangle(cornerRadius: model.adaptedCornerRadius(), style: .continuous)
+        .strokeBorder(model.borderColor.color, lineWidth: model.borderWidth)
+    )
+  }
+}
+
+// MARK: - Private View Helpers
+
+extension View {
+  fileprivate func tiTransparentScrollBackground() -> some View {
+    if #available(iOS 16.0, *) {
+      return AnyView(self.scrollContentBackground(.hidden))
+    } else {
+      return AnyView(self.onAppear { UITextView.appearance().backgroundColor = .clear })
+    }
+  }
+
+  fileprivate func tiContentMargins(_ value: CGFloat) -> some View {
+    let defaultMargin: CGFloat = 5
+    return self.onAppear {
+      UITextView.appearance().textContainerInset = .init(
+        top: value, left: value - defaultMargin, bottom: value, right: value - defaultMargin)
+      UITextView.appearance().textContainer.lineFragmentPadding = 0
+    }
+  }
+
+  @ViewBuilder
+  fileprivate func tiApplyFocus<FV: Hashable>(
+    globalFocus: FocusState<FV>.Binding?,
+    localFocus: FV
+  ) -> some View {
+    if let globalFocus {
+      self.focused(globalFocus, equals: localFocus)
+    } else {
+      self
+    }
+  }
+}
+
+// MARK: - Bool Focus Convenience
+
+extension SUTextInput where FocusValue == Bool {
+  public init(
+    text: Binding<String>,
+    isFocused: FocusState<Bool>.Binding,
+    model: TextInputVM = .init(),
+    onTextChange: ((String) -> Void)? = nil,
+    onSubmit: (() -> Void)? = nil,
+    onFocusChange: ((Bool) -> Void)? = nil
+  ) {
+    self._text = text
+    self.globalFocus = isFocused
+    self.localFocus = true
+    self.model = model
+    self.onTextChange = onTextChange
+    self.onSubmit = onSubmit
+    self.onFocusChange = onFocusChange
+  }
+
+  public init(
+    text: Binding<String>,
+    model: TextInputVM = .init(),
+    onTextChange: ((String) -> Void)? = nil,
+    onSubmit: (() -> Void)? = nil,
+    onFocusChange: ((Bool) -> Void)? = nil
+  ) {
+    self._text = text
+    self.globalFocus = nil
+    self.localFocus = true
+    self.model = model
+    self.onTextChange = onTextChange
+    self.onSubmit = onSubmit
+    self.onFocusChange = onFocusChange
+  }
+}
+
+// MARK: - From Submissions/copped/CoppedUI/Components/VideoPlayerLayer.swift
+
+import SwiftUI
+import AVFoundation
+
+// MARK: - VideoPlayerLayer
+
+/// Muted, auto-playing, looping video layer.
+/// Wraps AVPlayer in a UIViewRepresentable for SwiftUI.
+public struct VideoPlayerLayer: View {
+  let url: URL
+  var isMuted: Bool = true
+  var loops: Bool = true
+  var onPlaybackStarted: (() -> Void)? = nil
+  var onPlaybackEnded: (() -> Void)? = nil
+  var onError: ((Error) -> Void)? = nil
+
+  public init(
+    url: URL,
+    isMuted: Bool = true,
+    loops: Bool = true,
+    onPlaybackStarted: (() -> Void)? = nil,
+    onPlaybackEnded: (() -> Void)? = nil,
+    onError: ((Error) -> Void)? = nil
+  ) {
+    self.url = url
+    self.isMuted = isMuted
+    self.loops = loops
+    self.onPlaybackStarted = onPlaybackStarted
+    self.onPlaybackEnded = onPlaybackEnded
+    self.onError = onError
+  }
+
+  public var body: some View {
+    _AVPlayerView(url: url, isMuted: isMuted, loops: loops,
+                  onPlaybackStarted: onPlaybackStarted, onPlaybackEnded: onPlaybackEnded, onError: onError)
+  }
+}
+
+// MARK: - _AVPlayerView
+
+private struct _AVPlayerView: UIViewRepresentable {
+  let url: URL
+  let isMuted: Bool
+  let loops: Bool
+  var onPlaybackStarted: (() -> Void)?
+  var onPlaybackEnded: (() -> Void)?
+  var onError: ((Error) -> Void)?
+
+  func makeUIView(context: Context) -> _PlayerUIView {
+    let view = _PlayerUIView(url: url, isMuted: isMuted, loops: loops,
+                              onPlaybackStarted: onPlaybackStarted, onPlaybackEnded: onPlaybackEnded, onError: onError)
+    return view
+  }
+
+  func updateUIView(_ uiView: _PlayerUIView, context: Context) {
+    uiView.onPlaybackStarted = onPlaybackStarted
+    uiView.onPlaybackEnded = onPlaybackEnded
+    uiView.onError = onError
+    if uiView.currentURL != url {
+      uiView.load(url: url, isMuted: isMuted, loops: loops)
+    }
+  }
+}
+
+// MARK: - _PlayerUIView
+
+final class _PlayerUIView: UIView {
+  private var player: AVPlayer?
+  private var playerLayer: AVPlayerLayer?
+  private var loopObserver: NSObjectProtocol?
+  private var statusObserver: NSKeyValueObservation?
+  private(set) var currentURL: URL?
+  var onPlaybackStarted: (() -> Void)?
+  var onPlaybackEnded: (() -> Void)?
+  var onError: ((Error) -> Void)?
+
+  override class var layerClass: AnyClass { AVPlayerLayer.self }
+
+  init(url: URL, isMuted: Bool, loops: Bool,
+       onPlaybackStarted: (() -> Void)? = nil, onPlaybackEnded: (() -> Void)? = nil, onError: ((Error) -> Void)? = nil) {
+    self.onPlaybackStarted = onPlaybackStarted
+    self.onPlaybackEnded = onPlaybackEnded
+    self.onError = onError
+    super.init(frame: .zero)
+    load(url: url, isMuted: isMuted, loops: loops)
+  }
+
+  required init?(coder: NSCoder) { fatalError() }
+
+  func load(url: URL, isMuted: Bool, loops: Bool) {
+    currentURL = url
+    loopObserver.map { NotificationCenter.default.removeObserver($0) }
+    statusObserver?.invalidate()
+
+    let item = AVPlayerItem(url: url)
+    let player = AVPlayer(playerItem: item)
+    player.isMuted = isMuted
+    player.play()
+    self.player = player
+
+    let layer = self.layer as! AVPlayerLayer
+    layer.player = player
+    layer.videoGravity = .resizeAspectFill
+
+    statusObserver = item.observe(\.status, options: [.new]) { [weak self] item, _ in
+      DispatchQueue.main.async {
+        switch item.status {
+        case .readyToPlay:
+          self?.onPlaybackStarted?()
+        case .failed:
+          if let error = item.error {
+            self?.onError?(error)
+          }
+        default:
+          break
+        }
+      }
+    }
+
+    loopObserver = NotificationCenter.default.addObserver(
+      forName: .AVPlayerItemDidPlayToEndTime,
+      object: item,
+      queue: .main
+    ) { [weak self, weak player] _ in
+      self?.onPlaybackEnded?()
+      if loops {
+        player?.seek(to: .zero)
+        player?.play()
+      }
+    }
+  }
+
+  override func layoutSubviews() {
+    super.layoutSubviews()
+    (layer as? AVPlayerLayer)?.frame = bounds
+  }
+
+  deinit {
+    loopObserver.map { NotificationCenter.default.removeObserver($0) }
+    statusObserver?.invalidate()
+  }
+}
+
+// MARK: - VideoProgressBar
+
+/// Thin progress bar overlay for video playback position.
+public struct VideoProgressBar: View {
+  @Binding var progress: Double // 0.0 – 1.0
+  var color: Color = .white
+  var trackColor: Color = .white.opacity(0.3)
+  var height: CGFloat = 2
+
+  public init(progress: Binding<Double>, color: Color = .white, height: CGFloat = 2) {
+    self._progress = progress
+    self.color = color
+    self.height = height
+  }
+
+  public var body: some View {
+    GeometryReader { geo in
+      ZStack(alignment: .leading) {
+        Rectangle()
+          .fill(trackColor)
+          .frame(height: height)
+
+        Rectangle()
+          .fill(color)
+          .frame(width: geo.size.width * CGFloat(progress), height: height)
+      }
+    }
+    .frame(height: height)
+  }
+}
+
+// MARK: - From Submissions/copped/CoppedUI/Foundation/Palette.swift
+
+import Foundation
+
+// MARK: - Uber-style Color Palette
+
+extension Theme.Palette {
+  /// The app palette: black/white base with violet `#7C3AED` accent.
+  static var uber: Self {
+    var p = Theme.Palette()
+    p.accent = ComponentColor(
+      main:       .universal(.hex("#7C3AED")),
+      contrast:   .universal(.hex("#FFFFFF")),
+      background: .themed(light: .hex("#EDE9FE"), dark: .hex("#2E1065"))
+    )
+    return p
+  }
+}
+
+// MARK: - App Theme Setup
+
+extension Theme {
+  /// Call once at app launch (e.g. in your App init or AppDelegate).
+  ///
+  /// ```swift
+  /// Theme.configureApp()
+  /// ```
+  public static func configureApp() {
+    Theme.current.update {
+      $0.layout.typography = .manrope
+      $0.colors = .uber
+    }
+  }
+}
+
+// MARK: - From Submissions/copped/CoppedUI/Foundation/Typography.swift
+
+import SwiftUI
+
+// MARK: - Manrope Font Names
+
+/// All Manrope weights. Bundle the .ttf files in your app target under these names.
+public enum Manrope {
+  public static let extraLight = "Manrope-ExtraLight"  // 200
+  public static let light      = "Manrope-Light"       // 300
+  public static let regular    = "Manrope-Regular"     // 400
+  public static let medium     = "Manrope-Medium"      // 500
+  public static let semiBold   = "Manrope-SemiBold"    // 600
+  public static let bold       = "Manrope-Bold"        // 700
+  public static let extraBold  = "Manrope-ExtraBold"   // 800
+}
+
+// MARK: - Manrope Type Scale (semantic)
+
+public extension UniversalFont {
+  // Display — hero titles
+  static var display: UniversalFont   { .custom(name: Manrope.extraBold, size: 34) }
+
+  // Titles
+  static var title1: UniversalFont    { .custom(name: Manrope.bold,     size: 28) }
+  static var title2: UniversalFont    { .custom(name: Manrope.bold,     size: 22) }
+  static var title3: UniversalFont    { .custom(name: Manrope.semiBold, size: 18) }
+
+  // Body
+  static var bodyLarge: UniversalFont   { .custom(name: Manrope.regular, size: 18) }
+  static var bodyMedium: UniversalFont  { .custom(name: Manrope.regular, size: 16) }
+  static var bodySmall: UniversalFont   { .custom(name: Manrope.regular, size: 14) }
+
+  // Labels
+  static var labelLarge: UniversalFont  { .custom(name: Manrope.medium, size: 15) }
+  static var labelMedium: UniversalFont { .custom(name: Manrope.medium, size: 13) }
+  static var labelSmall: UniversalFont  { .custom(name: Manrope.medium, size: 11) }
+
+  // Caption
+  static var captionLarge: UniversalFont  { .custom(name: Manrope.regular, size: 13) }
+  static var captionMedium: UniversalFont { .custom(name: Manrope.regular, size: 11) }
+  static var captionSmall: UniversalFont  { .custom(name: Manrope.regular, size: 10) }
+
+  // Overline / tag
+  static var overline: UniversalFont { .custom(name: Manrope.semiBold, size: 10) }
+}
+
+// MARK: - Manrope Theme.Layout.Typography preset
+
+extension Theme.Layout.Typography {
+  /// Full Manrope typography to apply to the theme.
+  static var manrope: Self {
+    .init(
+      headline: .init(
+        small:  .custom(name: Manrope.semiBold, size: 14),
+        medium: .custom(name: Manrope.semiBold, size: 20),
+        large:  .custom(name: Manrope.bold,     size: 24)
+      ),
+      body: .init(
+        small:  .custom(name: Manrope.regular, size: 14),
+        medium: .custom(name: Manrope.regular, size: 16),
+        large:  .custom(name: Manrope.regular, size: 18)
+      ),
+      button: .init(
+        small:  .custom(name: Manrope.semiBold, size: 14),
+        medium: .custom(name: Manrope.semiBold, size: 16),
+        large:  .custom(name: Manrope.semiBold, size: 20)
+      ),
+      caption: .init(
+        small:  .custom(name: Manrope.regular, size: 10),
+        medium: .custom(name: Manrope.medium,  size: 12),
+        large:  .custom(name: Manrope.medium,  size: 14)
+      )
+    )
+  }
+}
+
+// MARK: - From Submissions/copped/CoppedUI/_Internals/Helpers.swift
+
+import SwiftUI
+import UIKit
+
+// MARK: - Collection
+
+extension Collection {
+  var isNotEmpty: Bool { !self.isEmpty }
+}
+
+// MARK: - Optional
+
+extension Optional {
+  var isNil: Bool { self == nil }
+  var isNotNil: Bool { self != nil }
+}
+
+extension Optional where Wrapped: Collection {
+  var isNotNilAndEmpty: Bool {
+    if let self { return self.isNotEmpty } else { return false }
+  }
+  var isNilOrEmpty: Bool {
+    if let self { return self.isEmpty } else { return true }
+  }
+}
+
+// MARK: - Array
+
+extension Array {
+  subscript(safe index: Index) -> Element? {
+    indices.contains(index) ? self[index] : nil
+  }
+}
+
+// MARK: - View: Size Observer
+
+extension View {
+  func observeSize(_ closure: @escaping (_ size: CGSize) -> Void) -> some View {
+    self.overlay(
+      GeometryReader { geometry in
+        Color.clear
+          .onAppear { closure(geometry.size) }
+          .onChange(of: geometry.size) { newValue in closure(newValue) }
+      }
+    )
+  }
+}
+
+// MARK: - View: Liquid Glass
+
+extension View {
+  /// Applies either native Liquid Glass (iOS 26+, when `useLiquidGlass` is true)
+  /// or the classic `GlassBackground` with clip + stroke.
+  func liquidGlass(
+    enabled: Bool = false,
+    cornerRadius: CGFloat = 20,
+    blurStyle: UIBlurEffect.Style = Theme.current.layout.glass.blurStyle,
+    tint: Color = Theme.current.layout.glass.tint,
+    borderColor: Color = Theme.current.layout.glass.border,
+    borderWidth: CGFloat = Theme.current.layout.glass.borderWidth,
+    useCapsule: Bool = false,
+    accentColor: Color? = nil
+  ) -> some View {
+    let resolvedTint = accentColor?.opacity(0.15) ?? tint
+    let resolvedBorder = accentColor?.opacity(0.3) ?? borderColor
+    return _liquidGlassBody(
+      enabled: enabled, cornerRadius: cornerRadius,
+      blurStyle: blurStyle, tint: resolvedTint,
+      borderColor: resolvedBorder, borderWidth: borderWidth,
+      useCapsule: useCapsule, accentColor: accentColor
+    )
+  }
+
+  @available(iOS 26.0, *)
+  @ViewBuilder
+  private func _nativeGlass(
+    cornerRadius: CGFloat,
+    useCapsule: Bool,
+    accentColor: Color?
+  ) -> some View {
+    if let accentColor {
+      if useCapsule {
+        self.glassEffect(.regular.interactive().tint(accentColor), in: .capsule)
+          .shadow(color: .clear, radius: 0)
+      } else {
+        self.glassEffect(.regular.interactive().tint(accentColor), in: .rect(cornerRadius: cornerRadius))
+          .shadow(color: .clear, radius: 0)
+      }
+    } else {
+      if useCapsule {
+        self.glassEffect(.regular.interactive(), in: .capsule)
+          .shadow(color: .clear, radius: 0)
+      } else {
+        self.glassEffect(.regular.interactive(), in: .rect(cornerRadius: cornerRadius))
+          .shadow(color: .clear, radius: 0)
+      }
+    }
+  }
+
+  @ViewBuilder
+  private func _liquidGlassBody(
+    enabled: Bool,
+    cornerRadius: CGFloat,
+    blurStyle: UIBlurEffect.Style,
+    tint: Color,
+    borderColor: Color,
+    borderWidth: CGFloat,
+    useCapsule: Bool,
+    accentColor: Color?
+  ) -> some View {
+    if enabled, #available(iOS 26.0, *) {
+      _nativeGlass(cornerRadius: cornerRadius, useCapsule: useCapsule, accentColor: accentColor)
+    } else {
+      _classicGlass(cornerRadius: cornerRadius, blurStyle: blurStyle, tint: tint,
+                    borderColor: borderColor, borderWidth: borderWidth, useCapsule: useCapsule)
+    }
+  }
+
+  @ViewBuilder
+  private func _classicGlass(
+    cornerRadius: CGFloat,
+    blurStyle: UIBlurEffect.Style,
+    tint: Color,
+    borderColor: Color,
+    borderWidth: CGFloat,
+    useCapsule: Bool
+  ) -> some View {
+    if useCapsule {
+      self
+        .background(GlassBackground(style: blurStyle, tint: tint, cornerRadius: 999))
+        .clipShape(Capsule())
+        .overlay(Capsule().strokeBorder(borderColor, lineWidth: borderWidth))
+    } else {
+      self
+        .background(GlassBackground(style: blurStyle, tint: tint, cornerRadius: cornerRadius))
+        .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+        .overlay(
+          RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+            .strokeBorder(borderColor, lineWidth: borderWidth)
+        )
+    }
+  }
+}
+
+// MARK: - View: Transparent Presentation Background
+
+struct TransparentBackground: UIViewRepresentable {
+  func makeUIView(context: Context) -> UIView {
+    let view = UIView()
+    DispatchQueue.main.async {
+      view.superview?.superview?.backgroundColor = .clear
+    }
+    return view
+  }
+  func updateUIView(_ uiView: UIView, context: Context) {}
+}
+
+extension View {
+  @ViewBuilder
+  func transparentPresentationBackground() -> some View {
+    if #available(iOS 16.4, *) {
+      self.presentationBackground(.clear)
+    } else {
+      self.background(TransparentBackground())
+    }
+  }
+
+  @ViewBuilder
+  func disableScrollWhenContentFits() -> some View {
+    if #available(iOS 16.4, *) {
+      self.scrollBounceBehavior(.basedOnSize)
+    } else {
+      self.onAppear {
+        UIScrollView.appearance().bounces = false
+      }
+    }
+  }
+}
+
+// MARK: - From Submissions/copped/CoppedUI/_Internals/Protocols.swift
+
+import Foundation
+
+// MARK: - Initializable
+
+/// A type that can be initialized with an empty initializer or with a transformation closure.
+public protocol Initializable {
+  init()
+  init(_ transform: (_ value: inout Self) -> Void)
+}
+
+extension Initializable {
+  public init(_ transform: (_ value: inout Self) -> Void) {
+    var defaultValue = Self()
+    transform(&defaultValue)
+    self = defaultValue
+  }
+}
+
+// MARK: - Updatable
+
+/// A type whose values can be updated or can create an updated copy.
+public protocol Updatable {
+  func updating(_ transform: (_ value: inout Self) -> Void) -> Self
+  mutating func update(_ transform: (_ value: inout Self) -> Void)
+}
+
+extension Updatable {
+  public func updating(_ transform: (_ value: inout Self) -> Void) -> Self {
+    var copy = self
+    transform(&copy)
+    return copy
+  }
+
+  public mutating func update(_ transform: (_ value: inout Self) -> Void) {
+    transform(&self)
+  }
+}
+
+// MARK: - ComponentVM
+
+/// A protocol that defines a component view model.
+public protocol ComponentVM: Equatable, Initializable, Updatable {}
+
+// MARK: - From Submissions/copped/CoppedUI/_Internals/Theme.swift
+
+import SwiftUI
+import UIKit
+
+// MARK: - Theme
+
+public struct Theme: Initializable, Updatable, Equatable {
+  public var colors: Palette = .init()
+  public var layout: Layout = .init()
+  public init() {}
+}
+
+extension Theme {
+  public static let didChangeThemeNotification = Notification.Name("didChangeThemeNotification")
+
+  public static var current = Self() {
+    didSet {
+      NotificationCenter.default.post(name: Self.didChangeThemeNotification, object: nil)
+    }
+  }
+}
+
+// MARK: - Theme.Layout
+
+extension Theme {
+  public struct Layout: Initializable, Updatable, Equatable {
+
+    public struct Radius: Equatable {
+      public var small: CGFloat
+      public var medium: CGFloat
+      public var large: CGFloat
+      public init(small: CGFloat, medium: CGFloat, large: CGFloat) {
+        self.small = small; self.medium = medium; self.large = large
+      }
+    }
+
+    public struct BorderWidth: Equatable {
+      public var small: CGFloat
+      public var medium: CGFloat
+      public var large: CGFloat
+      public init(small: CGFloat, medium: CGFloat, large: CGFloat) {
+        self.small = small; self.medium = medium; self.large = large
+      }
+    }
+
+    public struct AnimationScale: Equatable {
+      public var small: CGFloat
+      public var medium: CGFloat
+      public var large: CGFloat
+      public init(small: CGFloat, medium: CGFloat, large: CGFloat) {
+        guard small >= 0 && small <= 1.0,
+              medium >= 0 && medium <= 1.0,
+              large >= 0 && large <= 1.0 else {
+          fatalError("Animation scale values must be between 0 and 1")
+        }
+        self.small = small; self.medium = medium; self.large = large
+      }
+    }
+
+    public struct ShadowParams: Equatable {
+      public var radius: CGFloat
+      public var offset: CGSize
+      public var color: UniversalColor
+      public init(radius: CGFloat, offset: CGSize, color: UniversalColor) {
+        self.radius = radius; self.offset = offset; self.color = color
+      }
+    }
+
+    public struct Shadow: Equatable {
+      public var small: ShadowParams
+      public var medium: ShadowParams
+      public var large: ShadowParams
+      public init(small: ShadowParams, medium: ShadowParams, large: ShadowParams) {
+        self.small = small; self.medium = medium; self.large = large
+      }
+    }
+
+    public struct FontSet: Equatable {
+      public var small: UniversalFont
+      public var medium: UniversalFont
+      public var large: UniversalFont
+      public init(small: UniversalFont, medium: UniversalFont, large: UniversalFont) {
+        self.small = small; self.medium = medium; self.large = large
+      }
+    }
+
+    public struct Typography: Equatable {
+      public var headline: FontSet
+      public var body: FontSet
+      public var button: FontSet
+      public var caption: FontSet
+      public init(headline: FontSet, body: FontSet, button: FontSet, caption: FontSet) {
+        self.headline = headline; self.body = body; self.button = button; self.caption = caption
+      }
+    }
+
+    // MARK: Glass Surface Tokens
+
+    public struct Glass: Equatable {
+      public var blurStyle: UIBlurEffect.Style
+      public var tint: Color
+      public var border: Color
+      public var borderWidth: CGFloat
+      public var shadowColor: Color
+      public var shadowRadius: CGFloat
+      public var shadowOffset: CGSize
+
+      public init(
+        blurStyle: UIBlurEffect.Style = .systemUltraThinMaterialDark,
+        tint: Color = .white.opacity(0.06),
+        border: Color = .white.opacity(0.15),
+        borderWidth: CGFloat = 0.5,
+        shadowColor: Color = .clear,
+        shadowRadius: CGFloat = 0,
+        shadowOffset: CGSize = .zero
+      ) {
+        self.blurStyle = blurStyle
+        self.tint = tint
+        self.border = border
+        self.borderWidth = borderWidth
+        self.shadowColor = shadowColor
+        self.shadowRadius = shadowRadius
+        self.shadowOffset = shadowOffset
+      }
+
+      // MARK: Presets
+
+      /// Standard glass for cards, modals, expandable cards.
+      public static var standard: Self { .init() }
+
+      /// Subtle glass for floating tab bars — lighter tint and border.
+      public static var subtle: Self {
+        .init(
+          tint: .white.opacity(0.04),
+          border: .white.opacity(0.12)
+        )
+      }
+
+      /// Prominent glass for menu bars, action buttons — stronger tint and border.
+      public static var prominent: Self {
+        .init(
+          tint: .white.opacity(0.125),
+          border: .white.opacity(0.20)
+        )
+      }
+
+      /// Shadow modifier values as a tuple for easy application.
+      public var shadowParams: (color: Color, radius: CGFloat, x: CGFloat, y: CGFloat) {
+        (shadowColor, shadowRadius, shadowOffset.width, shadowOffset.height)
+      }
+    }
+
+    // MARK: Overlay Tokens
+
+    public struct Overlay: Equatable {
+      /// Opacity for modal dimmed overlays (default 0.7)
+      public var dim: CGFloat
+      /// Opacity for HUD/blocking overlays (default 0.5)
+      public var hudDim: CGFloat
+      /// Opacity for inactive/secondary text and icons (default 0.5)
+      public var inactiveContent: CGFloat
+      /// Opacity for dividers (default 0.1)
+      public var divider: CGFloat
+
+      public init(
+        dim: CGFloat = 0.5,
+        hudDim: CGFloat = 0.4,
+        inactiveContent: CGFloat = 0.5,
+        divider: CGFloat = 0.1
+      ) {
+        self.dim = dim
+        self.hudDim = hudDim
+        self.inactiveContent = inactiveContent
+        self.divider = divider
+      }
+    }
+
+    // MARK: Motion Tokens
+
+    public struct SpringParams: Equatable {
+      public var response: CGFloat
+      public var dampingFraction: CGFloat
+
+      public init(response: CGFloat, dampingFraction: CGFloat) {
+        self.response = response
+        self.dampingFraction = dampingFraction
+      }
+
+      public var animation: Animation {
+        .spring(response: response, dampingFraction: dampingFraction)
+      }
+    }
+
+    public struct Motion: Equatable {
+      /// Snappy spring for selection changes (tabs, toggles)
+      public var snappy: SpringParams
+      /// Smooth spring for expanding/collapsing content
+      public var smooth: SpringParams
+      /// Duration for quick fades (HUD, overlays)
+      public var fadeDuration: TimeInterval
+
+      public init(
+        snappy: SpringParams = .init(response: 0.3, dampingFraction: 0.7),
+        smooth: SpringParams = .init(response: 0.45, dampingFraction: 0.8),
+        fadeDuration: TimeInterval = 0.2
+      ) {
+        self.snappy = snappy
+        self.smooth = smooth
+        self.fadeDuration = fadeDuration
+      }
+    }
+
+    // MARK: Properties
+
+    public var glass: Glass = .init()
+    public var overlay: Overlay = .init()
+    public var motion: Motion = .init()
+
+    public var disabledOpacity: CGFloat = 0.5
+
+    public var componentRadius: Radius = .init(small: 10.0, medium: 12.0, large: 16.0)
+    public var containerRadius: Radius = .init(small: 16.0, medium: 20.0, large: 26.0)
+
+    public var shadow: Shadow = .init(
+      small:  .init(radius: 0, offset: .zero, color: .universal(.rgba(r: 0, g: 0, b: 0, a: 0))),
+      medium: .init(radius: 0, offset: .zero, color: .universal(.rgba(r: 0, g: 0, b: 0, a: 0))),
+      large:  .init(radius: 0, offset: .zero, color: .universal(.rgba(r: 0, g: 0, b: 0, a: 0)))
+    )
+
+    public var borderWidth: BorderWidth = .init(small: 0.5, medium: 1.0, large: 2.0)
+
+    public var animationScale: AnimationScale = .init(small: 0.99, medium: 0.98, large: 0.95)
+
+    /// Default typography — overridden by Foundation/Typography.swift at app launch.
+    public var typography: Typography = .init(
+      headline: .init(
+        small:  .system(size: 14, weight: .semibold),
+        medium: .system(size: 20, weight: .semibold),
+        large:  .system(size: 24, weight: .semibold)
+      ),
+      body: .init(
+        small:  .system(size: 14, weight: .regular),
+        medium: .system(size: 16, weight: .regular),
+        large:  .system(size: 18, weight: .regular)
+      ),
+      button: .init(
+        small:  .system(size: 14, weight: .medium),
+        medium: .system(size: 16, weight: .medium),
+        large:  .system(size: 20, weight: .medium)
+      ),
+      caption: .init(
+        small:  .system(size: 10, weight: .regular),
+        medium: .system(size: 12, weight: .regular),
+        large:  .system(size: 14, weight: .regular)
+      )
+    )
+
+    public init() {}
+  }
+}
+
+// MARK: - Theme.Palette
+
+extension Theme {
+  public struct Palette: Initializable, Updatable, Equatable {
+    public var background: UniversalColor           = .themed(light: .hex("#FFFFFF"), dark: .hex("#000000"))
+    public var secondaryBackground: UniversalColor  = .themed(light: .hex("#F5F5F5"), dark: .hex("#323335"))
+    public var foreground: UniversalColor           = .themed(light: .hex("#0B0C0E"), dark: .hex("#FFFFFF"))
+    public var secondaryForeground: UniversalColor  = .themed(light: .hex("#424355"), dark: .hex("#D6D6D7"))
+    public var content1: UniversalColor             = .themed(light: .hex("#EFEFF0"), dark: .hex("#27272a"))
+    public var content2: UniversalColor             = .themed(light: .hex("#D4D4D8"), dark: .hex("#3F3F46"))
+    public var content3: UniversalColor             = .themed(light: .hex("#B4BDC8"), dark: .hex("#52525b"))
+    public var content4: UniversalColor             = .themed(light: .hex("#8C9197"), dark: .hex("#86898B"))
+    public var divider: UniversalColor              = .themed(
+      light: .rgba(r: 11,  g: 12,  b: 14,  a: 0.12),
+      dark:  .rgba(r: 255, g: 255, b: 255, a: 0.15)
+    )
+    public var primary: ComponentColor = .init(
+      main:     .themed(light: .hex("#0B0C0E"), dark: .hex("#FFFFFF")),
+      contrast: .themed(light: .hex("#FFFFFF"), dark: .hex("#0B0C0E")),
+      background: .themed(light: .hex("#D9D9D9"), dark: .hex("#515253"))
+    )
+    public var accent: ComponentColor = .init(
+      main:       .universal(.hex("#007AFF")),
+      contrast:   .universal(.hex("#FFFFFF")),
+      background: .themed(light: .hex("#E1EEFE"), dark: .hex("#2B3E53"))
+    )
+    public var success: ComponentColor = .init(
+      main:       .themed(light: .hex("#37D45C"), dark: .hex("#1EC645")),
+      contrast:   .themed(light: .hex("#FFFFFF"), dark: .hex("#0B0C0E")),
+      background: .themed(light: .hex("#E1FBE7"), dark: .hex("#344B3C"))
+    )
+    public var warning: ComponentColor = .init(
+      main:       .themed(light: .hex("#F4B300"), dark: .hex("#F4B300")),
+      contrast:   .universal(.hex("#0B0C0E")),
+      background: .themed(light: .hex("#FFF6DD"), dark: .hex("#514A35"))
+    )
+    public var danger: ComponentColor = .init(
+      main:       .themed(light: .hex("#F03E53"), dark: .hex("#D22338")),
+      contrast:   .universal(.hex("#FFFFFF")),
+      background: .themed(light: .hex("#FFE5E8"), dark: .hex("#4F353A"))
+    )
+    public init() {}
+  }
+}
+
+// MARK: - ComponentColor
+
+public struct ComponentColor: Hashable {
+  public let main: UniversalColor
+  public let contrast: UniversalColor
+  public var background: UniversalColor {
+    return _background ?? main.withOpacity(0.15).blended(with: .background)
+  }
+  private let _background: UniversalColor?
+
+  public init(main: UniversalColor, contrast: UniversalColor, background: UniversalColor? = nil) {
+    self.main = main; self.contrast = contrast; self._background = background
+  }
+}
+
+extension ComponentColor {
+  public static var primary: Self { Theme.current.colors.primary }
+  public static var accent:  Self { Theme.current.colors.accent }
+  public static var success: Self { Theme.current.colors.success }
+  public static var warning: Self { Theme.current.colors.warning }
+  public static var danger:  Self { Theme.current.colors.danger }
+}
+
+// MARK: - UniversalColor Static Palette
+
+extension UniversalColor {
+  public static var black: Self { .universal(.hex("#000000")) }
+  public static var white: Self { .universal(.hex("#FFFFFF")) }
+  public static var clear: Self { .universal(.uiColor(.clear)) }
+
+  public static var background:          Self { Theme.current.colors.background }
+  public static var secondaryBackground: Self { Theme.current.colors.secondaryBackground }
+  public static var foreground:          Self { Theme.current.colors.foreground }
+  public static var secondaryForeground: Self { Theme.current.colors.secondaryForeground }
+  public static var divider:             Self { Theme.current.colors.divider }
+  public static var content1:            Self { Theme.current.colors.content1 }
+  public static var content2:            Self { Theme.current.colors.content2 }
+  public static var content3:            Self { Theme.current.colors.content3 }
+  public static var content4:            Self { Theme.current.colors.content4 }
+
+  public static var primary:           Self { Theme.current.colors.primary.main }
+  public static var primaryBackground: Self { Theme.current.colors.primary.background }
+  public static var primaryContrast:   Self { Theme.current.colors.primary.contrast }
+
+  public static var accent:           Self { Theme.current.colors.accent.main }
+  public static var accentBackground: Self { Theme.current.colors.accent.background }
+  public static var accentContrast:   Self { Theme.current.colors.accent.contrast }
+
+  public static var success:           Self { Theme.current.colors.success.main }
+  public static var successBackground: Self { Theme.current.colors.success.background }
+  public static var successContrast:   Self { Theme.current.colors.success.contrast }
+
+  public static var warning:           Self { Theme.current.colors.warning.main }
+  public static var warningBackground: Self { Theme.current.colors.warning.background }
+  public static var warningContrast:   Self { Theme.current.colors.warning.contrast }
+
+  public static var danger:           Self { Theme.current.colors.danger.main }
+  public static var dangerBackground: Self { Theme.current.colors.danger.background }
+  public static var dangerContrast:   Self { Theme.current.colors.danger.contrast }
+}
+
+// MARK: - From Submissions/copped/CoppedUI/_Internals/Types.swift
+
+import SwiftUI
+import UIKit
+
+// MARK: - AnimationScale
+
+public enum AnimationScale: Hashable {
+  case none
+  case small
+  case medium
+  case large
+  case custom(_ value: CGFloat)
+}
+
+extension AnimationScale {
+  public var value: CGFloat {
+    switch self {
+    case .none:             return 1.0
+    case .small:            return Theme.current.layout.animationScale.small
+    case .medium:           return Theme.current.layout.animationScale.medium
+    case .large:            return Theme.current.layout.animationScale.large
+    case .custom(let val):
+      guard val >= 0 && val <= 1.0 else {
+        assertionFailure("Animation scale must be 0.0–1.0")
+        return 1.0
+      }
+      return val
+    }
+  }
+}
+
+// MARK: - BorderWidth
+
+public enum BorderWidth: Hashable {
+  case none, small, medium, large
+}
+
+extension BorderWidth {
+  public var value: CGFloat {
+    switch self {
+    case .none:   return 0.0
+    case .small:  return Theme.current.layout.borderWidth.small
+    case .medium: return Theme.current.layout.borderWidth.medium
+    case .large:  return Theme.current.layout.borderWidth.large
+    }
+  }
+}
+
+// MARK: - ButtonStyle
+
+public enum ButtonStyle: Hashable {
+  case filled
+  case plain
+  case light
+  case bordered(BorderWidth)
+  case minimal
+  case glass
+}
+
+// MARK: - ComponentRadius
+
+public enum ComponentRadius: Hashable {
+  case none, small, medium, large, full
+  case custom(CGFloat)
+}
+
+extension ComponentRadius {
+  public func value(for height: CGFloat = 10_000) -> CGFloat {
+    let maxValue = height / 2
+    let value: CGFloat = switch self {
+    case .none:           0
+    case .small:          Theme.current.layout.componentRadius.small
+    case .medium:         Theme.current.layout.componentRadius.medium
+    case .large:          Theme.current.layout.componentRadius.large
+    case .full:           height / 2
+    case .custom(let v):  v
+    }
+    return min(value, maxValue)
+  }
+}
+
+// MARK: - ComponentSize
+
+public enum ComponentSize: Hashable {
+  case small, medium, large
+}
+
+// MARK: - ContainerRadius
+
+public enum ContainerRadius: Hashable {
+  case none, small, medium, large
+  case custom(CGFloat)
+}
+
+extension ContainerRadius {
+  public var value: CGFloat {
+    switch self {
+    case .none:          return 0
+    case .small:         return Theme.current.layout.containerRadius.small
+    case .medium:        return Theme.current.layout.containerRadius.medium
+    case .large:         return Theme.current.layout.containerRadius.large
+    case .custom(let v): return v
+    }
+  }
+}
+
+// MARK: - InputStyle
+
+public enum InputStyle: Hashable {
+  case light, bordered, faded
+}
+
+// MARK: - LineCap
+
+public enum LineCap {
+  case butt, round, square
+}
+
+extension LineCap {
+  var cgLineCap: CGLineCap {
+    switch self {
+    case .butt:   return .butt
+    case .round:  return .round
+    case .square: return .square
+    }
+  }
+}
+
+// MARK: - Paddings
+
+public struct Paddings: Hashable {
+  public var top: CGFloat
+  public var leading: CGFloat
+  public var bottom: CGFloat
+  public var trailing: CGFloat
+
+  public init(top: CGFloat, leading: CGFloat, bottom: CGFloat, trailing: CGFloat) {
+    self.top = top; self.leading = leading; self.bottom = bottom; self.trailing = trailing
+  }
+  public init(horizontal: CGFloat, vertical: CGFloat) {
+    self.top = vertical; self.leading = horizontal; self.bottom = vertical; self.trailing = horizontal
+  }
+  public init(padding: CGFloat) {
+    self.top = padding; self.leading = padding; self.bottom = padding; self.trailing = padding
+  }
+}
+
+extension Paddings {
+  public var edgeInsets: EdgeInsets {
+    EdgeInsets(top: top, leading: leading, bottom: bottom, trailing: trailing)
+  }
+  public var uiEdgeInsets: UIEdgeInsets {
+    UIEdgeInsets(top: top, left: leading, bottom: bottom, right: trailing)
+  }
+}
+
+// MARK: - SubmitType
+
+public enum SubmitType {
+  case done, go, send, join, route, search, `return`, next, `continue`
+}
+
+extension SubmitType {
+  public var returnKeyType: UIReturnKeyType {
+    switch self {
+    case .done:     return .done
+    case .go:       return .go
+    case .send:     return .send
+    case .join:     return .join
+    case .route:    return .route
+    case .search:   return .search
+    case .return:   return .default
+    case .next:     return .next
+    case .continue: return .continue
+    }
+  }
+  public var submitLabel: SubmitLabel {
+    switch self {
+    case .done:     return .done
+    case .go:       return .go
+    case .send:     return .send
+    case .join:     return .join
+    case .route:    return .route
+    case .search:   return .search
+    case .return:   return .return
+    case .next:     return .next
+    case .continue: return .continue
+    }
+  }
+}
+
+// MARK: - TextAutocapitalization
+
+public enum TextAutocapitalization {
+  case never, characters, words, sentences
+}
+
+extension TextAutocapitalization {
+  public var textAutocapitalizationType: UITextAutocapitalizationType {
+    switch self {
+    case .never:      return .none
+    case .characters: return .allCharacters
+    case .words:      return .words
+    case .sentences:  return .sentences
+    }
+  }
+  public var textInputAutocapitalization: SwiftUI.TextInputAutocapitalization {
+    switch self {
+    case .never:      return .never
+    case .characters: return .characters
+    case .words:      return .words
+    case .sentences:  return .sentences
+    }
+  }
+}
+
+// MARK: - From Submissions/copped/CoppedUI/_Internals/UniversalColor.swift
+
+import SwiftUI
+import UIKit
+
+/// A structure that represents a universal color for both UIKit and SwiftUI,
+/// with light and dark theme variants.
+public struct UniversalColor: Hashable {
+
+  // MARK: - ColorRepresentable
+
+  public enum ColorRepresentable: Hashable {
+    case rgba(r: CGFloat, g: CGFloat, b: CGFloat, a: CGFloat)
+    case uiColor(UIColor)
+    case color(Color)
+
+    public static func hex(_ value: String) -> Self {
+      let start: String.Index
+      if value.hasPrefix("#") {
+        start = value.index(value.startIndex, offsetBy: 1)
+      } else {
+        start = value.startIndex
+      }
+      let hexColor = String(value[start...])
+      let scanner = Scanner(string: hexColor)
+      var hexNumber: UInt64 = 0
+      if hexColor.count == 6 && scanner.scanHexInt64(&hexNumber) {
+        let r = CGFloat((hexNumber & 0x00ff0000) >> 16)
+        let g = CGFloat((hexNumber & 0x0000ff00) >> 8)
+        let b = CGFloat(hexNumber & 0x000000ff)
+        return .rgba(r: r, g: g, b: b, a: 1.0)
+      } else {
+        assertionFailure("Unable to initialize color from hex: \(value)")
+        return .rgba(r: 0, g: 0, b: 0, a: 1.0)
+      }
+    }
+
+    fileprivate func withOpacity(_ alpha: CGFloat) -> Self {
+      switch self {
+      case .rgba(let r, let g, let b, _):
+        return .rgba(r: r, g: g, b: b, a: alpha)
+      case .uiColor(let uiColor):
+        return .uiColor(uiColor.withAlphaComponent(alpha))
+      case .color(let color):
+        return .color(color.opacity(alpha))
+      }
+    }
+
+    fileprivate var uiColor: UIColor {
+      switch self {
+      case .rgba(let red, let green, let blue, let alpha):
+        return UIColor(red: red / 255, green: green / 255, blue: blue / 255, alpha: alpha)
+      case .uiColor(let uiColor):
+        return uiColor
+      case .color(let color):
+        return UIColor(color)
+      }
+    }
+
+    private var rgba: (r: CGFloat, g: CGFloat, b: CGFloat, a: CGFloat) {
+      switch self {
+      case let .rgba(r, g, b, a):
+        return (r, g, b, a)
+      case .uiColor, .color:
+        var red: CGFloat = 0
+        var green: CGFloat = 0
+        var blue: CGFloat = 0
+        var alpha: CGFloat = 0
+        self.uiColor.getRed(&red, green: &green, blue: &blue, alpha: &alpha)
+        return (red * 255, green * 255, blue * 255, alpha)
+      }
+    }
+
+    fileprivate func blended(with other: Self) -> Self {
+      let rgba = self.rgba
+      let otherRgba = other.rgba
+      let red   = rgba.r * rgba.a + otherRgba.r * (1.0 - rgba.a)
+      let green = rgba.g * rgba.a + otherRgba.g * (1.0 - rgba.a)
+      let blue  = rgba.b * rgba.a + otherRgba.b * (1.0 - rgba.a)
+      return .rgba(r: red, g: green, b: blue, a: 1.0)
+    }
+  }
+
+  // MARK: - Properties
+
+  public let light: ColorRepresentable
+  public let dark: ColorRepresentable
+
+  // MARK: - Factory
+
+  public static func themed(light: ColorRepresentable, dark: ColorRepresentable) -> Self {
+    return Self(light: light, dark: dark)
+  }
+
+  public static func universal(_ universal: ColorRepresentable) -> Self {
+    return Self(light: universal, dark: universal)
+  }
+
+  // MARK: - Conversions
+
+  public var uiColor: UIColor {
+    return UIColor { trait in
+      switch trait.userInterfaceStyle {
+      case .dark:
+        return self.dark.uiColor
+      default:
+        return self.light.uiColor
+      }
+    }
+  }
+
+  public var color: Color {
+    return Color(self.uiColor)
+  }
+
+  public var cgColor: CGColor {
+    return self.uiColor.cgColor
+  }
+
+  // MARK: - Methods
+
+  public func withOpacity(_ alpha: CGFloat) -> Self {
+    return .init(light: self.light.withOpacity(alpha), dark: self.dark.withOpacity(alpha))
+  }
+
+  public func enabled(_ isEnabled: Bool) -> Self {
+    return isEnabled ? self : self.withOpacity(Theme.current.layout.disabledOpacity)
+  }
+
+  public func blended(with other: Self) -> Self {
+    return .init(
+      light: self.light.blended(with: other.light),
+      dark: self.dark.blended(with: other.dark)
+    )
+  }
+}
+
+// MARK: - From Submissions/copped/CoppedUI/_Internals/UniversalFont.swift
+
+import SwiftUI
+import UIKit
+
+/// A universal font container for both UIKit and SwiftUI.
+public enum UniversalFont: Hashable {
+
+  public enum Weight: Hashable {
+    case ultraLight, thin, light, regular, medium, semibold, bold, heavy, black
+  }
+
+  case custom(name: String, size: CGFloat)
+  case system(size: CGFloat, weight: Weight)
+
+  // MARK: - Conversions
+
+  public var uiFont: UIFont {
+    switch self {
+    case .custom(let name, let size):
+      guard let font = UIFont(name: name, size: size) else {
+        assertionFailure("Unable to initialize font '\(name)'")
+        return UIFont.systemFont(ofSize: size)
+      }
+      return font
+    case .system(let size, let weight):
+      return UIFont.systemFont(ofSize: size, weight: weight.uiFontWeight)
+    }
+  }
+
+  public var font: Font {
+    switch self {
+    case .custom(let name, let size):
+      return Font.custom(name, size: size)
+    case .system(let size, let weight):
+      return Font.system(size: size, weight: weight.swiftUIFontWeight)
+    }
+  }
+
+  // MARK: - Helpers
+
+  public func withSize(_ size: CGFloat) -> Self {
+    switch self {
+    case .custom(let name, _):
+      return .custom(name: name, size: size)
+    case .system(_, let weight):
+      return .system(size: size, weight: weight)
+    }
+  }
+
+  public func withRelativeSize(_ shift: CGFloat) -> Self {
+    switch self {
+    case .custom(let name, let size):
+      return .custom(name: name, size: size + shift)
+    case .system(let size, let weight):
+      return .system(size: size + shift, weight: weight)
+    }
+  }
+}
+
+// MARK: - Weight Conversions
+
+extension UniversalFont.Weight {
+  var uiFontWeight: UIFont.Weight {
+    switch self {
+    case .ultraLight: return .ultraLight
+    case .thin:       return .thin
+    case .light:      return .light
+    case .regular:    return .regular
+    case .medium:     return .medium
+    case .semibold:   return .semibold
+    case .bold:       return .bold
+    case .heavy:      return .heavy
+    case .black:      return .black
+    }
+  }
+
+  var swiftUIFontWeight: Font.Weight {
+    switch self {
+    case .ultraLight: return .ultraLight
+    case .thin:       return .thin
+    case .light:      return .light
+    case .regular:    return .regular
+    case .medium:     return .medium
+    case .semibold:   return .semibold
+    case .bold:       return .bold
+    case .heavy:      return .heavy
+    case .black:      return .black
+    }
+  }
+}
+
+// MARK: - Theme-linked Presets
+
+extension UniversalFont {
+  public static var smHeadline: UniversalFont { Theme.current.layout.typography.headline.small }
+  public static var mdHeadline: UniversalFont { Theme.current.layout.typography.headline.medium }
+  public static var lgHeadline: UniversalFont { Theme.current.layout.typography.headline.large }
+
+  public static var smBody: UniversalFont { Theme.current.layout.typography.body.small }
+  public static var mdBody: UniversalFont { Theme.current.layout.typography.body.medium }
+  public static var lgBody: UniversalFont { Theme.current.layout.typography.body.large }
+
+  public static var smButton: UniversalFont { Theme.current.layout.typography.button.small }
+  public static var mdButton: UniversalFont { Theme.current.layout.typography.button.medium }
+  public static var lgButton: UniversalFont { Theme.current.layout.typography.button.large }
+
+  public static var smCaption: UniversalFont { Theme.current.layout.typography.caption.small }
+  public static var mdCaption: UniversalFont { Theme.current.layout.typography.caption.medium }
+  public static var lgCaption: UniversalFont { Theme.current.layout.typography.caption.large }
+}
+
+// MARK: - From Submissions/copped/CoppedUI/_Internals/UniversalImage.swift
+
+import SwiftUI
+import UIKit
+
+// MARK: - ImageRenderingMode
+
+public enum ImageRenderingMode {
+  case template
+  case original
+}
+
+extension ImageRenderingMode {
+  var uiImageRenderingMode: UIImage.RenderingMode {
+    switch self {
+    case .template: return .alwaysTemplate
+    case .original: return .alwaysOriginal
+    }
+  }
+  var imageRenderingModel: Image.TemplateRenderingMode {
+    switch self {
+    case .template: return .template
+    case .original: return .original
+    }
+  }
+}
+
+// MARK: - UniversalImage
+
+/// A platform-agnostic image container supporting SF Symbols and asset catalog images.
+public struct UniversalImage: Hashable {
+
+  private enum ImageRepresentable: Hashable {
+    case sfSymbol(String)
+    case asset(String, Bundle?)
+  }
+
+  private let internalImage: ImageRepresentable
+  private var renderingMode: ImageRenderingMode?
+
+  private init(image: ImageRepresentable, mode: ImageRenderingMode) {
+    self.internalImage = image
+    self.renderingMode = mode
+  }
+
+  public init(systemName name: String) {
+    self.internalImage = .sfSymbol(name)
+  }
+
+  public init(_ name: String, bundle: Bundle? = nil) {
+    self.internalImage = .asset(name, bundle)
+  }
+}
+
+extension UniversalImage {
+  public var uiImage: UIImage? {
+    let image = switch self.internalImage {
+    case .sfSymbol(let name):  UIImage(systemName: name)
+    case .asset(let name, let bundle): UIImage(named: name, in: bundle, with: nil)
+    }
+    if let renderingMode {
+      return image?.withRenderingMode(renderingMode.uiImageRenderingMode)
+    }
+    return image
+  }
+
+  public var image: Image {
+    let image = switch self.internalImage {
+    case .sfSymbol(let name):  Image(systemName: name)
+    case .asset(let name, let bundle): Image(name, bundle: bundle)
+    }
+    if let renderingMode {
+      return image.renderingMode(renderingMode.imageRenderingModel)
+    }
+    return image
+  }
+
+  public func withRenderingMode(_ mode: ImageRenderingMode) -> Self {
+    return Self(image: self.internalImage, mode: mode)
+  }
+}
+
 // MARK: - From Submissions/copped/CoppedUIKitBridges.swift
 
 import PassKit
@@ -3644,16 +7697,16 @@ struct CoppedVideoRecorder: View {
             if let message = controller.errorMessage ?? simulatorError {
                 HStack(spacing: 5) {
                     Image(systemName: "exclamationmark.circle.fill")
-                        .font(.system(size: 10))
+                        .font(.custom(Manrope.regular, size: 10))
                     Text(message)
-                        .font(.system(size: 11, weight: .medium, design: .rounded))
+                        .font(.custom(Manrope.medium, size: 11))
                 }
-                .foregroundStyle(CoppedPalette.neonOrange)
+                .foregroundStyle(CoppedPalette.warning)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 16)
                 .padding(.vertical, 8)
                 .frame(maxWidth: .infinity)
-                .background(CoppedPalette.neonOrange.opacity(0.08), in: RoundedRectangle(cornerRadius: 10))
+                .background(CoppedPalette.warning.opacity(0.08), in: RoundedRectangle(cornerRadius: 10))
                 .padding(.horizontal, 12)
                 .padding(.bottom, 8)
             }
@@ -3694,7 +7747,7 @@ struct CoppedVideoRecorder: View {
                     Spacer()
                     if controller.isRecording {
                         Text("REC")
-                            .font(.system(size: 10, weight: .black, design: .rounded))
+                            .font(.custom(Manrope.extraBold, size: 10))
                             .foregroundStyle(.white)
                             .padding(.horizontal, 8)
                             .padding(.vertical, 4)
@@ -3708,7 +7761,7 @@ struct CoppedVideoRecorder: View {
                         ProgressView()
                             .tint(.white)
                         Text("Preparing camera...")
-                            .font(.system(size: 11, weight: .medium, design: .rounded))
+                            .font(.custom(Manrope.medium, size: 11))
                             .foregroundStyle(.white.opacity(0.5))
                     }
                 }
@@ -3721,7 +7774,7 @@ struct CoppedVideoRecorder: View {
                             ProgressView()
                                 .tint(.white)
                             Text("Finalizing clip...")
-                                .font(.system(size: 12, weight: .semibold, design: .rounded))
+                                .font(.custom(Manrope.semiBold, size: 12))
                                 .foregroundStyle(.white)
                         }
                     }
@@ -3736,9 +7789,9 @@ struct CoppedVideoRecorder: View {
             if controller.isFinalizing {
                 HStack(spacing: 8) {
                     ProgressView()
-                        .tint(CoppedPalette.neonBlue)
+                        .tint(.white)
                     Text("Saving your recording")
-                        .font(.system(size: 12, weight: .semibold, design: .rounded))
+                        .font(.custom(Manrope.semiBold, size: 12))
                         .foregroundStyle(.white.opacity(0.8))
                 }
                 .frame(maxWidth: .infinity)
@@ -3782,8 +7835,8 @@ struct CoppedVideoRecorder: View {
                     .fill(
                         LinearGradient(
                             colors: [
-                                CoppedPalette.neonBlue.opacity(0.15),
-                                CoppedPalette.mint.opacity(0.1)
+                                Color.white.opacity(0.06),
+                                Color.white.opacity(0.03)
                             ],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
@@ -3795,13 +7848,13 @@ struct CoppedVideoRecorder: View {
 
                 VStack(spacing: 8) {
                     Image(systemName: "iphone.gen3.radiowaves.left.and.right")
-                        .font(.system(size: 30, weight: .light))
+                        .font(.custom(Manrope.light, size: 30))
                         .foregroundStyle(.white.opacity(0.4))
                     Text("Simulator Mode")
-                        .font(.system(size: 14, weight: .semibold, design: .rounded))
+                        .font(.custom(Manrope.semiBold, size: 14))
                         .foregroundStyle(.white.opacity(0.6))
                     Text("Use a physical iPhone for camera")
-                        .font(.system(size: 11, weight: .medium, design: .rounded))
+                        .font(.custom(Manrope.medium, size: 11))
                         .foregroundStyle(.white.opacity(0.3))
                 }
 
@@ -3810,7 +7863,7 @@ struct CoppedVideoRecorder: View {
                     Spacer()
                     if simulatorRecording {
                         Text("REC")
-                            .font(.system(size: 10, weight: .black, design: .rounded))
+                            .font(.custom(Manrope.extraBold, size: 10))
                             .foregroundStyle(.white)
                             .padding(.horizontal, 8)
                             .padding(.vertical, 4)
@@ -3838,7 +7891,7 @@ struct CoppedVideoRecorder: View {
                         startSimulatorRecording()
                     }
                 },
-                accentColor: CoppedPalette.neonOrange
+                accentColor: CoppedPalette.accent
             )
 
             recorderHint(
@@ -3876,10 +7929,10 @@ struct CoppedVideoRecorder: View {
         return Button(action: onTap) {
             HStack(spacing: 10) {
                 Image(systemName: iconName)
-                    .font(.system(size: 16, weight: .black))
+                    .font(.custom(Manrope.extraBold, size: 16))
 
                 Text(title)
-                    .font(.system(size: 15, weight: .black, design: .rounded))
+                    .font(.custom(Manrope.extraBold, size: 15))
             }
             .foregroundStyle(stopDisabled ? .white.opacity(0.7) : .white)
             .frame(maxWidth: .infinity)
@@ -3892,17 +7945,17 @@ struct CoppedVideoRecorder: View {
                 RoundedRectangle(cornerRadius: 14)
                     .stroke(Color.white.opacity(0.2), lineWidth: 0.5)
             )
-            .shadow(color: (isRecording ? Color.red : accentColor).opacity(0.32), radius: 12, y: 4)
+            .shadow(color: Color.black.opacity(0.3), radius: 8, y: 4)
             .animation(.easeInOut(duration: 0.2), value: isRecording)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(PlainButtonStyle())
         .disabled(stopDisabled)
         .accessibilityLabel(isRecording ? "Stop recording" : "Start recording")
     }
 
     private func recorderHint(_ text: String) -> some View {
         Text(text)
-            .font(.system(size: 11, weight: .medium, design: .rounded))
+            .font(.custom(Manrope.medium, size: 11))
             .foregroundStyle(.white.opacity(0.55))
             .multilineTextAlignment(.center)
             .padding(.horizontal, 16)
@@ -3914,13 +7967,13 @@ struct CoppedVideoRecorder: View {
         let isActive = (mode == .camera ? controller.isRecording : simulatorRecording)
         HStack(spacing: 5) {
             Circle()
-                .fill(isActive ? Color.red : CoppedPalette.mint)
+                .fill(isActive ? Color.red : .white.opacity(0.5))
                 .frame(width: 6, height: 6)
             Text("\(Int(elapsed))s")
-                .font(.system(size: 11, weight: .bold, design: .monospaced))
+                .font(.custom(Manrope.bold, size: 11))
                 .foregroundStyle(.white)
             Text("\(Int(minDuration))-\(Int(maxDuration))s")
-                .font(.system(size: 10, weight: .medium, design: .monospaced))
+                .font(.custom(Manrope.medium, size: 10))
                 .foregroundStyle(.white.opacity(0.5))
         }
         .padding(.horizontal, 8)
@@ -4386,6 +8439,7 @@ struct CoppedViewerExperience: ClipExperience {
     @State private var errorMessage: String?
     @State private var copiedReceiptURL = false
     @State private var pulseCTA = false
+    @State private var selectedTab = 0
 
     private let deviceID = "copped-device-id"
 
@@ -4447,6 +8501,7 @@ struct CoppedViewerExperience: ClipExperience {
             topHUD
         }
         .onAppear {
+            CoppedTheme.bootstrap()
             withAnimation(.easeInOut(duration: 1.35).repeatForever(autoreverses: true)) {
                 pulseCTA = true
             }
@@ -4502,14 +8557,14 @@ struct CoppedViewerExperience: ClipExperience {
         VStack(spacing: 8) {
             HStack {
                 VStack(alignment: .leading, spacing: 1) {
-                    CoppedInfoChip(title: "REAL CLIPS", icon: "play.rectangle.fill", tint: CoppedPalette.neonOrange)
+                    CoppedInfoChip(title: "REAL CLIPS", icon: "play.rectangle.fill", tint: .white)
 
                     Text(product.name)
-                        .font(.system(size: 17, weight: .black, design: .rounded))
+                        .font(.custom(Manrope.extraBold, size: 17))
                         .foregroundStyle(.white)
                     if !clips.isEmpty {
                         Text("Swipe for more")
-                            .font(.system(size: 10, weight: .medium, design: .rounded))
+                            .font(.custom(Manrope.medium, size: 10))
                             .foregroundStyle(.white.opacity(0.5))
                     }
                 }
@@ -4519,11 +8574,11 @@ struct CoppedViewerExperience: ClipExperience {
             if let errorMessage {
                 HStack(spacing: 4) {
                     Image(systemName: "exclamationmark.triangle.fill")
-                        .font(.system(size: 9))
+                        .font(.custom(Manrope.regular, size: 9))
                     Text(errorMessage)
-                        .font(.system(size: 11, weight: .medium, design: .rounded))
+                        .font(.custom(Manrope.medium, size: 11))
                 }
-                .foregroundStyle(CoppedPalette.neonOrange)
+                .foregroundStyle(CoppedPalette.warning)
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
 
@@ -4536,29 +8591,78 @@ struct CoppedViewerExperience: ClipExperience {
 
     // MARK: - Bottom Overlay
 
+    private var tabBarItems: [TabBarItem] {
+        [
+            TabBarItem(id: 0, icon: "play.rectangle.fill", label: "Browse"),
+            TabBarItem(id: 1, icon: "plus.circle.fill", label: "Create"),
+            TabBarItem(id: 2, icon: "creditcard.fill", label: "Wallet")
+        ]
+    }
+
     @ViewBuilder
     private var bottomOverlay: some View {
-        if checkoutOutcome != nil || (!isLoading && !clips.isEmpty) {
-            VStack(spacing: 8) {
-                if let outcome = checkoutOutcome {
-                    receiptPanel(outcome: outcome)
-                }
+        VStack(spacing: 0) {
+            if checkoutOutcome != nil || (!isLoading && !clips.isEmpty) {
+                VStack(spacing: 8) {
+                    if let outcome = checkoutOutcome {
+                        receiptPanel(outcome: outcome)
+                    }
 
-                if !isLoading && !clips.isEmpty {
-                    buyBar
+                    if !isLoading && !clips.isEmpty {
+                        buyBar
+                    }
                 }
+                .padding(.horizontal, 12)
+                .padding(.top, 8)
+                .padding(.bottom, 4)
             }
-            .padding(.horizontal, 12)
-            .padding(.top, 8)
-            .padding(.bottom, 6)
-            .background(
-                LinearGradient(
-                    colors: [Color.clear, Color.black.opacity(0.5)],
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
+
+            // FAB create button
+            Button {
+                if let outcome = checkoutOutcome {
+                    let url = URL(string: "https://clip.copped.app/c/\(outcome.receiptID)")!
+                    Task { await CoppedURLLauncher.open(url) }
+                }
+            } label: {
+                Image(systemName: "plus")
+                    .font(.system(size: 24, weight: .bold))
+                    .foregroundStyle(.white)
+                    .frame(width: 56, height: 56)
+                    .background(
+                        Circle()
+                            .fill(CoppedPalette.accent)
+                            .shadow(color: CoppedPalette.accent.opacity(0.4), radius: 12, y: 4)
+                    )
+            }
+            .buttonStyle(PlainButtonStyle())
+            .padding(.vertical, 4)
+
+            FloatingTabBar(
+                items: tabBarItems,
+                selection: $selectedTab,
+                inactiveColor: .primary.opacity(0.45),
+                bottomPadding: 8,
+                useLiquidGlass: true,
+                onSelectionChanged: { tab in
+                    if tab == 1 {
+                        // + Create: deep-link to creator
+                        if let outcome = checkoutOutcome {
+                            let url = URL(string: "https://clip.copped.app/c/\(outcome.receiptID)")!
+                            Task { await CoppedURLLauncher.open(url) }
+                        }
+                        // Reset to browse tab
+                        selectedTab = 0
+                    }
+                }
             )
         }
+        .background(
+            LinearGradient(
+                colors: [Color.clear, Color.black.opacity(0.6)],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+        )
     }
 
     private var buyBar: some View {
@@ -4568,36 +8672,36 @@ struct CoppedViewerExperience: ClipExperience {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("BUY NOW")
-                        .font(.system(size: 9, weight: .black, design: .rounded))
+                        .font(.custom(Manrope.extraBold, size: 9))
                         .tracking(0.8)
                         .foregroundStyle(.white.opacity(0.7))
 
                     Text(product.formattedPrice)
-                        .font(.system(size: 22, weight: .black, design: .rounded))
+                        .font(.custom(Manrope.extraBold, size: 22))
                         .foregroundStyle(.white)
 
                     Text("Fast checkout")
-                        .font(.system(size: 10, weight: .medium, design: .rounded))
+                        .font(.custom(Manrope.medium, size: 10))
                         .foregroundStyle(.white.opacity(0.65))
                 }
                 Spacer()
                 Image(systemName: "cart.badge.plus")
-                    .font(.system(size: 26, weight: .bold))
+                    .font(.custom(Manrope.bold, size: 26))
                     .foregroundStyle(.white)
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 14)
             .background(
                 RoundedRectangle(cornerRadius: 16)
-                    .fill(CoppedPalette.primaryGradient)
-                    .shadow(color: CoppedPalette.neonPink.opacity(pulseCTA ? 0.35 : 0.12), radius: pulseCTA ? 18 : 8)
+                    .fill(CoppedPalette.accent)
+                    .shadow(color: Color.black.opacity(0.3), radius: 10, y: 4)
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 16)
                     .stroke(Color.white.opacity(0.15), lineWidth: 0.5)
             )
         }
-        .buttonStyle(.plain)
+        .buttonStyle(PlainButtonStyle())
         .disabled(currentClip == nil)
         .opacity(currentClip == nil ? 0.5 : 1)
     }
@@ -4611,7 +8715,7 @@ struct CoppedViewerExperience: ClipExperience {
                 .scaleEffect(1.2)
 
             Text("PULLING LIVE CLIPS")
-                .font(.system(size: 11, weight: .black, design: .rounded))
+                .font(.custom(Manrope.extraBold, size: 11))
                 .tracking(1.0)
                 .foregroundStyle(.white.opacity(0.6))
         }
@@ -4621,15 +8725,15 @@ struct CoppedViewerExperience: ClipExperience {
     private var emptyState: some View {
         VStack(spacing: 12) {
             Image(systemName: "video.slash.fill")
-                .font(.system(size: 34, weight: .bold))
+                .font(.custom(Manrope.bold, size: 34))
                 .foregroundStyle(.white.opacity(0.3))
 
             Text("NO CLIPS YET")
-                .font(.system(size: 20, weight: .black, design: .rounded))
+                .font(.custom(Manrope.extraBold, size: 20))
                 .foregroundStyle(.white)
 
             Text("Be first to create social proof for \(product.name).\nStake a 5-15s clip and unlock instant rewards.")
-                .font(.system(size: 12, weight: .medium, design: .rounded))
+                .font(.custom(Manrope.medium, size: 12))
                 .foregroundStyle(.white.opacity(0.5))
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 32)
@@ -4679,7 +8783,7 @@ struct CoppedViewerExperience: ClipExperience {
     private func positionedCaption(for clip: CoppedClip) -> some View {
         if let text = clip.textOverlay, !text.isEmpty {
             let caption = Text(text.uppercased())
-                .font(.system(size: 24, weight: .black, design: .rounded))
+                .font(.custom(Manrope.extraBold, size: 24))
                 .foregroundStyle(.white)
                 .shadow(color: .black.opacity(0.5), radius: 6)
                 .lineLimit(2)
@@ -4710,7 +8814,7 @@ struct CoppedViewerExperience: ClipExperience {
             VStack {
                 Spacer(minLength: 0)
                 Text(clip.product.name)
-                    .font(.system(size: 12, weight: .semibold, design: .rounded))
+                    .font(.custom(Manrope.semiBold, size: 12))
                     .foregroundStyle(.white.opacity(0.6))
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, 12)
@@ -4729,17 +8833,17 @@ struct CoppedViewerExperience: ClipExperience {
             HStack {
                 HStack(spacing: 4) {
                     Image(systemName: "checkmark.circle.fill")
-                        .font(.system(size: 11))
-                        .foregroundStyle(CoppedPalette.mint)
+                        .font(.custom(Manrope.regular, size: 11))
+                        .foregroundStyle(.white.opacity(0.7))
                     Text("ORDER CONFIRMED")
-                        .font(.system(size: 11, weight: .black, design: .rounded))
-                        .foregroundStyle(CoppedPalette.mint)
+                        .font(.custom(Manrope.extraBold, size: 11))
+                        .foregroundStyle(.white.opacity(0.7))
                 }
                 Spacer()
             }
 
             Text("Your receipt is ready. Open creator flow to record and claim reward.")
-                .font(.system(size: 11, weight: .medium, design: .rounded))
+                .font(.custom(Manrope.medium, size: 11))
                 .foregroundStyle(.white.opacity(0.65))
 
             HStack(spacing: 8) {
@@ -4755,11 +8859,11 @@ struct CoppedViewerExperience: ClipExperience {
                         }
                     }
                 }
-                .font(.system(size: 11, weight: .bold, design: .rounded))
+                .font(.custom(Manrope.bold, size: 11))
                 .foregroundStyle(.white)
                 .padding(.horizontal, 10)
                 .padding(.vertical, 6)
-                .background(CoppedPalette.neonBlue, in: RoundedRectangle(cornerRadius: 8))
+                .background(CoppedPalette.accent, in: RoundedRectangle(cornerRadius: 8))
 
                 Button(copiedReceiptURL ? "Copied Link" : "Copy Link") {
                     Task { @MainActor in
@@ -4767,7 +8871,7 @@ struct CoppedViewerExperience: ClipExperience {
                         copiedReceiptURL = true
                     }
                 }
-                .font(.system(size: 11, weight: .bold, design: .rounded))
+                .font(.custom(Manrope.bold, size: 11))
                 .foregroundStyle(.white)
                 .padding(.horizontal, 10)
                 .padding(.vertical, 6)
@@ -4869,15 +8973,15 @@ private struct CoppedViewerCheckoutSheet: View {
                 VStack(spacing: 16) {
                     VStack(spacing: 6) {
                         Image(systemName: "creditcard.fill")
-                            .font(.system(size: 28, weight: .light))
-                            .foregroundStyle(CoppedPalette.neonBlue)
+                            .font(.custom(Manrope.light, size: 28))
+                            .foregroundStyle(.white.opacity(0.6))
 
                         Text("CHECKOUT")
-                            .font(.system(size: 20, weight: .black, design: .rounded))
+                            .font(.custom(Manrope.extraBold, size: 20))
                             .foregroundStyle(.white)
 
                         Text("Secure one-tap checkout")
-                            .font(.system(size: 12, weight: .medium, design: .rounded))
+                            .font(.custom(Manrope.medium, size: 12))
                             .foregroundStyle(.white.opacity(0.45))
                             .multilineTextAlignment(.center)
                     }
@@ -4897,10 +9001,10 @@ private struct CoppedViewerCheckoutSheet: View {
                     if isProcessing {
                         HStack(spacing: 8) {
                             ProgressView()
-                                .tint(CoppedPalette.neonPink)
+                                .tint(.white)
                                 .scaleEffect(0.8)
                             Text("Processing Apple Pay...")
-                                .font(.system(size: 12, weight: .medium, design: .rounded))
+                                .font(.custom(Manrope.medium, size: 12))
                                 .foregroundStyle(.white.opacity(0.6))
                         }
                     }
@@ -4922,11 +9026,11 @@ private struct CoppedViewerCheckoutSheet: View {
     private func checkoutRow(label: String, value: String) -> some View {
         HStack {
             Text(label)
-                .font(.system(size: 12, weight: .medium, design: .rounded))
+                .font(.custom(Manrope.medium, size: 12))
                 .foregroundStyle(.white.opacity(0.5))
             Spacer()
             Text(value)
-                .font(.system(size: 12, weight: .bold, design: .monospaced))
+                .font(.custom(Manrope.bold, size: 12))
                 .foregroundStyle(.white)
         }
         .padding(.horizontal, 12)
@@ -4958,16 +9062,16 @@ private struct CoppedLoopingVideoPlayer: View {
                 VStack(spacing: 8) {
                     if controller.didFail {
                         Image(systemName: "video.slash.fill")
-                            .font(.system(size: 26, weight: .semibold))
+                            .font(.custom(Manrope.semiBold, size: 26))
                             .foregroundStyle(.white.opacity(0.55))
                         Text("Video unavailable")
-                            .font(.system(size: 12, weight: .bold, design: .rounded))
+                            .font(.custom(Manrope.bold, size: 12))
                             .foregroundStyle(.white.opacity(0.7))
                     } else {
                         ProgressView()
                             .tint(.white)
                         Text("Loading clip")
-                            .font(.system(size: 11, weight: .medium, design: .rounded))
+                            .font(.custom(Manrope.medium, size: 11))
                             .foregroundStyle(.white.opacity(0.65))
                     }
                 }
