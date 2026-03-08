@@ -156,16 +156,16 @@ struct CoppedCreatorExperience: ClipExperience {
                     if showsInlineErrorBanner, let errorMessage {
                         HStack(spacing: 6) {
                             Image(systemName: "exclamationmark.triangle.fill")
-                                .font(.system(size: 11))
+                                .font(.custom(Manrope.regular, size: 11))
                             Text(errorMessage)
-                                .font(.system(size: 12, weight: .medium, design: .rounded))
+                                .font(.custom(Manrope.medium, size: 12))
                         }
-                        .foregroundStyle(CoppedPalette.neonOrange)
+                        .foregroundStyle(CoppedPalette.warning)
                         .multilineTextAlignment(.center)
                         .padding(.horizontal, 16)
                         .padding(.vertical, 8)
                         .frame(maxWidth: .infinity)
-                        .background(CoppedPalette.neonOrange.opacity(0.1), in: RoundedRectangle(cornerRadius: 10))
+                        .background(CoppedPalette.warning.opacity(0.1), in: RoundedRectangle(cornerRadius: 10))
                     }
                 }
                 .padding(.horizontal, 12)
@@ -195,12 +195,12 @@ struct CoppedCreatorExperience: ClipExperience {
         VStack(spacing: 7) {
             HStack(spacing: 6) {
                 Image(systemName: "camera.aperture")
-                    .font(.system(size: 10, weight: .bold))
-                    .foregroundStyle(CoppedPalette.neonPink)
+                    .font(.custom(Manrope.bold, size: 10))
+                    .foregroundStyle(.white.opacity(0.6))
                 Text("CREATOR")
-                    .font(.system(size: 10, weight: .black, design: .rounded))
+                    .font(.custom(Manrope.extraBold, size: 10))
                     .tracking(1.2)
-                    .foregroundStyle(CoppedPalette.neonPink)
+                    .foregroundStyle(.white.opacity(0.6))
 
                 Spacer()
             }
@@ -213,7 +213,7 @@ struct CoppedCreatorExperience: ClipExperience {
                     RoundedRectangle(cornerRadius: 3)
                         .fill(CoppedPalette.accentGradient)
                         .frame(width: max(8, geometry.size.width * progressValue))
-                        .shadow(color: CoppedPalette.neonBlue.opacity(pulseHero ? 0.4 : 0.15), radius: pulseHero ? 10 : 4)
+                        .shadow(color: CoppedPalette.accent.opacity(pulseHero ? 0.4 : 0.15), radius: pulseHero ? 10 : 4)
                 }
             }
             .frame(height: 4)
@@ -222,8 +222,8 @@ struct CoppedCreatorExperience: ClipExperience {
             if let rewardsSnapshot {
                 HStack {
                     Text("Wallet \(rewardsSnapshot.availableBalanceDisplay)")
-                        .font(.system(size: 10, weight: .bold, design: .monospaced))
-                        .foregroundStyle(CoppedPalette.mint)
+                        .font(.custom(Manrope.bold, size: 10))
+                        .foregroundStyle(CoppedPalette.success)
                     Spacer()
                 }
             }
@@ -275,12 +275,12 @@ struct CoppedCreatorExperience: ClipExperience {
             }
 
             Text("SYNCING RECEIPT")
-                .font(.system(size: 11, weight: .black, design: .rounded))
+                .font(.custom(Manrope.extraBold, size: 11))
                 .tracking(1.0)
                 .foregroundStyle(.white.opacity(0.7))
 
             Text("Checking eligible products")
-                .font(.system(size: 11, weight: .medium, design: .rounded))
+                .font(.custom(Manrope.medium, size: 11))
                 .foregroundStyle(.white.opacity(0.45))
         }
         .frame(maxWidth: .infinity)
@@ -294,25 +294,25 @@ struct CoppedCreatorExperience: ClipExperience {
         VStack(spacing: 8) {
             HStack {
                 Text("Select a product")
-                    .font(.system(size: 15, weight: .bold, design: .rounded))
+                    .font(.custom(Manrope.bold, size: 15))
                     .foregroundStyle(.white)
                 Spacer()
                 Text("\(products.count) eligible")
-                    .font(.system(size: 10, weight: .bold, design: .monospaced))
-                    .foregroundStyle(CoppedPalette.mint)
+                    .font(.custom(Manrope.bold, size: 10))
+                    .foregroundStyle(CoppedPalette.success)
                     .padding(.horizontal, 8)
                     .padding(.vertical, 3)
-                    .background(CoppedPalette.mint.opacity(0.12), in: Capsule())
+                    .background(CoppedPalette.success.opacity(0.12), in: Capsule())
             }
             .padding(.horizontal, 4)
 
             if products.isEmpty {
                 VStack(spacing: 8) {
                     Image(systemName: "shippingbox")
-                        .font(.system(size: 28))
+                        .font(.custom(Manrope.regular, size: 28))
                         .foregroundStyle(.white.opacity(0.3))
                     Text("No eligible products found.")
-                        .font(.system(size: 13, weight: .medium, design: .rounded))
+                        .font(.custom(Manrope.medium, size: 13))
                         .foregroundStyle(.white.opacity(0.5))
                 }
                 .padding(.vertical, 24)
@@ -335,14 +335,14 @@ struct CoppedCreatorExperience: ClipExperience {
 
                 VStack(alignment: .leading, spacing: 3) {
                     Text(product.name)
-                        .font(.system(size: 15, weight: .bold, design: .rounded))
+                        .font(.custom(Manrope.bold, size: 15))
                         .foregroundStyle(.white)
                     HStack(spacing: 6) {
                         Text(product.formattedPrice)
-                            .font(.system(size: 12, weight: .bold, design: .monospaced))
-                            .foregroundStyle(CoppedPalette.mint)
+                            .font(.custom(Manrope.bold, size: 12))
+                            .foregroundStyle(CoppedPalette.success)
                         Text("STAKE-READY")
-                            .font(.system(size: 9, weight: .black, design: .rounded))
+                            .font(.custom(Manrope.extraBold, size: 9))
                             .tracking(0.6)
                             .foregroundStyle(.black)
                             .padding(.horizontal, 6)
@@ -354,7 +354,7 @@ struct CoppedCreatorExperience: ClipExperience {
                 Spacer()
 
                 Image(systemName: "chevron.right")
-                    .font(.system(size: 13, weight: .semibold))
+                    .font(.custom(Manrope.semiBold, size: 13))
                     .foregroundStyle(.white.opacity(0.4))
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -362,7 +362,7 @@ struct CoppedCreatorExperience: ClipExperience {
             .padding(12)
             .clipStakesGlassCard(cornerRadius: 14)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(PlainButtonStyle())
     }
 
     private func beginRecording(for product: CoppedProduct) {
@@ -383,10 +383,10 @@ struct CoppedCreatorExperience: ClipExperience {
                         .frame(width: 34, height: 34)
                     VStack(alignment: .leading, spacing: 1) {
                         Text("Recording")
-                            .font(.system(size: 10, weight: .medium, design: .rounded))
+                            .font(.custom(Manrope.medium, size: 10))
                             .foregroundStyle(.white.opacity(0.5))
                         Text(selectedProduct.name)
-                            .font(.system(size: 13, weight: .bold, design: .rounded))
+                            .font(.custom(Manrope.bold, size: 13))
                             .foregroundStyle(.white)
                             .lineLimit(1)
                     }
@@ -397,7 +397,7 @@ struct CoppedCreatorExperience: ClipExperience {
                 Button("Change Product") {
                     step = .selectProduct
                 }
-                .font(.system(size: 11, weight: .bold, design: .rounded))
+                .font(.custom(Manrope.bold, size: 11))
                 .foregroundStyle(.white)
                 .padding(.horizontal, 10)
                 .padding(.vertical, 6)
@@ -417,7 +417,7 @@ struct CoppedCreatorExperience: ClipExperience {
 
             HStack(spacing: 8) {
                 Text("Record one clean take, then tap Stop.")
-                    .font(.system(size: 11, weight: .medium, design: .rounded))
+                    .font(.custom(Manrope.medium, size: 11))
                     .foregroundStyle(.white.opacity(0.55))
                 Spacer()
             }
@@ -440,7 +440,7 @@ struct CoppedCreatorExperience: ClipExperience {
         VStack(spacing: 14) {
             ZStack {
                 Circle()
-                    .stroke(CoppedPalette.neonBlue.opacity(0.15), lineWidth: 6)
+                    .stroke(CoppedPalette.accent.opacity(0.15), lineWidth: 6)
                     .frame(width: 56, height: 56)
                 Circle()
                     .trim(from: 0, to: 0.6)
@@ -448,17 +448,17 @@ struct CoppedCreatorExperience: ClipExperience {
                     .frame(width: 56, height: 56)
                     .rotationEffect(.degrees(pulseHero ? 210 : -70))
                 Image(systemName: "brain")
-                    .font(.system(size: 18, weight: .semibold))
+                    .font(.custom(Manrope.semiBold, size: 18))
                     .foregroundStyle(.white.opacity(0.7))
             }
 
             Text("AI REVIEW")
-                .font(.system(size: 11, weight: .black, design: .rounded))
+                .font(.custom(Manrope.extraBold, size: 11))
                 .tracking(1.0)
                 .foregroundStyle(.white.opacity(0.8))
 
             Text(validationMessage.isEmpty ? "Checking visibility, framing, and content" : validationMessage)
-                .font(.system(size: 12, weight: .medium, design: .rounded))
+                .font(.custom(Manrope.medium, size: 12))
                 .foregroundStyle(.white.opacity(0.5))
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 20)
@@ -474,11 +474,11 @@ struct CoppedCreatorExperience: ClipExperience {
         VStack(spacing: 12) {
             HStack {
                 Text("Add overlay text")
-                    .font(.system(size: 16, weight: .bold, design: .rounded))
+                    .font(.custom(Manrope.bold, size: 16))
                     .foregroundStyle(.white)
                 Spacer()
                 Text("Optional")
-                    .font(.system(size: 10, weight: .medium, design: .rounded))
+                    .font(.custom(Manrope.medium, size: 10))
                     .foregroundStyle(.white.opacity(0.4))
             }
 
@@ -486,7 +486,7 @@ struct CoppedCreatorExperience: ClipExperience {
                 TextField("OBSESSED", text: $textOverlay)
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
-                    .font(.system(size: 15, weight: .bold, design: .rounded))
+                    .font(.custom(Manrope.bold, size: 15))
                     .foregroundStyle(.white)
                     .padding(11)
                     .background(Color.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 10))
@@ -527,7 +527,7 @@ struct CoppedCreatorExperience: ClipExperience {
             RoundedRectangle(cornerRadius: 12)
                 .fill(
                     LinearGradient(
-                        colors: [Color.black.opacity(0.5), CoppedPalette.neonBlue.opacity(0.3)],
+                        colors: [Color.black.opacity(0.5), CoppedPalette.accent.opacity(0.3)],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
                     )
@@ -558,7 +558,7 @@ struct CoppedCreatorExperience: ClipExperience {
 
     private var overlayPreviewText: some View {
         Text(trimmedTextOverlay.isEmpty ? "YOUR OVERLAY" : trimmedTextOverlay.uppercased())
-            .font(.system(size: 15, weight: .black, design: .rounded))
+            .font(.custom(Manrope.extraBold, size: 15))
             .foregroundStyle(.white)
             .shadow(color: .black.opacity(0.45), radius: 4)
             .lineLimit(2)
@@ -571,7 +571,7 @@ struct CoppedCreatorExperience: ClipExperience {
         VStack(spacing: 12) {
             HStack {
                 Text("Final Review")
-                    .font(.system(size: 17, weight: .bold, design: .rounded))
+                    .font(.custom(Manrope.bold, size: 17))
                     .foregroundStyle(.white)
                 Spacer()
             }
@@ -588,22 +588,22 @@ struct CoppedCreatorExperience: ClipExperience {
             HStack(spacing: 10) {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("INSTANT REWARD")
-                        .font(.system(size: 9, weight: .black, design: .rounded))
+                        .font(.custom(Manrope.extraBold, size: 9))
                         .tracking(0.8)
                         .foregroundStyle(.white.opacity(0.6))
                     Text("$5 Coupon")
-                        .font(.system(size: 20, weight: .black, design: .rounded))
+                        .font(.custom(Manrope.extraBold, size: 20))
                         .foregroundStyle(.white)
                 }
                 Spacer()
                 Image(systemName: "ticket.fill")
-                    .font(.system(size: 24, weight: .bold))
-                    .foregroundStyle(CoppedPalette.neonOrange)
+                    .font(.custom(Manrope.bold, size: 24))
+                    .foregroundStyle(CoppedPalette.warning)
             }
             .padding(12)
             .background(
                 LinearGradient(
-                    colors: [CoppedPalette.neonPink.opacity(0.25), CoppedPalette.neonOrange.opacity(0.2)],
+                    colors: [CoppedPalette.accent.opacity(0.25), CoppedPalette.warning.opacity(0.2)],
                     startPoint: .topLeading,
                     endPoint: .bottomTrailing
                 ),
@@ -617,10 +617,10 @@ struct CoppedCreatorExperience: ClipExperience {
             if isUploading {
                 HStack(spacing: 8) {
                     ProgressView()
-                        .tint(CoppedPalette.neonPink)
+                        .tint(CoppedPalette.accent)
                         .scaleEffect(0.8)
                     Text("Uploading + minting reward...")
-                        .font(.system(size: 12, weight: .medium, design: .rounded))
+                        .font(.custom(Manrope.medium, size: 12))
                         .foregroundStyle(.white.opacity(0.6))
                 }
                 .padding(.vertical, 4)
@@ -657,11 +657,11 @@ struct CoppedCreatorExperience: ClipExperience {
                 // Header
                 VStack(spacing: 4) {
                     Image(systemName: "checkmark.circle.fill")
-                        .font(.system(size: 32, weight: .bold))
-                        .foregroundStyle(CoppedPalette.mint)
+                        .font(.custom(Manrope.bold, size: 32))
+                        .foregroundStyle(CoppedPalette.success)
 
                     Text("CLIP IS LIVE")
-                        .font(.system(size: 10, weight: .black, design: .rounded))
+                        .font(.custom(Manrope.extraBold, size: 10))
                         .tracking(1.2)
                         .foregroundStyle(.white.opacity(0.6))
                 }
@@ -669,17 +669,17 @@ struct CoppedCreatorExperience: ClipExperience {
                 // Reward card
                 VStack(spacing: 10) {
                     Text("+\(reward.instantCreditDisplay)")
-                        .font(.system(size: 44, weight: .black, design: .rounded))
+                        .font(.custom(Manrope.extraBold, size: 44))
                         .foregroundStyle(.white)
 
                     Text("ADDED TO YOUR WALLET BALANCE")
-                        .font(.system(size: 9, weight: .black, design: .rounded))
+                        .font(.custom(Manrope.extraBold, size: 9))
                         .tracking(1.2)
                         .foregroundStyle(.white.opacity(0.8))
 
                     HStack(spacing: 8) {
                         Text(displayedBalance)
-                            .font(.system(size: 14, weight: .bold, design: .monospaced))
+                            .font(.custom(Manrope.bold, size: 14))
                             .foregroundStyle(.white)
 
                         Button(copiedWalletCode ? "Copied" : "Copy Wallet Code") {
@@ -688,7 +688,7 @@ struct CoppedCreatorExperience: ClipExperience {
                                 copiedWalletCode = true
                             }
                         }
-                        .font(.system(size: 11, weight: .bold, design: .rounded))
+                        .font(.custom(Manrope.bold, size: 11))
                         .foregroundStyle(.white)
                         .padding(.horizontal, 10)
                         .padding(.vertical, 5)
@@ -702,7 +702,7 @@ struct CoppedCreatorExperience: ClipExperience {
                 .padding(20)
                 .background(
                     LinearGradient(
-                        colors: [CoppedPalette.neonPink, CoppedPalette.neonBlue],
+                        colors: [CoppedPalette.accent, CoppedPalette.accent],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
                     ),
@@ -712,7 +712,7 @@ struct CoppedCreatorExperience: ClipExperience {
                     RoundedRectangle(cornerRadius: 18)
                         .stroke(Color.white.opacity(0.2), lineWidth: 0.5)
                 )
-                .shadow(color: CoppedPalette.neonPink.opacity(pulseReward ? 0.35 : 0.15), radius: pulseReward ? 20 : 10, y: 6)
+                .shadow(color: CoppedPalette.accent.opacity(pulseReward ? 0.35 : 0.15), radius: pulseReward ? 20 : 10, y: 6)
 
                 // Actions
                 VStack(spacing: 8) {
@@ -775,7 +775,7 @@ struct CoppedCreatorExperience: ClipExperience {
 
                 if let walletStatusMessage {
                     Text(walletStatusMessage)
-                        .font(.system(size: 11, weight: .medium, design: .rounded))
+                        .font(.custom(Manrope.medium, size: 11))
                         .foregroundStyle(.white.opacity(0.6))
                         .multilineTextAlignment(.center)
                 }
@@ -783,20 +783,20 @@ struct CoppedCreatorExperience: ClipExperience {
                 if !transactions.isEmpty {
                     VStack(alignment: .leading, spacing: 8) {
                         Text("Recent Earnings")
-                            .font(.system(size: 12, weight: .bold, design: .rounded))
+                            .font(.custom(Manrope.bold, size: 12))
                             .foregroundStyle(.white.opacity(0.82))
 
                         ForEach(transactions.prefix(3)) { item in
                             HStack(spacing: 8) {
                                 Image(systemName: item.kind == .conversion ? "cart.fill.badge.plus" : "video.badge.plus")
-                                    .font(.system(size: 11, weight: .bold))
-                                    .foregroundStyle(CoppedPalette.mint)
+                                    .font(.custom(Manrope.bold, size: 11))
+                                    .foregroundStyle(CoppedPalette.success)
                                 Text(item.kind == .conversion ? "Conversion reward" : "Clip published")
-                                    .font(.system(size: 11, weight: .medium, design: .rounded))
+                                    .font(.custom(Manrope.medium, size: 11))
                                     .foregroundStyle(.white.opacity(0.74))
                                 Spacer()
                                 Text("+\(item.amountDisplay)")
-                                    .font(.system(size: 11, weight: .bold, design: .monospaced))
+                                    .font(.custom(Manrope.bold, size: 11))
                                     .foregroundStyle(.white)
                             }
                         }
@@ -816,23 +816,23 @@ struct CoppedCreatorExperience: ClipExperience {
     private var blockedState: some View {
         VStack(spacing: 10) {
             Image(systemName: "lock.trianglebadge.exclamationmark")
-                .font(.system(size: 36, weight: .bold))
-                .foregroundStyle(CoppedPalette.neonOrange)
+                .font(.custom(Manrope.bold, size: 36))
+                .foregroundStyle(CoppedPalette.warning)
 
             Text("Receipt Already Used")
-                .font(.system(size: 18, weight: .bold, design: .rounded))
+                .font(.custom(Manrope.bold, size: 18))
                 .foregroundStyle(.white)
 
             Text(errorMessage ?? "This receipt already created a clip.")
-                .font(.system(size: 12, weight: .medium, design: .rounded))
+                .font(.custom(Manrope.medium, size: 12))
                 .foregroundStyle(.white.opacity(0.5))
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 16)
 
             if let rewardsSnapshot {
                 Text("Wallet balance: \(rewardsSnapshot.availableBalanceDisplay)")
-                    .font(.system(size: 12, weight: .bold, design: .monospaced))
-                    .foregroundStyle(CoppedPalette.mint)
+                    .font(.custom(Manrope.bold, size: 12))
+                    .foregroundStyle(CoppedPalette.success)
             }
 
             VStack(spacing: 8) {
@@ -852,7 +852,7 @@ struct CoppedCreatorExperience: ClipExperience {
 
             if let blockedStatusMessage {
                 Text(blockedStatusMessage)
-                    .font(.system(size: 11, weight: .medium, design: .rounded))
+                    .font(.custom(Manrope.medium, size: 11))
                     .foregroundStyle(.white.opacity(0.6))
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 16)
@@ -866,15 +866,15 @@ struct CoppedCreatorExperience: ClipExperience {
     private var failureState: some View {
         VStack(spacing: 10) {
             Image(systemName: "xmark.octagon.fill")
-                .font(.system(size: 36, weight: .bold))
-                .foregroundStyle(CoppedPalette.neonPink)
+                .font(.custom(Manrope.bold, size: 36))
+                .foregroundStyle(CoppedPalette.accent)
 
             Text("Could Not Load Receipt")
-                .font(.system(size: 18, weight: .bold, design: .rounded))
+                .font(.custom(Manrope.bold, size: 18))
                 .foregroundStyle(.white)
 
             Text(errorMessage ?? "Try another receipt URL.")
-                .font(.system(size: 12, weight: .medium, design: .rounded))
+                .font(.custom(Manrope.medium, size: 12))
                 .foregroundStyle(.white.opacity(0.5))
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 16)
@@ -895,11 +895,11 @@ struct CoppedCreatorExperience: ClipExperience {
     private func confirmRow(label: String, value: String) -> some View {
         HStack {
             Text(label)
-                .font(.system(size: 12, weight: .medium, design: .rounded))
+                .font(.custom(Manrope.medium, size: 12))
                 .foregroundStyle(.white.opacity(0.5))
             Spacer()
             Text(value)
-                .font(.system(size: 12, weight: .bold, design: .monospaced))
+                .font(.custom(Manrope.bold, size: 12))
                 .foregroundStyle(.white)
                 .lineLimit(1)
         }
@@ -922,13 +922,13 @@ struct CoppedCreatorExperience: ClipExperience {
                             .scaledToFill()
                     default:
                         Image(systemName: product.systemImage)
-                            .font(.system(size: 14, weight: .semibold))
+                            .font(.custom(Manrope.semiBold, size: 14))
                             .foregroundStyle(.white.opacity(0.5))
                     }
                 }
             } else {
                 Image(systemName: product.systemImage)
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(.custom(Manrope.semiBold, size: 14))
                     .foregroundStyle(.white.opacity(0.5))
             }
         }
@@ -940,11 +940,11 @@ struct CoppedCreatorExperience: ClipExperience {
         let seed = abs(product.id.hashValue) % 3
         switch seed {
         case 0:
-            return LinearGradient(colors: [CoppedPalette.neonBlue, CoppedPalette.mint], startPoint: .topLeading, endPoint: .bottomTrailing)
+            return LinearGradient(colors: [CoppedPalette.accent, CoppedPalette.success], startPoint: .topLeading, endPoint: .bottomTrailing)
         case 1:
-            return LinearGradient(colors: [CoppedPalette.neonOrange, CoppedPalette.neonPink], startPoint: .topLeading, endPoint: .bottomTrailing)
+            return LinearGradient(colors: [CoppedPalette.warning, CoppedPalette.accent], startPoint: .topLeading, endPoint: .bottomTrailing)
         default:
-            return LinearGradient(colors: [CoppedPalette.mint, CoppedPalette.neonBlue], startPoint: .topLeading, endPoint: .bottomTrailing)
+            return LinearGradient(colors: [CoppedPalette.success, CoppedPalette.accent], startPoint: .topLeading, endPoint: .bottomTrailing)
         }
     }
 

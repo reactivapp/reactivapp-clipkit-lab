@@ -31,16 +31,16 @@ struct CoppedVideoRecorder: View {
             if let message = controller.errorMessage ?? simulatorError {
                 HStack(spacing: 5) {
                     Image(systemName: "exclamationmark.circle.fill")
-                        .font(.system(size: 10))
+                        .font(.custom(Manrope.regular, size: 10))
                     Text(message)
-                        .font(.system(size: 11, weight: .medium, design: .rounded))
+                        .font(.custom(Manrope.medium, size: 11))
                 }
-                .foregroundStyle(CoppedPalette.neonOrange)
+                .foregroundStyle(CoppedPalette.warning)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 16)
                 .padding(.vertical, 8)
                 .frame(maxWidth: .infinity)
-                .background(CoppedPalette.neonOrange.opacity(0.08), in: RoundedRectangle(cornerRadius: 10))
+                .background(CoppedPalette.warning.opacity(0.08), in: RoundedRectangle(cornerRadius: 10))
                 .padding(.horizontal, 12)
                 .padding(.bottom, 8)
             }
@@ -81,7 +81,7 @@ struct CoppedVideoRecorder: View {
                     Spacer()
                     if controller.isRecording {
                         Text("REC")
-                            .font(.system(size: 10, weight: .black, design: .rounded))
+                            .font(.custom(Manrope.extraBold, size: 10))
                             .foregroundStyle(.white)
                             .padding(.horizontal, 8)
                             .padding(.vertical, 4)
@@ -95,7 +95,7 @@ struct CoppedVideoRecorder: View {
                         ProgressView()
                             .tint(.white)
                         Text("Preparing camera...")
-                            .font(.system(size: 11, weight: .medium, design: .rounded))
+                            .font(.custom(Manrope.medium, size: 11))
                             .foregroundStyle(.white.opacity(0.5))
                     }
                 }
@@ -108,7 +108,7 @@ struct CoppedVideoRecorder: View {
                             ProgressView()
                                 .tint(.white)
                             Text("Finalizing clip...")
-                                .font(.system(size: 12, weight: .semibold, design: .rounded))
+                                .font(.custom(Manrope.semiBold, size: 12))
                                 .foregroundStyle(.white)
                         }
                     }
@@ -123,9 +123,9 @@ struct CoppedVideoRecorder: View {
             if controller.isFinalizing {
                 HStack(spacing: 8) {
                     ProgressView()
-                        .tint(CoppedPalette.neonBlue)
+                        .tint(.white)
                     Text("Saving your recording")
-                        .font(.system(size: 12, weight: .semibold, design: .rounded))
+                        .font(.custom(Manrope.semiBold, size: 12))
                         .foregroundStyle(.white.opacity(0.8))
                 }
                 .frame(maxWidth: .infinity)
@@ -169,8 +169,8 @@ struct CoppedVideoRecorder: View {
                     .fill(
                         LinearGradient(
                             colors: [
-                                CoppedPalette.neonBlue.opacity(0.15),
-                                CoppedPalette.mint.opacity(0.1)
+                                Color.white.opacity(0.06),
+                                Color.white.opacity(0.03)
                             ],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
@@ -182,13 +182,13 @@ struct CoppedVideoRecorder: View {
 
                 VStack(spacing: 8) {
                     Image(systemName: "iphone.gen3.radiowaves.left.and.right")
-                        .font(.system(size: 30, weight: .light))
+                        .font(.custom(Manrope.light, size: 30))
                         .foregroundStyle(.white.opacity(0.4))
                     Text("Simulator Mode")
-                        .font(.system(size: 14, weight: .semibold, design: .rounded))
+                        .font(.custom(Manrope.semiBold, size: 14))
                         .foregroundStyle(.white.opacity(0.6))
                     Text("Use a physical iPhone for camera")
-                        .font(.system(size: 11, weight: .medium, design: .rounded))
+                        .font(.custom(Manrope.medium, size: 11))
                         .foregroundStyle(.white.opacity(0.3))
                 }
 
@@ -197,7 +197,7 @@ struct CoppedVideoRecorder: View {
                     Spacer()
                     if simulatorRecording {
                         Text("REC")
-                            .font(.system(size: 10, weight: .black, design: .rounded))
+                            .font(.custom(Manrope.extraBold, size: 10))
                             .foregroundStyle(.white)
                             .padding(.horizontal, 8)
                             .padding(.vertical, 4)
@@ -225,7 +225,7 @@ struct CoppedVideoRecorder: View {
                         startSimulatorRecording()
                     }
                 },
-                accentColor: CoppedPalette.neonOrange
+                accentColor: .white
             )
 
             recorderHint(
@@ -263,10 +263,10 @@ struct CoppedVideoRecorder: View {
         return Button(action: onTap) {
             HStack(spacing: 10) {
                 Image(systemName: iconName)
-                    .font(.system(size: 16, weight: .black))
+                    .font(.custom(Manrope.extraBold, size: 16))
 
                 Text(title)
-                    .font(.system(size: 15, weight: .black, design: .rounded))
+                    .font(.custom(Manrope.extraBold, size: 15))
             }
             .foregroundStyle(stopDisabled ? .white.opacity(0.7) : .white)
             .frame(maxWidth: .infinity)
@@ -282,14 +282,14 @@ struct CoppedVideoRecorder: View {
             .shadow(color: (isRecording ? Color.red : accentColor).opacity(0.32), radius: 12, y: 4)
             .animation(.easeInOut(duration: 0.2), value: isRecording)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(PlainButtonStyle())
         .disabled(stopDisabled)
         .accessibilityLabel(isRecording ? "Stop recording" : "Start recording")
     }
 
     private func recorderHint(_ text: String) -> some View {
         Text(text)
-            .font(.system(size: 11, weight: .medium, design: .rounded))
+            .font(.custom(Manrope.medium, size: 11))
             .foregroundStyle(.white.opacity(0.55))
             .multilineTextAlignment(.center)
             .padding(.horizontal, 16)
@@ -301,13 +301,13 @@ struct CoppedVideoRecorder: View {
         let isActive = (mode == .camera ? controller.isRecording : simulatorRecording)
         HStack(spacing: 5) {
             Circle()
-                .fill(isActive ? Color.red : CoppedPalette.mint)
+                .fill(isActive ? Color.red : .white.opacity(0.5))
                 .frame(width: 6, height: 6)
             Text("\(Int(elapsed))s")
-                .font(.system(size: 11, weight: .bold, design: .monospaced))
+                .font(.custom(Manrope.bold, size: 11))
                 .foregroundStyle(.white)
             Text("\(Int(minDuration))-\(Int(maxDuration))s")
-                .font(.system(size: 10, weight: .medium, design: .monospaced))
+                .font(.custom(Manrope.medium, size: 10))
                 .foregroundStyle(.white.opacity(0.5))
         }
         .padding(.horizontal, 8)

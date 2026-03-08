@@ -1,88 +1,90 @@
 import SwiftUI
+import CoreText
 
-enum CoppedPalette {
-    static let ink = Color(red: 0.08, green: 0.05, blue: 0.12)
-    static let shadowInk = Color(red: 0.04, green: 0.02, blue: 0.08)
-    static let neonPink = Color(red: 1.00, green: 0.31, blue: 0.63)
-    static let neonOrange = Color(red: 1.00, green: 0.55, blue: 0.20)
-    static let neonBlue = Color(red: 0.26, green: 0.69, blue: 1.00)
-    static let mint = Color(red: 0.31, green: 0.92, blue: 0.78)
-    static let cardBase = Color.white.opacity(0.07)
-    static let cardBorder = Color.white.opacity(0.14)
-    static let surfaceElevated = Color.white.opacity(0.10)
+// MARK: - Theme Bootstrap
 
-    static let primaryGradient = LinearGradient(
-        colors: [neonPink, neonOrange],
-        startPoint: .topLeading,
-        endPoint: .bottomTrailing
-    )
+/// Call once when either Copped clip launches to configure ClankerComponents theme.
+enum CoppedTheme {
+    private static var isConfigured = false
 
-    static let accentGradient = LinearGradient(
-        colors: [neonBlue, mint],
-        startPoint: .topLeading,
-        endPoint: .bottomTrailing
-    )
+    static func bootstrap() {
+        guard !isConfigured else { return }
+        isConfigured = true
+        registerManropeFonts()
+        Theme.configureApp()
+    }
 
-    static let subtleGradient = LinearGradient(
-        colors: [Color.white.opacity(0.08), Color.white.opacity(0.02)],
-        startPoint: .topLeading,
-        endPoint: .bottomTrailing
-    )
-}
-
-struct CoppedStageBackground: View {
-    var body: some View {
-        ZStack {
-            LinearGradient(
-                colors: [CoppedPalette.shadowInk, CoppedPalette.ink],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-
-            Circle()
-                .fill(CoppedPalette.neonPink.opacity(0.22))
-                .blur(radius: 100)
-                .frame(width: 220, height: 220)
-                .offset(x: 120, y: -260)
-
-            Circle()
-                .fill(CoppedPalette.neonBlue.opacity(0.16))
-                .blur(radius: 110)
-                .frame(width: 240, height: 240)
-                .offset(x: -130, y: -60)
-
-            Circle()
-                .fill(CoppedPalette.neonOrange.opacity(0.14))
-                .blur(radius: 120)
-                .frame(width: 250, height: 250)
-                .offset(x: 80, y: 300)
+    /// Programmatically register Manrope .ttf files from the app bundle
+    /// so they work without Info.plist entries (hackathon convenience).
+    private static func registerManropeFonts() {
+        let fontNames = [
+            "Manrope-ExtraLight", "Manrope-Light", "Manrope-Regular",
+            "Manrope-Medium", "Manrope-SemiBold", "Manrope-Bold", "Manrope-ExtraBold"
+        ]
+        for name in fontNames {
+            if let url = Bundle.main.url(forResource: name, withExtension: "ttf") {
+                CTFontManagerRegisterFontsForURL(url as CFURL, .process, nil)
+            }
         }
-        .ignoresSafeArea()
     }
 }
+
+// MARK: - CoppedPalette (brand accent colors, kept thin)
+
+enum CoppedPalette {
+    // Primary surfaces
+    static let ink = Color(red: 0.06, green: 0.04, blue: 0.09)
+
+    // Accent kept from ClankerComponents theme — violet #7C3AED
+    static var accent: Color { UniversalColor.accent.color }
+    static var accentBg: Color { UniversalColor.accentBackground.color }
+
+    // Semantic
+    static var success: Color { UniversalColor.success.color }
+    static var danger: Color { UniversalColor.danger.color }
+    static var warning: Color { UniversalColor.warning.color }
+
+    // Neutrals
+    static var fg: Color { UniversalColor.foreground.color }
+    static var fgSecondary: Color { UniversalColor.secondaryForeground.color }
+    static var bg: Color { UniversalColor.background.color }
+    static var divider: Color { UniversalColor.divider.color }
+    static var content1: Color { UniversalColor.content1.color }
+    static var content2: Color { UniversalColor.content2.color }
+}
+
+// MARK: - Copped Glass Card (bridges to ClankerComponents glass)
 
 struct CoppedGlassCardModifier: ViewModifier {
     let cornerRadius: CGFloat
 
     func body(content: Content) -> some View {
         content
-            .background(
-                RoundedRectangle(cornerRadius: cornerRadius)
-                    .fill(CoppedPalette.cardBase)
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: cornerRadius)
-                    .stroke(CoppedPalette.cardBorder, lineWidth: 0.5)
-            )
-            .shadow(color: .black.opacity(0.22), radius: 12, y: 6)
+            .liquidGlass(cornerRadius: cornerRadius)
     }
 }
 
 extension View {
-    func clipStakesGlassCard(cornerRadius: CGFloat = 22) -> some View {
+    func coppedGlass(cornerRadius: CGFloat = 20) -> some View {
         modifier(CoppedGlassCardModifier(cornerRadius: cornerRadius))
     }
+
+    /// Legacy name kept for files that still reference it.
+    func clipStakesGlassCard(cornerRadius: CGFloat = 22) -> some View {
+        coppedGlass(cornerRadius: cornerRadius)
+    }
 }
+
+// MARK: - Background
+
+struct CoppedStageBackground: View {
+    var body: some View {
+        CoppedPalette.ink
+            .ignoresSafeArea()
+    }
+}
+
+// MARK: - Small Utilities
 
 struct CoppedInfoChip: View {
     let title: String
@@ -92,60 +94,14 @@ struct CoppedInfoChip: View {
     var body: some View {
         HStack(spacing: 5) {
             Image(systemName: icon)
-                .font(.system(size: 9, weight: .bold))
+                .font(.custom(Manrope.semiBold, size: 9))
             Text(title)
-                .font(.system(size: 10, weight: .bold, design: .rounded))
+                .font(.custom(Manrope.bold, size: 10))
         }
         .foregroundStyle(tint)
         .padding(.horizontal, 8)
         .padding(.vertical, 5)
-        .background(tint.opacity(0.12), in: Capsule())
-        .overlay(Capsule().stroke(tint.opacity(0.25), lineWidth: 0.5))
-    }
-}
-
-struct CoppedPrimaryButtonStyle: ButtonStyle {
-    var disabled = false
-
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .font(.system(size: 15, weight: .bold, design: .rounded))
-            .foregroundStyle(.white)
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 14)
-            .background(
-                RoundedRectangle(cornerRadius: 14)
-                    .fill(
-                        disabled
-                            ? AnyShapeStyle(Color.gray.opacity(0.3))
-                            : AnyShapeStyle(CoppedPalette.primaryGradient)
-                    )
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 14)
-                    .stroke(Color.white.opacity(disabled ? 0.1 : 0.2), lineWidth: 0.5)
-            )
-            .scaleEffect(configuration.isPressed ? 0.97 : 1)
-            .opacity(configuration.isPressed ? 0.85 : 1)
-            .animation(.easeOut(duration: 0.15), value: configuration.isPressed)
-    }
-}
-
-struct CoppedSecondaryButtonStyle: ButtonStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .font(.system(size: 14, weight: .semibold, design: .rounded))
-            .foregroundStyle(.white.opacity(0.9))
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 12)
-            .background(Color.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 12))
-            .overlay(
-                RoundedRectangle(cornerRadius: 12)
-                    .stroke(Color.white.opacity(0.15), lineWidth: 0.5)
-            )
-            .scaleEffect(configuration.isPressed ? 0.97 : 1)
-            .opacity(configuration.isPressed ? 0.85 : 1)
-            .animation(.easeOut(duration: 0.15), value: configuration.isPressed)
+        .liquidGlass(cornerRadius: 20, useCapsule: true)
     }
 }
 
@@ -155,14 +111,123 @@ struct CoppedStepPill: View {
 
     var body: some View {
         Text(label)
-            .font(.system(size: 10, weight: .bold, design: .rounded))
-            .foregroundStyle(isActive ? Color.black : Color.white.opacity(0.6))
+            .font(.custom(Manrope.bold, size: 10))
+            .foregroundStyle(isActive ? .white : .white.opacity(0.5))
             .padding(.horizontal, 10)
             .padding(.vertical, 5)
-            .background(
-                Capsule()
-                    .fill(isActive ? AnyShapeStyle(CoppedPalette.accentGradient) : AnyShapeStyle(Color.white.opacity(0.08)))
-            )
+            .liquidGlass(cornerRadius: 20, useCapsule: true,
+                         accentColor: isActive ? CoppedPalette.accent : nil)
             .animation(.easeInOut(duration: 0.25), value: isActive)
+    }
+}
+
+// MARK: - Brand Gradients
+
+extension CoppedPalette {
+    static var primaryGradient: LinearGradient {
+        LinearGradient(colors: [accent, accent], startPoint: .leading, endPoint: .trailing)
+    }
+    static var accentGradient: LinearGradient {
+        LinearGradient(colors: [accent.opacity(0.7), accent], startPoint: .topLeading, endPoint: .bottomTrailing)
+    }
+}
+
+// MARK: - Bridge Button Styles (ClankerComponents look via SwiftUI ButtonStyle)
+
+struct CoppedPrimaryButtonStyle: SwiftUI.ButtonStyle {
+    var disabled: Bool = false
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.custom(Manrope.bold, size: 15))
+            .foregroundStyle(.white)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 13)
+            .background(
+                RoundedRectangle(cornerRadius: 14)
+                    .fill(disabled ? CoppedPalette.accent.opacity(0.4) : CoppedPalette.accent)
+            )
+            .opacity(configuration.isPressed ? 0.85 : 1)
+            .animation(.easeInOut(duration: 0.15), value: configuration.isPressed)
+    }
+}
+
+struct CoppedSecondaryButtonStyle: SwiftUI.ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.custom(Manrope.semiBold, size: 14))
+            .foregroundStyle(.white.opacity(0.85))
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 11)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color.white.opacity(0.1))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(Color.white.opacity(0.15), lineWidth: 0.5)
+            )
+            .opacity(configuration.isPressed ? 0.7 : 1)
+            .animation(.easeInOut(duration: 0.15), value: configuration.isPressed)
+    }
+}
+
+// MARK: - Convenience Button Builders
+
+enum CoppedButtons {
+    static func primary(
+        title: String,
+        icon: String? = nil,
+        isLoading: Bool = false,
+        isEnabled: Bool = true,
+        action: @escaping () -> Void
+    ) -> SUButton {
+        SUButton(model: ButtonVM {
+            $0.title = title
+            $0.style = .filled
+            $0.color = .accent
+            $0.size = .large
+            $0.isFullWidth = true
+            $0.isLoading = isLoading
+            $0.isEnabled = isEnabled
+            if let icon {
+                $0.image = UniversalImage(systemName: icon)
+            }
+        }, action: action)
+    }
+
+    static func secondary(
+        title: String,
+        icon: String? = nil,
+        isEnabled: Bool = true,
+        action: @escaping () -> Void
+    ) -> SUButton {
+        SUButton(model: ButtonVM {
+            $0.title = title
+            $0.style = .light
+            $0.color = .primary
+            $0.size = .medium
+            $0.isFullWidth = true
+            $0.isEnabled = isEnabled
+            if let icon {
+                $0.image = UniversalImage(systemName: icon)
+            }
+        }, action: action)
+    }
+
+    static func ghost(
+        title: String,
+        icon: String? = nil,
+        action: @escaping () -> Void
+    ) -> SUButton {
+        SUButton(model: ButtonVM {
+            $0.title = title
+            $0.style = .plain
+            $0.color = .primary
+            $0.size = .small
+            if let icon {
+                $0.image = UniversalImage(systemName: icon)
+            }
+        }, action: action)
     }
 }
