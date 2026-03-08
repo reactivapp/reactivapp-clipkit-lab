@@ -249,6 +249,7 @@ struct CoppedCreatorExperience: ClipExperience {
             .scrollDismissesKeyboard(.interactively)
         }
         .onAppear {
+            CoppedTheme.bootstrap()
             withAnimation(.easeInOut(duration: 1.6).repeatForever(autoreverses: true)) {
                 pulseHero = true
                 pulseReward = true
@@ -8520,6 +8521,7 @@ struct CoppedViewerExperience: ClipExperience {
             topHUD
         }
         .onAppear {
+            CoppedTheme.bootstrap()
             withAnimation(.easeInOut(duration: 1.35).repeatForever(autoreverses: true)) {
                 pulseCTA = true
             }

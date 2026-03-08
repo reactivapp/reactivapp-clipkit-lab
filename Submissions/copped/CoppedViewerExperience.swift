@@ -82,6 +82,7 @@ struct CoppedViewerExperience: ClipExperience {
             topHUD
         }
         .onAppear {
+            CoppedTheme.bootstrap()
             withAnimation(.easeInOut(duration: 1.35).repeatForever(autoreverses: true)) {
                 pulseCTA = true
             }
