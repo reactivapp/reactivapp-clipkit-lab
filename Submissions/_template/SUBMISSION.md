@@ -1,5 +1,5 @@
-## Team Name: ___
-## Clip Name: ___
+## Team Name: Nopium
+## Clip Name: NaloxoneNow
 ## Invocation URL Pattern: ___
 
 ---
@@ -23,7 +23,7 @@ Which user moment or touchpoint are you targeting?
 - [ ] Purchase / conversion
 - [ ] In-person / on-site interaction
 - [ ] Post-purchase / re-engagement
-- [ ] Other: ___
+- [-] Other: Canadian Opiod Crisis
 
 What friction or missed opportunity are you solving for? (3-5 sentences)
 
