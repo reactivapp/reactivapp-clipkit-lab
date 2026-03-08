@@ -40,6 +40,7 @@ struct ReturnclipClipExperience: ClipExperience {
     @State private var selectedPhotoItem: PhotosPickerItem? = nil
     @State private var showingImageSourceDialog = false
     @State private var showingCamera = false
+    @State private var returnLabelSuffix = String(format: "%04d", Int.random(in: 1000...9999))
 
     private var orderId: String? {
         context.pathParameters["orderId"]
@@ -653,7 +654,7 @@ struct ReturnclipClipExperience: ClipExperience {
                         .padding(20)
                         .glassEffect(.regular.interactive(), in: RoundedRectangle(cornerRadius: 20))
 
-                    Text("RET-\(orderId ?? "000000")-\(String(format: "%04d", Int.random(in: 1000...9999)))")
+                    Text("RET-\(orderId ?? "000000")-\(returnLabelSuffix)")
                         .font(.system(size: 12, weight: .medium, design: .monospaced))
                         .foregroundStyle(.tertiary)
                 }
