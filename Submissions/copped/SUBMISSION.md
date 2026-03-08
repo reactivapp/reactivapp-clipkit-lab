@@ -41,10 +41,10 @@ In physical retail, shoppers still trust other customers more than polished ads,
 
 Note: In this simulator prototype, invocation is tested via URL input and an in-app NFC payload simulator button in the invocation console (no NFC entitlement required), while the trigger mapping above represents real App Clip deployment options.
 Catalog note: pass `?store=<domain>` to load products from public Shopify `products.json` without authentication.
-NFC demo note (free developer setup): the invocation console NFC button accepts either a full URL payload (`clip.copped.app/v/prod_hoodie`) or a raw product ID payload (`prod_hoodie`), both mapped to the viewer clip.
+NFC demo note (free developer setup): the invocation console NFC button accepts either a full URL payload (`clip.copped.app/v/hoodie`) or a raw product ID payload (`hoodie`), both mapped to the viewer clip.
 
 **End-to-end user experience** (step by step):
-1. Shopper scans product trigger (`clip.copped.app/v/prod_hoodie`) and watches ranked buyer clips.
+1. Shopper scans product trigger (`clip.copped.app/v/hoodie`) and watches ranked buyer clips.
 2. Shopper buys from the viewer flow; conversion is logged and a receipt record is generated.
 3. Buyer scans receipt trigger (`clip.copped.app/c/order_1234`), records a 5-15s clip, passes on-device validation, optionally adds text, and stakes clip for instant $5 coupon.
 4. If any viewer purchase converts from that clip within 8 hours, creator becomes bonus-eligible (+$5).
@@ -61,6 +61,8 @@ No hard platform extensions are required for this prototype. Production rollout 
 - Real Shopify discount generation and redemption tracking
 - Real APNs delivery for bonus notifications
 - Signed Apple Wallet pass generation
+
+Submission scope note: some implementation-support edits were made outside `Submissions/copped/` (for simulator/runtime wiring and permissions). This is organizer-approved per [Reactiv] Mike P on Discord (March 7, 2026): "Changing the lab project permissions is allowed if needed for your project."
 
 ---
 
@@ -87,6 +89,8 @@ This prototype includes two runnable `ClipExperience` flows in the simulator:
 
 All backend logic is represented by a local in-memory actor (`CoppedMockBackend`) that mirrors planned endpoint behavior.
 
+MomentTimer validation: we verified the first meaningful value moment appears under 30 seconds for both tracks (viewer: immediate social proof + buy CTA; creator: record flow + reward confirmation).
+
 ---
 
 ### 5. Impact Hypothesis
@@ -105,8 +109,19 @@ All backend logic is represented by a local in-memory actor (`CoppedMockBackend`
 
 ### Demo Video
 
-Link: TBD
+Google Drive folder (all demo videos): https://drive.google.com/drive/folders/1iDUOn7rRy_Gpmyru26CI3nVl9M779oHy?usp=sharing
+
+Optional direct video links:
+- Viewer demo (hoodie): `PASTE_LINK_HERE`
+- Viewer demo (book): `PASTE_LINK_HERE`
+- Creator demo (record -> reward): `PASTE_LINK_HERE`
 
 ### Screenshot(s)
 
-TBD
+Selected screenshots:
+
+- Screenshot 1 (Viewer landing): `Submissions/copped/DemoAssets/FromRecordings/candidates/ScreenRecording_03-08-2026 08-36-04_1_t2.png`
+- Screenshot 2 (Viewer checkout): `Submissions/copped/DemoAssets/FromRecordings/selected/viewer_checkout_t6.6.png`
+- Screenshot 3 (Creator recording): `Submissions/copped/DemoAssets/FromRecordings/selected/creator_long_t16.png`
+- Screenshot 4 (Creator success): `Submissions/copped/DemoAssets/FromRecordings/selected/creator_success_scan_t44.png`
+- Screenshot 5 (Conversion proof): `Submissions/copped/DemoAssets/FromRecordings/selected/creator_long_t94.png`
