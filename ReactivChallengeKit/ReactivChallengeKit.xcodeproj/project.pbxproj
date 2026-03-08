@@ -10,14 +10,37 @@
 		7409D7E92F525C060097EC9A /* ReactivChallengeKit.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ReactivChallengeKit.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		B5BA23F32F5CE42700A5D802 /* Exceptions for "Submissions" folder in "ReactivChallengeKit" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				_template/MyClipExperience.swift,
+				The3musketeers/CanaLocalShopClipExperience.swift,
+				The3musketeers/ProductCard.swift,
+				The3musketeers/screenshots/browse.png,
+				The3musketeers/screenshots/checkingStock.png,
+				The3musketeers/screenshots/checkOut.png,
+				The3musketeers/screenshots/confirm.png,
+				The3musketeers/screenshots/outOfStock.png,
+				The3musketeers/ShopCartSummary.swift,
+				The3musketeers/ShopClipProductGrid.swift,
+			);
+			target = 7409D7E82F525C060097EC9A /* ReactivChallengeKit */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		7409D7EB2F525C060097EC9A /* ReactivChallengeKit */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = ReactivChallengeKit;
 			sourceTree = "<group>";
 		};
-		74AB00012F525C060097EC9A /* ../Submissions */ = {
+		74AB00012F525C060097EC9A /* Submissions */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				B5BA23F32F5CE42700A5D802 /* Exceptions for "Submissions" folder in "ReactivChallengeKit" target */,
+			);
+			name = Submissions;
 			path = ../Submissions;
 			sourceTree = "<group>";
 		};
@@ -38,7 +61,7 @@
 			isa = PBXGroup;
 			children = (
 				7409D7EB2F525C060097EC9A /* ReactivChallengeKit */,
-				74AB00012F525C060097EC9A /* ../Submissions */,
+				74AB00012F525C060097EC9A /* Submissions */,
 				7409D7EA2F525C060097EC9A /* Products */,
 			);
 			sourceTree = "<group>";
