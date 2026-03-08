@@ -2,8 +2,7 @@
   "permissions": {
     "allow": [
       "WebSearch",
-      "WebFetch(domain:bugfender.com)",
-      "Bash(bash scripts/create-submission.sh \"Scanify\" \"ScanifyExperience\")"
+      "WebFetch(domain:bugfender.com)"
     ]
   }
 }
